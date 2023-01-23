@@ -38,7 +38,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         const postConfig = postOptions(img.fileName, githubOptions, data)
         const body: {
           content: {
-            download_url: string
+            download_url: string,
+            sha: string
           }
         } = await ctx.request(postConfig)
         if (body) {
@@ -49,6 +50,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           } else {
             img.imgUrl = body.content.download_url
           }
+          img.hash = body.content.sha
         } else {
           throw new Error('Server error, please try again')
         }
