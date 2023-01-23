@@ -38,7 +38,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         const postConfig = postOptions(img.fileName, githubOptions, data)
         const body: {
           content: {
-            download_url: string,
+            download_url: string
             sha: string
           }
         } = await ctx.request(postConfig)
