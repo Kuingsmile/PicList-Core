@@ -121,7 +121,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/PicGo/PicGo-Core.git"
+    "url": "git+https://github.com/Kuingsmile/PicList-Core.git"
   },
   "picBed": {
     "current": "smms"
