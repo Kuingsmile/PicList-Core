@@ -44,6 +44,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           delete img.base64Image
           delete img.buffer
           img.imgUrl = body.data.url
+          img.deleteUrl = body.data.delete
         } else if (body.code === 'image_repeated' && typeof body.images === 'string') { // do extra check since this error return is not documented at https://doc.sm.ms/#api-Image-Upload
           delete img.base64Image
           delete img.buffer

@@ -69,7 +69,7 @@ export class PicGo extends EventEmitter implements IPicGo {
 
   private initConfigPath (): void {
     if (this.configPath === '') {
-      this.configPath = homedir() + '/.picgo/config.json'
+      this.configPath = homedir() + '/.piclist/config.json'
     }
     if (path.extname(this.configPath).toUpperCase() !== '.JSON') {
       this.configPath = ''
