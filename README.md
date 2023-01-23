@@ -1,4 +1,4 @@
-# PicGo-Core
+# PicList-Core
 
 ![standard](https://img.shields.io/badge/code%20style-standard-green.svg?style=flat-square)
 ![GitHub](https://img.shields.io/github/license/mashape/apistatus.svg?style=flat-square)
@@ -15,26 +15,26 @@ A tool for picture uploading. Both CLI & api supports. It also supports plugin s
 
 ## Installation
 
-PicGo should be installed with node.js >= 12 (v1.5.0-alpha.4 and small) & node.js >= 16 (since v1.5.0-alpha.5).
+PicList should be installed with node.js >= 12 (v1.5.0-alpha.4 and small) & node.js >= 16 (since v1.5.0-alpha.5).
 
 ### Global install
 
 ```bash
-npm install picgo -g
+npm install piclist -g
 
 # or
 
-yarn global add picgo
+yarn global add piclist
 ```
 
 ### Local install
 
 ```bash
-npm install picgo -D
+npm install piclist -D
 
 # or
 
-yarn add picgo -D
+yarn add piclist -D
 ```
 
 ## Usage
