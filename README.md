@@ -11,11 +11,12 @@
 
 A tool for picture uploading. Both CLI & api supports. It also supports plugin system, please check [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) to find powerful plugins.
 
-**Typora supports PicGo-Core natively**. If you like PicGo-Core and have time, welcome to help me translate the documentation of PicGo-Core into English.
+**Typora supports PicGo-Core natively**.
 
 ## 修改列表
 
 * smms图床的返回参数增加了图片hash，用于删除图片
+* imgur图床的返回参数增加了图片hash，用于删除图片
 
 ## Installation
 
@@ -94,13 +95,13 @@ Thanks to [vs-picgo](https://github.com/Spades-S/vs-picgo) && [Spades-S](https:/
 #### Common JS
 
 ```js
-const { PicGo } = require('picgo')
+const { PicGo } = require('piclist')
 ```
 
 #### ES Module
 
 ```js
-import { PicGo } from 'picgo'
+import { PicGo } from 'piclist'
 ```
 
 #### API usage example

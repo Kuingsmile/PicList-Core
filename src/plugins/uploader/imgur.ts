@@ -42,6 +42,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           delete img.base64Image
           delete img.buffer
           img.imgUrl = body.data.link
+          img.hash = body.data.deletehash
         } else {
           throw new Error('Server error, please try again')
         }
