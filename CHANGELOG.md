@@ -1,6 +1,9 @@
-# :tada: 1.5.0 (2022-11-13)
 
+# :tada: PicList core 0.0.6 (2023-01-23)
 
+### :sparkles: Features
+
+* github、smms and imgur uploader now returns hash for deleting uploaded file.
 
 # :tada: 1.5.0-alpha.17 (2022-11-13)
 
