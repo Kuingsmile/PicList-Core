@@ -13,6 +13,10 @@ A tool for picture uploading. Both CLI & api supports. It also supports plugin s
 
 **Typora supports PicGo-Core natively**. If you like PicGo-Core and have time, welcome to help me translate the documentation of PicGo-Core into English.
 
+## 修改列表
+
+* smms图床的返回参数增加了图片hash，用于删除图片
+
 ## Installation
 
 PicList should be installed with node.js >= 12 (v1.5.0-alpha.4 and small) & node.js >= 16 (since v1.5.0-alpha.5).
