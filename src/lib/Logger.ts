@@ -32,24 +32,24 @@ export class Logger implements ILogger {
   private handleLog (type: ILogType, ...msg: ILogArgvTypeWithError[]): void {
     // check config.silent
     if (!this.ctx.getConfig<Undefinable<string>>('silent')) {
-      const logHeader = chalk[this.level[type] as ILogColor](`[PicGo ${type.toUpperCase()}]:`)
+      const logHeader = chalk[this.level[type] as ILogColor](`[PicList ${type.toUpperCase()}]:`)
       console.log(logHeader, ...msg)
       this.logLevel = this.ctx.getConfig('settings.logLevel')
-      this.logPath = this.ctx.getConfig<Undefinable<string>>('settings.logPath') || path.join(this.ctx.baseDir, './picgo.log')
+      this.logPath = this.ctx.getConfig<Undefinable<string>>('settings.logPath') || path.join(this.ctx.baseDir, './piclist.log')
       setTimeout(() => {
         // fix log file is too large, now the log file's default size is 10 MB
         try {
           const result = this.checkLogFileIsLarge(this.logPath)
           if (result.isLarge) {
             const warningMsg = `Log file is too large (> ${(result.logFileSizeLimit!) / 1024 / 1024 || '10'} MB), recreate log file`
-            console.log(chalk.yellow('[PicGo WARN]:'), warningMsg)
+            console.log(chalk.yellow('[PicList WARN]:'), warningMsg)
             this.recreateLogFile(this.logPath)
             msg.unshift(warningMsg)
           }
           this.handleWriteLog(this.logPath, type, ...msg)
         } catch (e) {
           // why???
-          console.error('[PicGo Error] on checking log file size', e)
+          console.error('[PicList Error] on checking log file size', e)
         }
       }, 0)
     }
@@ -84,7 +84,7 @@ export class Logger implements ILogger {
   private handleWriteLog (logPath: string, type: string, ...msg: ILogArgvTypeWithError[]): void {
     try {
       if (this.checkLogLevel(type, this.logLevel)) {
-        let log = `${dayjs().format('YYYY-MM-DD HH:mm:ss')} [PicGo ${type.toUpperCase()}] `
+        let log = `${dayjs().format('YYYY-MM-DD HH:mm:ss')} [PicList ${type.toUpperCase()}] `
         msg.forEach((item: ILogArgvTypeWithError) => {
           if (item instanceof Error && type === 'error') {
             log += `\n------Error Stack Begin------\n${util.format(item?.stack)}\n-------Error Stack End------- `
@@ -100,7 +100,7 @@ export class Logger implements ILogger {
         fs.appendFileSync(logPath, log)
       }
     } catch (e) {
-      console.error('[PicGo Error] on writing log file', e)
+      console.error('[PicList Error] on writing log file', e)
     }
   }
 
