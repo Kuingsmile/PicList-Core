@@ -1,1 +1,1 @@
-export const CLIPBOARD_IMAGE_FOLDER = 'picgo-clipboard-images'
+export const CLIPBOARD_IMAGE_FOLDER = 'piclist-clipboard-images'
