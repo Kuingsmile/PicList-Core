@@ -80,7 +80,7 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
             const contentType = resp.headers['content-type']
             if (contentType?.includes('image')) {
               isImage = true
-              extname = `.${contentType.split('image/')[1]}`
+              extname = `.${String(contentType.split('image/')[1])}`
             }
             return resp.data as Buffer
           })
