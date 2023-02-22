@@ -15,9 +15,8 @@ A tool for picture uploading. Both CLI & api supports. It also supports plugin s
 
 ## 修改列表
 
-* smms图床的返回参数增加了图片hash，用于删除图片
-* imgur图床的返回参数增加了图片hash，用于删除图片
-* github图床的返回参数增加了图片hash，用于删除图片
+* smms, imgur和github图床增加hash返回参数，配合piclist的删除功能
+* 增加了webdav内置支持
 
 ## Installation
 
