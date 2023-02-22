@@ -365,6 +365,21 @@ export interface IImgurConfig {
   /** 代理地址，仅支持 http 代理 */
   proxy: string
 }
+/** Webdav 图床配置项 */
+export interface IWebdavPlistConfig{
+  /** webdav 的 `host` */
+  host: string
+  /** webdav 的 `sslEnabled` */
+  sslEnabled: boolean
+  /** webdav 的 `username` */
+  username: string
+  /** webdav 的 `password` */
+  password: string
+  /** webdav 的 `path` */
+  path: string
+  /** webdav 的 `customUrl` */
+  customUrl: string
+}
 /** PicGo 配置文件类型定义 */
 export interface IConfig {
   picBed: {
@@ -377,6 +392,7 @@ export interface IConfig {
     github?: IGithubConfig
     aliyun?: IAliyunConfig
     imgur?: IImgurConfig
+    webdavplist?: IWebdavPlistConfig
     transformer?: string
     /** for uploader */
     proxy?: string

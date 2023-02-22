@@ -2,6 +2,7 @@
 
 import { PicGo } from '../core/PicGo'
 import LifecyclePlugins from '../lib/LifecyclePlugins'
+import { IWebdavPlistConfig } from '../types'
 
 /**
  * for plugin config
@@ -139,6 +140,7 @@ export interface IConfig {
     github?: IGithubConfig
     aliyun?: IAliyunConfig
     imgur?: IImgurConfig
+    webdavplist?: IWebdavPlistConfig
     transformer?: string
     proxy: string
   }

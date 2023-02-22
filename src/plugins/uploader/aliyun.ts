@@ -36,6 +36,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   if (!aliYunOptions) {
     throw new Error('Can\'t find aliYun OSS config')
   }
+  aliYunOptions.path = aliYunOptions.path.replace(/\/*$/, '').replace(/^\/*/, '') + '/'
   try {
     const imgList = ctx.output
     const customUrl = aliYunOptions.customUrl
