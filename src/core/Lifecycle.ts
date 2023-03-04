@@ -12,6 +12,8 @@ export class Lifecycle extends EventEmitter {
   constructor (ctx: IPicGo) {
     super()
     this.ctx = ctx
+    const tempFilePath = path.join(ctx.baseDir, 'piclistTemp')
+    fs.emptyDirSync(tempFilePath)
   }
 
   async start (input: any[]): Promise<IPicGo> {
@@ -54,8 +56,9 @@ export class Lifecycle extends EventEmitter {
                 } else {
                   newExt = info.extname ?? ''
                 }
+                newExt = newExt.startsWith('.') ? newExt : `.${newExt}`
                 const tempFile = path.join(tempFilePath, `${info.fileName
-                  ? `${path.basename(info.fileName, path.extname(info.fileName))}.${newExt}`
+                  ? `${path.basename(info.fileName, path.extname(info.fileName))}${newExt}`
                   : new Date().getTime()}${newExt}`)
                 fs.writeFileSync(tempFile, transformedBuffer)
                 ctx.input[index] = tempFile
@@ -80,7 +83,8 @@ export class Lifecycle extends EventEmitter {
               } else {
                 newExt = path.extname(item)
               }
-              const tempFile = path.join(tempFilePath, `${path.basename(item, path.extname(item))}.${newExt}`)
+              newExt = newExt.startsWith('.') ? newExt : `.${newExt}`
+              const tempFile = path.join(tempFilePath, `${path.basename(item, path.extname(item))}${newExt}`)
               fs.writeFileSync(tempFile, transformedBuffer)
               ctx.input[index] = tempFile
             }
