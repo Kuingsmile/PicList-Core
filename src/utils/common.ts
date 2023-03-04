@@ -376,7 +376,7 @@ async function text2SVG (
   fontFamily?: string
 ): Promise<Buffer> {
   text = !text ? '测试' : text
-  fontFamily = !fontFamily ? './assets/simhei.ttf' : fontFamily
+  fontFamily = !fontFamily ? defaultWatermarkFontPath : fontFamily
   color = !color ? 'rgba(204, 204, 204, 0.45)' : color
   const text2SVG = TextToSVG.loadSync(fontFamily)
   const options: TextToSVG.GenerationOptions = {
@@ -390,8 +390,8 @@ async function text2SVG (
   return svg
 }
 
-const defaultWatermarkImagePath = '../assets/piclist.png'
-const defaultWatermarkFontPath = '../assets/simhei.ttf'
+const defaultWatermarkImagePath = `${__dirname}/assets/piclist.png`
+const defaultWatermarkFontPath = `${__dirname}/assets/simhei.ttf`
 
 export async function AddWatermark (
   img: Buffer,
