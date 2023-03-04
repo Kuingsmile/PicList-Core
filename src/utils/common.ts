@@ -570,21 +570,21 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
     if (validParam(options.quality) && options.quality! < 100) {
       quality = options.quality!
     }
-    if (options.isReSize) {
-      if (options.isReSizeByPercent) {
-        if (validParam(options.reSizePercent)) {
-          const imageWidth = await image.metadata().then(metadata => metadata.width)
-          const imageHeight = await image.metadata().then(metadata => metadata.height)
-          if (imageWidth && imageHeight) {
-            image = image.resize(
-              Math.round(imageWidth * options.reSizePercent! / 100),
-              Math.round(imageHeight * options.reSizePercent! / 100),
-              {
-                fit: 'inside'
-              })
-          }
+    if (options.isReSizeByPercent) {
+      if (validParam(options.reSizePercent)) {
+        const imageWidth = await image.metadata().then(metadata => metadata.width)
+        const imageHeight = await image.metadata().then(metadata => metadata.height)
+        if (imageWidth && imageHeight) {
+          image = image.resize(
+            Math.round(imageWidth * options.reSizePercent! / 100),
+            Math.round(imageHeight * options.reSizePercent! / 100),
+            {
+              fit: 'inside'
+            })
         }
-      } else if (validParam(options.reSizeHeight, options.reSizeWidth)) {
+      }
+    } else if (options.isReSize) {
+      if (validParam(options.reSizeHeight, options.reSizeWidth)) {
         image = image.resize(
           options.reSizeWidth,
           options.reSizeHeight,
@@ -631,14 +631,11 @@ export const needCompress = (compressOptions: IBuildInCompressOptions | undefine
     if (validParam(compressOptions.quality) && compressOptions.quality! < 100) {
       return true
     }
-    if (compressOptions.isReSize) {
-      if (validParam(compressOptions.reSizeHeight, compressOptions.reSizeWidth)) {
-        return true
-      } else if (compressOptions.isReSizeByPercent) {
-        if (validParam(compressOptions.reSizePercent) && compressOptions.reSizePercent! <= 100) {
-          return true
-        }
-      }
+    if (compressOptions.isReSizeByPercent && validParam(compressOptions.reSizePercent)) {
+      return true
+    }
+    if (compressOptions.isReSize && validParam(compressOptions.reSizeHeight, compressOptions.reSizeWidth)) {
+      return true
     }
     if (compressOptions.isRotate && compressOptions.rotateDegree) {
       return true
@@ -647,6 +644,7 @@ export const needCompress = (compressOptions: IBuildInCompressOptions | undefine
       const newFormat = compressOptions.convertFormat || 'jpg'
       return fileExt !== newFormat
     }
+    return false
   }
   return false
 }
