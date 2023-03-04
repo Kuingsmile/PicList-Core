@@ -2,6 +2,7 @@ import { terser } from 'rollup-plugin-terser'
 import pkg from './package.json'
 import typescript from 'rollup-plugin-typescript2'
 import commonjs from '@rollup/plugin-commonjs'
+import copy from 'rollup-plugin-copy'
 import { string } from 'rollup-plugin-string'
 import json from '@rollup/plugin-json'
 import builtins from 'builtins'
@@ -31,6 +32,11 @@ const commonOptions = {
           module: 'ES2015'
         }
       }
+    }),
+    copy({
+      targets: [
+        { src: 'assets', dest: 'dist' }
+      ]
     }),
     // terser(),
     commonjs(),

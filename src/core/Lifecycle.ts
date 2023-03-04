@@ -1,8 +1,10 @@
 import { EventEmitter } from 'events'
-import { ILifecyclePlugins, IPicGo, IPlugin, Undefinable } from '../types'
-import { handleUrlEncode } from '../utils/common'
+import { IBuildInWaterMarkOptions, IBuildInCompressOptions, ILifecyclePlugins, IPathTransformedImgInfo, IPicGo, IPlugin, Undefinable } from '../types'
+import { getURLFile, handleUrlEncode, imageProcess, isUrl, needCompress, needAddWatermark, imageAddWaterMark } from '../utils/common'
 import { IBuildInEvent } from '../utils/enum'
 import { createContext } from '../utils/createContext'
+import path from 'path'
+import fs from 'fs-extra'
 
 export class Lifecycle extends EventEmitter {
   private readonly ctx: IPicGo
@@ -22,7 +24,69 @@ export class Lifecycle extends EventEmitter {
       }
       ctx.input = input
       ctx.output = []
-
+      const compressOptions = ctx.getConfig<IBuildInCompressOptions>('buildIn.compress')
+      const watermarkOptions = ctx.getConfig<IBuildInWaterMarkOptions>('buildIn.watermark')
+      if (compressOptions || watermarkOptions) {
+        const tempFilePath = path.join(ctx.baseDir, 'piclistTemp')
+        if (!fs.existsSync(tempFilePath)) {
+          fs.mkdirSync(tempFilePath)
+        }
+        const watermarkMsg = 'Add watermark to image'
+        const compressMsg = 'Compress or convert image'
+        await Promise.allSettled(ctx.input.map(async (item: string, index: number) => {
+          let info: IPathTransformedImgInfo
+          if (isUrl(item)) {
+            info = await getURLFile(item, ctx)
+            if (info.success && info.buffer) {
+              let transformedBuffer
+              if (needAddWatermark(watermarkOptions)) {
+                ctx.log.info(watermarkMsg)
+                transformedBuffer = await imageAddWaterMark(info.buffer, watermarkOptions)
+              }
+              if (needCompress(compressOptions, info.extname ?? '')) {
+                ctx.log.info(compressMsg)
+                transformedBuffer = await imageProcess(transformedBuffer ?? info.buffer, compressOptions, info.extname ?? '')
+              }
+              if (transformedBuffer) {
+                let newExt
+                if (compressOptions?.isConvert) {
+                  newExt = compressOptions?.convertFormat ?? 'jpg'
+                } else {
+                  newExt = info.extname ?? ''
+                }
+                const tempFile = path.join(tempFilePath, `${info.fileName
+                  ? `${path.basename(info.fileName, path.extname(info.fileName))}.${newExt}`
+                  : new Date().getTime()}${newExt}`)
+                fs.writeFileSync(tempFile, transformedBuffer)
+                ctx.input[index] = tempFile
+              }
+            } else {
+              throw new Error(info.reason)
+            }
+          } else {
+            let transformedBuffer
+            if (needAddWatermark(watermarkOptions)) {
+              ctx.log.info(watermarkMsg)
+              transformedBuffer = await imageAddWaterMark(fs.readFileSync(item), watermarkOptions)
+            }
+            if (needCompress(compressOptions, path.extname(item))) {
+              ctx.log.info(compressMsg)
+              transformedBuffer = await imageProcess(transformedBuffer ?? fs.readFileSync(item), compressOptions, path.extname(item))
+            }
+            if (transformedBuffer) {
+              let newExt
+              if (compressOptions?.isConvert) {
+                newExt = compressOptions?.convertFormat ?? 'jpg'
+              } else {
+                newExt = path.extname(item)
+              }
+              const tempFile = path.join(tempFilePath, `${path.basename(item, path.extname(item))}.${newExt}`)
+              fs.writeFileSync(tempFile, transformedBuffer)
+              ctx.input[index] = tempFile
+            }
+          }
+        }))
+      }
       // lifecycle main
       await this.beforeTransform(ctx)
       await this.doTransform(ctx)

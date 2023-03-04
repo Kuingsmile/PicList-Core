@@ -1,11 +1,14 @@
 import { IPicGo, IPluginConfig, IStringKeyMap } from '../../types'
+import compress from '../beforetransformer/compress'
+import watermark from '../beforetransformer/watermark'
 
 // handle modules config -> save to picgo config file
 const handleConfig = async (ctx: IPicGo, prompts: IPluginConfig[], module: string, name: string): Promise<void> => {
   const answer = await ctx.cmd.inquirer.prompt(prompts)
   const configName = module === 'uploader'
     ? `picBed.${name}` : module === 'transformer'
-      ? `transformer.${name}` : name
+      ? `transformer.${name}` : module === 'buildin'
+        ? `buildIn.${name}` : name
   ctx.saveConfig({
     [configName]: answer
   })
@@ -18,7 +21,7 @@ const setting = {
       .command('set')
       .alias('config')
       .arguments('<module> [name]')
-      .description('configure config of picgo modules')
+      .description('configure config of picgo modules, uploader|transformer|plugin|buildin')
       .action((module: string, name: string) => {
         (async () => {
           try {
@@ -26,6 +29,28 @@ const setting = {
             // await ctx.pluginLoader.load()
             // if a module is specific, then just set this option in config
             switch (module) {
+              case 'buildin':
+                if (name === 'compress') {
+                  await handleConfig(ctx, compress.config(ctx), module, name)
+                } else if (name === 'watermark') {
+                  await handleConfig(ctx, watermark.config(ctx), module, name)
+                } else {
+                  const prompts = [
+                    {
+                      type: 'list',
+                      name: 'buildin',
+                      choices: ['compress', 'watermark'],
+                      message: 'Choose a buildin module'
+                    }
+                  ]
+                  const answer = await ctx.cmd.inquirer.prompt<IStringKeyMap<any>>(prompts)
+                  if (answer.buildin === 'compress') {
+                    await handleConfig(ctx, compress.config(ctx), module, answer.buildin)
+                  } else if (answer.buildin === 'watermark') {
+                    await handleConfig(ctx, watermark.config(ctx), module, answer.buildin)
+                  }
+                }
+                break
               case 'uploader':
               case 'transformer':
                 if (name) {
@@ -82,11 +107,13 @@ const setting = {
                 break
               default:
                 ctx.log.warn(`No module named ${module}`)
-                return ctx.log.warn('Available modules are uploader|transformer|plugin')
+                return ctx.log.warn('Available modules are uploader|transformer|plugin|buildin')
             }
             const useModuleName = module === 'plugin' ? 'plugins' : module
             ctx.log.success('Configure config successfully!')
-            ctx.log.info(`If you want to use this config, please run 'picgo use ${useModuleName}'`)
+            if (module !== 'buildin') {
+              ctx.log.info(`If you want to use this config, please run 'picgo use ${useModuleName}'`)
+            }
           } catch (e: any) {
             ctx.log.error(e)
             if (process.argv.includes('--debug')) {

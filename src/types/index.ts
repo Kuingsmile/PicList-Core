@@ -1,5 +1,6 @@
 import { Command } from 'commander'
 import { Inquirer } from 'inquirer'
+import { FormatEnum, GravityEnum } from 'sharp'
 import { IRequestPromiseOptions } from './oldRequest'
 
 export interface IPicGo extends NodeJS.EventEmitter {
@@ -610,4 +611,34 @@ export interface II18nManager {
    * get language list
    */
   getLanguageList: () => string[]
+}
+
+export type availableConvertFormat = keyof FormatEnum
+
+export type availableWatermarkPosition = keyof GravityEnum
+
+export interface IBuildInWaterMarkOptions {
+  isAddWatermark?: boolean
+  watermarkType?: 'text' | 'image'
+  isFullScreenWatermark?: boolean
+  watermarkDegree?: number
+  watermarkText?: string
+  watermarkFontPath?: string
+  watermarkScaleRatio?: number
+  watermarkColor?: string
+  watermarkImagePath?: string
+  watermarkPosition?: availableWatermarkPosition
+}
+
+export interface IBuildInCompressOptions {
+  quality?: number
+  isConvert?: boolean
+  convertFormat?: availableConvertFormat
+  isReSize?: boolean
+  reSizeWidth?: number
+  reSizeHeight?: number
+  isReSizeByPercent?: boolean
+  reSizePercent?: number
+  isRotate?: boolean
+  rotateDegree?: number
 }

@@ -6,11 +6,16 @@ import {
   IPathTransformedImgInfo,
   IPluginNameType,
   ILogger,
-  IPicGo
+  IPicGo,
+  IBuildInCompressOptions,
+  IBuildInWaterMarkOptions
 } from '../types'
 import { URL } from 'url'
+import TextToSVG from 'text-to-svg'
+import sharp from 'sharp'
 
-export const isUrl = (url: string): boolean => (url.startsWith('http://') || url.startsWith('https://'))
+export const isUrl = (url: string): boolean => (/^https?:\/\//).test(url)
+
 export const isUrlEncode = (url: string): boolean => {
   url = url || ''
   try {
@@ -64,8 +69,6 @@ export const getFSFile = async (filePath: string): Promise<IPathTransformedImgIn
 
 export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransformedImgInfo> => {
   url = handleUrlEncode(url)
-  let isImage = false
-  let extname = ''
   let timeoutId: NodeJS.Timeout
   const requestFn = new Promise<IPathTransformedImgInfo>((resolve, reject) => {
     (async () => {
@@ -77,28 +80,16 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
           responseType: 'arraybuffer'
         })
           .then((resp) => {
-            const contentType = resp.headers['content-type']
-            if (contentType?.includes('image')) {
-              isImage = true
-              extname = `.${String(contentType.split('image/')[1])}`
-            }
             return resp.data as Buffer
           })
         clearTimeout(timeoutId)
-        if (isImage) {
-          const urlPath = new URL(url).pathname
-          resolve({
-            buffer: res,
-            fileName: path.basename(urlPath),
-            extname,
-            success: true
-          })
-        } else {
-          resolve({
-            success: false,
-            reason: `${url} is not image`
-          })
-        }
+        const urlPath = new URL(url).pathname
+        resolve({
+          buffer: res,
+          fileName: path.basename(urlPath),
+          extname: path.extname(urlPath),
+          success: true
+        })
       } catch (error: any) {
         clearTimeout(timeoutId)
         resolve({
@@ -115,7 +106,7 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
         success: false,
         reason: `request ${url} timeout`
       })
-    }, 10000)
+    }, 30000)
   })
   return Promise.race([requestFn, timeoutPromise])
 }
@@ -377,4 +368,285 @@ export const isDev = (): boolean => {
 
 export const isProd = (): boolean => {
   return process.env.NODE_ENV === 'production'
+}
+
+async function text2SVG (
+  text?: string,
+  color?: string,
+  fontFamily?: string
+): Promise<Buffer> {
+  text = !text ? '测试' : text
+  fontFamily = !fontFamily ? './assets/simhei.ttf' : fontFamily
+  color = !color ? 'rgba(204, 204, 204, 0.45)' : color
+  const text2SVG = TextToSVG.loadSync(fontFamily)
+  const options: TextToSVG.GenerationOptions = {
+    anchor: 'top',
+    attributes: {
+      fill: color
+    }
+  }
+  const textSVG = text2SVG.getSVG(text, options)
+  const svg = Buffer.from(textSVG)
+  return svg
+}
+
+const defaultWatermarkImagePath = '../assets/piclist.png'
+const defaultWatermarkFontPath = '../assets/simhei.ttf'
+
+export async function AddWatermark (
+  img: Buffer,
+  watermarkType: 'text' | 'image',
+  isFullScreenWatermark?: boolean,
+  watermarkDegree?: number,
+  text?: string,
+  watermarkFontPath?: string,
+  watermarkScaleRatio?: number,
+  watermarkColor?: string,
+  watermarkImagePath?: string,
+  position?: sharp.Gravity
+): Promise<Buffer> {
+  watermarkScaleRatio = !watermarkScaleRatio || watermarkScaleRatio < 0 || watermarkScaleRatio > 1 ? 0.15 : watermarkScaleRatio
+  const image = sharp(img)
+  const { width: imgWidth = 200 } = await image.metadata()
+  const watermark = await createWatermark(
+    watermarkType,
+    watermarkDegree,
+    text,
+    watermarkFontPath,
+    watermarkScaleRatio,
+    watermarkColor,
+    watermarkImagePath,
+    imgWidth
+  )
+  const composited = await image
+    .composite([
+      {
+        input: watermark,
+        gravity: position || 'southeast',
+        tile: isFullScreenWatermark
+      }
+    ])
+    .toBuffer()
+  return composited
+}
+
+async function createWatermark (
+  watermarkType: 'text' | 'image',
+  watermarkDegree: number = 0,
+  text?: string,
+  watermarkFontPath?: string,
+  watermarkScaleRatio?: number,
+  watermarkColor?: string,
+  watermarkImagePath?: string,
+  imgWidth: number = 200
+): Promise<Buffer> {
+  let watermark: any
+  if (watermarkType === 'image') {
+    watermarkImagePath = watermarkImagePath || defaultWatermarkImagePath
+    watermark = await sharp(watermarkImagePath).toBuffer()
+  } else {
+    watermark = await text2SVG(
+      text,
+      watermarkColor,
+      watermarkFontPath || defaultWatermarkFontPath
+    )
+  }
+  const { width: watermarkWidth, height: watermarkHeight } = await getSize(
+    watermark
+  )
+  const watermarkResizeWidth = Math.floor(imgWidth * forceNumber(watermarkScaleRatio))
+  const watermarkResizeHeight = Math.floor(
+    (watermarkResizeWidth * watermarkHeight) / watermarkWidth
+  )
+  return await sharp(watermark)
+    .resize(watermarkResizeWidth, watermarkResizeHeight, {
+      fit: 'inside'
+    })
+    .rotate(watermarkDegree, { background: { r: 255, g: 255, b: 255, alpha: 0 } })
+    .toBuffer()
+}
+
+async function getSize (image: Buffer): Promise<{ width: number, height: number }> {
+  const { width, height } = await sharp(image).metadata()
+  return { width: width || 200, height: height || 200 }
+}
+
+const validParam = (...params: any[]): boolean => {
+  return params.every(param => {
+    if (param === undefined || param === null) {
+      return false
+    }
+    if (typeof param === 'string') {
+      return param !== ''
+    }
+    if (typeof param === 'number') {
+      return param > 0
+    }
+    if (typeof param === 'object') {
+      return Object.keys(param).length > 0
+    }
+    return true
+  })
+}
+
+const availableConvertFormatList = [
+  'avif',
+  'dz',
+  'fits',
+  'gif',
+  'heif',
+  'input',
+  'jpeg',
+  'jpg',
+  'jp2',
+  'jxl',
+  'magick',
+  'openslide',
+  'pdf',
+  'png',
+  'ppm',
+  'raw',
+  'svg',
+  'tiff',
+  'tif',
+  'v',
+  'webp'
+]
+
+const validOutputFormat = (format: string): boolean => {
+  return availableConvertFormatList.includes(format)
+}
+
+const imageExtList = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'avif', 'heif', 'heic']
+
+export async function imageAddWaterMark (img: Buffer, options: IBuildInWaterMarkOptions): Promise<Buffer> {
+  try {
+    let image: sharp.Sharp = sharp(img)
+    if (validParam(options.watermarkText)) {
+      image = sharp(await AddWatermark(
+        img,
+        options.watermarkType || 'text',
+        options.isFullScreenWatermark,
+        forceNumber(options.watermarkDegree),
+        options.watermarkText,
+        options.watermarkFontPath,
+        forceNumber(options.watermarkScaleRatio),
+        options.watermarkColor,
+        options.watermarkImagePath,
+        options.watermarkPosition
+      ))
+    }
+    return await image.toBuffer()
+  } catch (error) {
+    console.log(error)
+    return img
+  }
+}
+
+function formatOptions (options: IBuildInCompressOptions): IBuildInCompressOptions {
+  return {
+    quality: forceNumber(options.quality),
+    isConvert: options.isConvert || false,
+    convertFormat: options.convertFormat || 'jpg',
+    isReSize: options.isReSize || false,
+    reSizeHeight: forceNumber(options.reSizeHeight),
+    reSizeWidth: forceNumber(options.reSizeWidth),
+    isReSizeByPercent: options.isReSizeByPercent || false,
+    reSizePercent: forceNumber(options.reSizePercent),
+    isRotate: options.isRotate || false,
+    rotateDegree: forceNumber(options.rotateDegree)
+  }
+}
+
+export async function imageProcess (img: Buffer, options: IBuildInCompressOptions, rawFormat: string): Promise<Buffer> {
+  options = formatOptions(options)
+  try {
+    rawFormat = rawFormat.toLowerCase().replace('.', '')
+    if (!imageExtList.includes(rawFormat)) {
+      return img
+    }
+    let image: sharp.Sharp = sharp(img)
+    let quality = 100
+    if (validParam(options.quality) && options.quality! < 100) {
+      quality = options.quality!
+    }
+    if (options.isReSize) {
+      if (options.isReSizeByPercent) {
+        if (validParam(options.reSizePercent) && options.reSizePercent! <= 100) {
+          const imageWidth = await image.metadata().then(metadata => metadata.width)
+          const imageHeight = await image.metadata().then(metadata => metadata.height)
+          if (imageWidth && imageHeight) {
+            image = image.resize(
+              Math.round(imageWidth * options.reSizePercent! / 100),
+              Math.round(imageHeight * options.reSizePercent! / 100),
+              {
+                fit: 'inside'
+              })
+          }
+        }
+      } else if (validParam(options.reSizeHeight, options.reSizeWidth)) {
+        image = image.resize(
+          options.reSizeWidth,
+          options.reSizeHeight,
+          {
+            fit: 'inside'
+          }
+        )
+      }
+    }
+    if (options.isRotate && options.rotateDegree) {
+      image = image.rotate(options.rotateDegree, { background: { r: 255, g: 255, b: 255, alpha: 0 } })
+    }
+    if (options.isConvert) {
+      const newFormat = options.convertFormat || 'jpg'
+      image = image.toFormat(newFormat, {
+        quality
+      })
+    } else {
+      if (rawFormat && validOutputFormat(rawFormat)) {
+        image = image.toFormat(rawFormat as any, {
+          quality
+        })
+      } else {
+        image = image.toFormat('jpg', {
+          quality
+        })
+      }
+    }
+    return await image.toBuffer()
+  } catch (error) {
+    console.log(error)
+    return img
+  }
+}
+
+export const needAddWatermark = (watermarkOptions: IBuildInWaterMarkOptions | undefined): boolean => {
+  return !!watermarkOptions && !!watermarkOptions.isAddWatermark
+}
+
+export const needCompress = (compressOptions: IBuildInCompressOptions | undefined, fileExt: string): boolean => {
+  fileExt = fileExt.toLowerCase().replace('.', '')
+  if (compressOptions) {
+    compressOptions = formatOptions(compressOptions)
+    if (validParam(compressOptions.quality) && compressOptions.quality! < 100) {
+      return true
+    }
+    if (compressOptions.isReSize) {
+      if (validParam(compressOptions.reSizeHeight, compressOptions.reSizeWidth)) {
+        return true
+      } else if (compressOptions.isReSizeByPercent) {
+        if (validParam(compressOptions.reSizePercent) && compressOptions.reSizePercent! <= 100) {
+          return true
+        }
+      }
+    }
+    if (compressOptions.isRotate && compressOptions.rotateDegree) {
+      return true
+    }
+    if (compressOptions.isConvert) {
+      const newFormat = compressOptions.convertFormat || 'jpg'
+      return fileExt !== newFormat
+    }
+  }
+  return false
 }

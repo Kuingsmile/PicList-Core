@@ -1,6 +1,6 @@
 {
   "name": "piclist",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Modified PicGo core, A tool for picture uploading",
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
@@ -67,6 +67,8 @@
     "@types/node": "16.11.7",
     "@types/resolve": "^0.0.8",
     "@types/rimraf": "^3.0.0",
+    "@types/sharp": "^0.31.1",
+    "@types/text-to-svg": "^3.1.1",
     "@types/tunnel": "^0.0.3",
     "@typescript-eslint/eslint-plugin": "3",
     "@typescript-eslint/parser": "^3.2.0",
@@ -89,12 +91,13 @@
     "rollup-plugin-string": "^3.0.0",
     "rollup-plugin-terser": "^7.0.2",
     "rollup-plugin-typescript2": "^0.30.0",
+    "rollup-plugin-copy": "^3.4.0",
     "typescript": "^4.8.2"
   },
   "dependencies": {
     "@picgo/i18n": "^1.0.0",
     "@picgo/store": "^2.0.4",
-    "axios": "^1.3.2",
+    "axios": "^1.3.4",
     "chalk": "^2.4.1",
     "commander": "^8.1.0",
     "comment-json": "^2.3.1",
@@ -116,6 +119,8 @@
     "qiniu": "^7.8.0",
     "resolve": "^1.8.1",
     "rimraf": "^3.0.2",
+    "sharp": "^0.31.3",
+    "text-to-svg": "^3.1.5",
     "tunnel": "^0.0.6"
   },
   "repository": {
