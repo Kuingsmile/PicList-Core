@@ -572,7 +572,7 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
     }
     if (options.isReSize) {
       if (options.isReSizeByPercent) {
-        if (validParam(options.reSizePercent) && options.reSizePercent! <= 100) {
+        if (validParam(options.reSizePercent)) {
           const imageWidth = await image.metadata().then(metadata => metadata.width)
           const imageHeight = await image.metadata().then(metadata => metadata.height)
           if (imageWidth && imageHeight) {
