@@ -29,6 +29,16 @@ Based on Picgo-Core and add some features.
 
 PicList should be installed with node.js >= 12 (v1.5.0-alpha.4 and small) & node.js >= 16 (since v1.5.0-alpha.5).
 
+### before install
+
+As PicList depends on [sharp](https://sharp.pixelplumbing.com/), you need to install sharp before install PicList.
+
+```bash
+npm config set sharp_binary_host "https://npmmirror.com/mirrors/sharp"
+npm config set sharp_libvips_binary_host "https://npmmirror.com/mirrors/sharp-libvips"
+npm install sharp
+```
+
 ### Global install
 
 ```bash
