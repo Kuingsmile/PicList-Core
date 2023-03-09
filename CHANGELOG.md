@@ -1,3 +1,12 @@
+# :tada: 0.3.0 (2023-03-09)
+
+
+### :sparkles: Features
+
+* reduce package size ([c59c1dc](https://github.com/Kuingsmile/PicList-Core/commit/c59c1dc))
+
+
+
 
 # :tada: PicList core 0.0.6 (2023-01-23)
 
