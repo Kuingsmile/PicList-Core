@@ -5,15 +5,40 @@ import { IBuildInEvent } from '../utils/enum'
 import { createContext } from '../utils/createContext'
 import path from 'path'
 import fs from 'fs-extra'
+import axios from 'axios'
 
 export class Lifecycle extends EventEmitter {
   private readonly ctx: IPicGo
+  private readonly ttfLink: string = 'https://release.piclist.cn/simhei.ttf'
+  ttfPath: string
 
   constructor (ctx: IPicGo) {
     super()
     this.ctx = ctx
     const tempFilePath = path.join(ctx.baseDir, 'piclistTemp')
     fs.emptyDirSync(tempFilePath)
+    this.ttfPath = path.join(ctx.baseDir, 'assets', 'simhei.ttf')
+  }
+
+  async downloadTTF (): Promise<boolean> {
+    const outputDir = path.dirname(this.ttfPath)
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true })
+    }
+    if (!fs.existsSync(this.ttfPath)) {
+      this.ctx.log.info('Download ttf file.')
+      try {
+        const res = await axios.get(this.ttfLink, { responseType: 'arraybuffer' })
+        fs.writeFileSync(this.ttfPath, res.data)
+        this.ctx.log.info('Download ttf file success.')
+        return true
+      } catch (e: any) {
+        this.ctx.log.error('Download ttf file failed.')
+        return false
+      }
+    } else {
+      return true
+    }
   }
 
   async start (input: any[]): Promise<IPicGo> {
@@ -41,9 +66,14 @@ export class Lifecycle extends EventEmitter {
             info = await getURLFile(item, ctx)
             if (info.success && info.buffer) {
               let transformedBuffer
-              if (needAddWatermark(watermarkOptions)) {
-                ctx.log.info(watermarkMsg)
-                transformedBuffer = await imageAddWaterMark(info.buffer, watermarkOptions)
+              if (needAddWatermark(watermarkOptions, info.extname ?? '')) {
+                const downloadTTFRet = await this.downloadTTF()
+                if (!downloadTTFRet) {
+                  this.ctx.log.warn('Download ttf file failed, skip add watermark.')
+                } else {
+                  ctx.log.info(watermarkMsg)
+                  transformedBuffer = await imageAddWaterMark(info.buffer, watermarkOptions, this.ttfPath)
+                }
               }
               if (needCompress(compressOptions, info.extname ?? '')) {
                 ctx.log.info(compressMsg)
@@ -68,9 +98,14 @@ export class Lifecycle extends EventEmitter {
             }
           } else {
             let transformedBuffer
-            if (needAddWatermark(watermarkOptions)) {
-              ctx.log.info(watermarkMsg)
-              transformedBuffer = await imageAddWaterMark(fs.readFileSync(item), watermarkOptions)
+            if (needAddWatermark(watermarkOptions, path.extname(item))) {
+              const downloadTTFRet = await this.downloadTTF()
+              if (!downloadTTFRet) {
+                this.ctx.log.warn('Download ttf file failed, skip add watermark.')
+              } else {
+                ctx.log.info(watermarkMsg)
+                transformedBuffer = await imageAddWaterMark(fs.readFileSync(item), watermarkOptions, this.ttfPath)
+              }
             }
             if (needCompress(compressOptions, path.extname(item))) {
               ctx.log.info(compressMsg)

@@ -371,6 +371,7 @@ export const isProd = (): boolean => {
 }
 
 async function text2SVG (
+  defaultWatermarkFontPath: string,
   text?: string,
   color?: string,
   fontFamily?: string
@@ -391,11 +392,11 @@ async function text2SVG (
 }
 
 const defaultWatermarkImagePath = `${__dirname}/assets/piclist.png`
-const defaultWatermarkFontPath = `${__dirname}/assets/simhei.ttf`
 
 export async function AddWatermark (
   img: Buffer,
   watermarkType: 'text' | 'image',
+  defaultWatermarkFontPath: string,
   isFullScreenWatermark?: boolean,
   watermarkDegree?: number,
   text?: string,
@@ -411,6 +412,7 @@ export async function AddWatermark (
   const watermark = await createWatermark(
     watermarkType,
     watermarkDegree,
+    defaultWatermarkFontPath,
     text,
     watermarkFontPath,
     watermarkScaleRatio,
@@ -433,6 +435,7 @@ export async function AddWatermark (
 async function createWatermark (
   watermarkType: 'text' | 'image',
   watermarkDegree: number = 0,
+  defaultWatermarkFontPath: string,
   text?: string,
   watermarkFontPath?: string,
   watermarkScaleRatio?: number,
@@ -446,6 +449,7 @@ async function createWatermark (
     watermark = await sharp(watermarkImagePath).toBuffer()
   } else {
     watermark = await text2SVG(
+      defaultWatermarkFontPath,
       text,
       watermarkColor,
       watermarkFontPath || defaultWatermarkFontPath
@@ -519,13 +523,14 @@ const validOutputFormat = (format: string): boolean => {
 
 const imageExtList = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'avif', 'heif', 'heic']
 
-export async function imageAddWaterMark (img: Buffer, options: IBuildInWaterMarkOptions): Promise<Buffer> {
+export async function imageAddWaterMark (img: Buffer, options: IBuildInWaterMarkOptions, defaultWatermarkFontPath: string): Promise<Buffer> {
   try {
     let image: sharp.Sharp = sharp(img)
     if (validParam(options.watermarkText)) {
       image = sharp(await AddWatermark(
         img,
         options.watermarkType || 'text',
+        defaultWatermarkFontPath,
         options.isFullScreenWatermark,
         forceNumber(options.watermarkDegree),
         options.watermarkText,
@@ -620,12 +625,18 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
   }
 }
 
-export const needAddWatermark = (watermarkOptions: IBuildInWaterMarkOptions | undefined): boolean => {
-  return !!watermarkOptions && !!watermarkOptions.isAddWatermark
+const imageFormatList = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'avif', 'heif', 'heic']
+
+export const needAddWatermark = (watermarkOptions: IBuildInWaterMarkOptions | undefined, fileExt: string): boolean => {
+  fileExt = fileExt.toLowerCase().replace('.', '')
+  return !!watermarkOptions && !!watermarkOptions.isAddWatermark && imageFormatList.includes(fileExt)
 }
 
 export const needCompress = (compressOptions: IBuildInCompressOptions | undefined, fileExt: string): boolean => {
   fileExt = fileExt.toLowerCase().replace('.', '')
+  if (!imageFormatList.includes(fileExt)) {
+    return false
+  }
   if (compressOptions) {
     compressOptions = formatOptions(compressOptions)
     if (validParam(compressOptions.quality) && compressOptions.quality! < 100) {
