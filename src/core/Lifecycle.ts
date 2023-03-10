@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
 import { IBuildInWaterMarkOptions, IBuildInCompressOptions, ILifecyclePlugins, IPathTransformedImgInfo, IPicGo, IPlugin, Undefinable } from '../types'
-import { getURLFile, handleUrlEncode, imageProcess, isUrl, needCompress, needAddWatermark, imageAddWaterMark } from '../utils/common'
+import { getURLFile, handleUrlEncode, imageProcess, isUrl, needCompress, needAddWatermark, imageAddWaterMark, removeExif } from '../utils/common'
 import { IBuildInEvent } from '../utils/enum'
 import { createContext } from '../utils/createContext'
 import path from 'path'
@@ -79,6 +79,10 @@ export class Lifecycle extends EventEmitter {
                 ctx.log.info(compressMsg)
                 transformedBuffer = await imageProcess(transformedBuffer ?? info.buffer, compressOptions, info.extname ?? '')
               }
+              if (!transformedBuffer && compressOptions?.isRemoveExif) {
+                ctx.log.info('Remove exif info.')
+                transformedBuffer = await removeExif(info.buffer, info.extname ?? '')
+              }
               if (transformedBuffer) {
                 let newExt
                 if (compressOptions?.isConvert) {
@@ -110,6 +114,10 @@ export class Lifecycle extends EventEmitter {
             if (needCompress(compressOptions, path.extname(item))) {
               ctx.log.info(compressMsg)
               transformedBuffer = await imageProcess(transformedBuffer ?? fs.readFileSync(item), compressOptions, path.extname(item))
+            }
+            if (!transformedBuffer && compressOptions?.isRemoveExif) {
+              ctx.log.info('Remove exif info.')
+              transformedBuffer = await removeExif(fs.readFileSync(item), path.extname(item))
             }
             if (transformedBuffer) {
               let newExt

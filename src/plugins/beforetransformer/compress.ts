@@ -75,6 +75,13 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       get alias () { return ctx.i18n.translate<ILocalesKey>('BUILDIN_COMPRESS_ROTATEDEGREE') },
       required: false,
       default: userConfig.rotateDegree || 90
+    },
+    {
+      name: 'isRemoveExif',
+      type: 'confirm',
+      get alias () { return ctx.i18n.translate<ILocalesKey>('BUILDIN_COMPRESS_ISREMOVEEXIF') },
+      required: false,
+      default: userConfig.isRemoveExif || false
     }
   ]
   return config

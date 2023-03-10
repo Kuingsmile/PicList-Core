@@ -411,14 +411,14 @@ export async function AddWatermark (
   const { width: imgWidth = 200 } = await image.metadata()
   const watermark = await createWatermark(
     watermarkType,
-    watermarkDegree,
     defaultWatermarkFontPath,
     text,
     watermarkFontPath,
     watermarkScaleRatio,
     watermarkColor,
     watermarkImagePath,
-    imgWidth
+    imgWidth,
+    watermarkDegree
   )
   const composited = await image
     .composite([
@@ -434,14 +434,14 @@ export async function AddWatermark (
 
 async function createWatermark (
   watermarkType: 'text' | 'image',
-  watermarkDegree: number = 0,
   defaultWatermarkFontPath: string,
   text?: string,
   watermarkFontPath?: string,
   watermarkScaleRatio?: number,
   watermarkColor?: string,
   watermarkImagePath?: string,
-  imgWidth: number = 200
+  imgWidth: number = 200,
+  watermarkDegree: number = 0
 ): Promise<Buffer> {
   let watermark: any
   if (watermarkType === 'image') {
@@ -658,4 +658,12 @@ export const needCompress = (compressOptions: IBuildInCompressOptions | undefine
     return false
   }
   return false
+}
+
+export const removeExif = async (img: Buffer, fileExt: string): Promise<Buffer> => {
+  fileExt = fileExt.toLowerCase().replace('.', '')
+  if (!imageFormatList.includes(fileExt)) {
+    return img
+  }
+  return await sharp(img).toBuffer()
 }

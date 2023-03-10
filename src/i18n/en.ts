@@ -148,6 +148,8 @@ export const EN: ILocales = {
   BUILDIN_COMPRESS_MESSAGE_ISROTATE: 'Enable when image rotation is required',
   BUILDIN_COMPRESS_ROTATEDEGREE: 'Set rotation angle',
   BUILDIN_COMPRESS_MESSAGE_ROTATEDEGREE: 'Please enter a number, can be negative',
+  BUILDIN_COMPRESS_ISREMOVEEXIF: 'Whether to remove EXIF information',
+  BUILDIN_COMPRESS_MESSAGE_ISREMOVEEXIF: 'Enable when removing EXIF information is required',
   // Plugin Handler
   PLUGIN_HANDLER_PLUGIN_INSTALL_SUCCESS: 'Plugin installed successfully',
   PLUGIN_HANDLER_PLUGIN_INSTALL_FAILED: 'Plugin installation failed',

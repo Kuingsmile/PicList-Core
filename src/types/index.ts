@@ -641,4 +641,5 @@ export interface IBuildInCompressOptions {
   reSizePercent?: number
   isRotate?: boolean
   rotateDegree?: number
+  isRemoveExif?: boolean
 }
