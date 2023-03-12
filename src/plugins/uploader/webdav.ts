@@ -45,9 +45,9 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
           delete img.base64Image
           delete img.buffer
           if (customUrl) {
-            img.imgUrl = `${customUrl}/${path}${img.fileName}`
+            img.imgUrl = `${customUrl}/${path === '/' ? '' : path}${img.fileName}`
           } else {
-            img.imgUrl = `${webdavplistOptions.host}/${path}${img.fileName}`
+            img.imgUrl = `${webdavplistOptions.host}/${path === '/' ? '' : path}${img.fileName}`
           }
         } else {
           throw new Error('Upload failed')
