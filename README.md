@@ -9,7 +9,6 @@
 
 ![picgo-core](https://cdn.jsdelivr.net/gh/Molunerfinn/test/picgo/picgo-core-fix.jpg)
 
-
 A tool for picture uploading. Both CLI & api supports. It also supports plugin system, please check [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) to find powerful plugins.
 
 Based on Picgo-Core and add some features.
@@ -19,15 +18,16 @@ Based on Picgo-Core and add some features.
 ## 修改列表
 
 * 增加了水印添加、图片压缩和图片格式转换功能
-  - CLI命令下通过`picgo set buildin watermark`和`picgo set buildin compress`设置水印和压缩参数
+  - CLI命令下通过 `picgo set buildin watermark`和 `picgo set buildin compress`设置水印和压缩参数
   - 图片处理位于beforeTransform之前，不与任何插件冲突
 * smms, imgur和github图床增加hash返回参数，配合piclist的删除功能
 * 增加了webdav内置支持
+* imgur图床添加了对账户上传的支持
 * axios等依赖升级到最新版本
 
 ## Installation
 
-PicList should be installed with node.js >= 12 (v1.5.0-alpha.4 and small) & node.js >= 16 (since v1.5.0-alpha.5).
+PicList should be installed with node.js >= 16
 
 ### before install
 
