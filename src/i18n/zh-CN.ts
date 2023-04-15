@@ -73,7 +73,14 @@ export const ZH_CN = {
   // imgur
   PICBED_IMGUR: 'Imgur',
   PICBED_IMGUR_CLIENTID: '设定ClientId',
+  PICBED_IMGUR_USERNAME: '设定用户名',
+  PICBED_IMGUR_ACCESS_TOKEN: '设定accessToken',
+  PICBED_IMGUR_ALBUM: '设定相册名',
   PICBED_IMGUR_PROXY: '设定代理',
+  PICBED_IMGUR_MESSAGE_CLIENTID: '匿名上传时填写',
+  PICBED_IMGUR_MESSAGE_USERNAME: '需要上传到账户时填写',
+  PICBED_IMGUR_MESSAGE_ACCESS_TOKEN: '需要上传到账户时填写',
+  PICBED_IMGUR_MESSAGE_ALBUM: '例如：test',
   PICBED_IMGUR_MESSAGE_PROXY: '例如：http://127.0.0.1:1080',
 
   // upyun

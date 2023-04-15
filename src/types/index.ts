@@ -365,6 +365,12 @@ export interface IImgurConfig {
   clientId: string
   /** 代理地址，仅支持 http 代理 */
   proxy: string
+  /** imgur 用户名 */
+  username: string
+  /** imgur access token */
+  accessToken: string
+  /** imgur album name */
+  album: string
 }
 /** Webdav 图床配置项 */
 export interface IWebdavPlistConfig{

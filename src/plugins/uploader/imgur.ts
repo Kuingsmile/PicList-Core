@@ -1,28 +1,77 @@
-import { IPicGo, IPluginConfig, IImgurConfig, IOldReqOptions } from '../../types'
+import { IPicGo, IPluginConfig, IImgurConfig, IOldReqOptions, IFullResponse } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { ILocalesKey } from '../../i18n/zh-CN'
 
-const postOptions = (options: IImgurConfig, fileName: string, imgBase64: string): IOldReqOptions => {
-  const clientId = options.clientId
-  const obj: IOldReqOptions = {
+const formatAccessToken = (accessToken: string): string => accessToken ? accessToken.startsWith('Bearer') ? accessToken : `Bearer ${accessToken}` : ''
+
+const postOptions = async (ctx: IPicGo, options: IImgurConfig, fileName: string, imgBase64: string): Promise<IOldReqOptions> => {
+  const clientId = options.clientId || ''
+  const username = options.username || ''
+  const accessToken = formatAccessToken(options.accessToken || '')
+  const album = options.album || ''
+  let authorization
+  if (username && accessToken) {
+    authorization = accessToken
+  } else if (clientId) {
+    authorization = `Client-ID ${clientId}`
+  } else {
+    throw new Error('clientId or accessToken is required')
+  }
+  const requestOptions: IOldReqOptions = {
     method: 'POST',
     url: 'https://api.imgur.com/3/image',
     headers: {
-      Authorization: `Client-ID ${clientId}`,
+      Authorization: authorization,
       'content-type': 'multipart/form-data',
       Host: 'api.imgur.com',
-      'User-Agent': 'PicGo'
+      'User-Agent': 'PicList'
     },
     formData: {
       image: imgBase64,
       type: 'base64',
-      name: fileName
+      name: fileName,
+      description: 'Uploaded with PicList'
+    }
+  }
+  if (username && accessToken && album) {
+    let initPages = 0
+    let res
+    let albumHash = ''
+    do {
+      const getAlbumHashOptions: IOldReqOptions = {
+        method: 'GET',
+        url: `https://api.imgur.com/3/account/${username}/albums/${initPages}`,
+        headers: {
+          Authorization: authorization
+        },
+        json: true,
+        resolveWithFullResponse: true,
+        timeout: 10000
+      }
+      if (options.proxy) {
+        getAlbumHashOptions.proxy = options.proxy
+      }
+      res = await ctx.request(getAlbumHashOptions) as unknown as IFullResponse
+      if (!(res.statusCode === 200 && res.body.success)) {
+        throw new Error('Server error, please try again')
+      }
+      const albumList = res.body.data
+      for (const item of albumList) {
+        if (item.title === album) {
+          albumHash = item.id
+          break
+        }
+      }
+      initPages++
+    } while (res.body.data.length > 0)
+    if (albumHash && requestOptions.formData) {
+      requestOptions.formData.album = albumHash
     }
   }
   if (options.proxy) {
-    obj.proxy = options.proxy
+    requestOptions.proxy = options.proxy
   }
-  return obj
+  return requestOptions
 }
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
@@ -35,7 +84,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     for (const img of imgList) {
       if (img.fileName && img.buffer) {
         const base64Image = img.base64Image || Buffer.from(img.buffer).toString('base64')
-        const options = postOptions(imgurOptions, img.fileName, base64Image)
+        const options = await postOptions(ctx, imgurOptions, img.fileName, base64Image)
         const res: string = await ctx.request(options)
         const body = typeof res === 'string' ? JSON.parse(res) : res
         if (body.success) {
@@ -66,9 +115,38 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'clientId',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_CLIENTID') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_CLIENTID') },
+      get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_MESSAGE_CLIENTID') },
       default: userConfig.clientId || '',
-      required: true
+      required: false
+    },
+    {
+      name: 'username',
+      type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_USERNAME') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_USERNAME') },
+      get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_MESSAGE_USERNAME') },
+      default: userConfig.username || '',
+      required: false
+    },
+    {
+      name: 'accessToken',
+      type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_ACCESS_TOKEN') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_ACCESS_TOKEN') },
+      get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_MESSAGE_ACCESS_TOKEN') },
+      default: userConfig.accessToken || '',
+      required: false
+    },
+    {
+      name: 'album',
+      type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_ALBUM') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_ALBUM') },
+      get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_MESSAGE_ALBUM') },
+      default: userConfig.album || '',
+      required: false
     },
     {
       name: 'proxy',

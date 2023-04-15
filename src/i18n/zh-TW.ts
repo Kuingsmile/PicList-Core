@@ -75,7 +75,14 @@ export const ZH_TW: ILocales = {
   // imgur
   PICBED_IMGUR: 'Imgur',
   PICBED_IMGUR_CLIENTID: '設定ClientId',
+  PICBED_IMGUR_USERNAME: '設定用戶名',
+  PICBED_IMGUR_ACCESS_TOKEN: '設定accessToken',
+  PICBED_IMGUR_ALBUM: '設定相簿名',
   PICBED_IMGUR_PROXY: '設定PROXY',
+  PICBED_IMGUR_MESSAGE_CLIENTID: '匿名上傳時填寫',
+  PICBED_IMGUR_MESSAGE_USERNAME: '需要上傳到賬戶時填寫',
+  PICBED_IMGUR_MESSAGE_ACCESS_TOKEN: '需要上傳到賬戶時填寫',
+  PICBED_IMGUR_MESSAGE_ALBUM: '例如：test',
   PICBED_IMGUR_MESSAGE_PROXY: '例如：http://127.0.0.1:1080',
 
   // upyun
