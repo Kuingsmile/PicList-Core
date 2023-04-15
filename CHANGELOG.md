@@ -1,3 +1,12 @@
+## :tada: 0.5.1 (2023-04-15)
+
+
+### :sparkles: Features
+
+* add auth user upload for imgur ([ebfe657](https://github.com/Kuingsmile/PicList-Core/commit/ebfe657))
+
+
+
 # :tada: 0.3.0 (2023-03-09)
 
 
