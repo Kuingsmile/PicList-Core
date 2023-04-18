@@ -6,6 +6,7 @@ import { createContext } from '../utils/createContext'
 import path from 'path'
 import fs from 'fs-extra'
 import axios from 'axios'
+import { cloneDeep } from 'lodash'
 
 export class Lifecycle extends EventEmitter {
   private readonly ctx: IPicGo
@@ -50,6 +51,7 @@ export class Lifecycle extends EventEmitter {
         throw new Error('Input must be an array.')
       }
       ctx.input = input
+      ctx.rawInput = cloneDeep(input)
       ctx.output = []
       const compressOptions = ctx.getConfig<IBuildInCompressOptions>('buildIn.compress')
       const watermarkOptions = ctx.getConfig<IBuildInWaterMarkOptions>('buildIn.watermark')
@@ -139,6 +141,7 @@ export class Lifecycle extends EventEmitter {
       await this.doTransform(ctx)
       await this.beforeUpload(ctx)
       await this.doUpload(ctx)
+      ctx.input = ctx.rawInput
       await this.afterUpload(ctx)
       return ctx
     } catch (e: any) {

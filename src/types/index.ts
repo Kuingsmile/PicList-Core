@@ -27,9 +27,13 @@ export interface IPicGo extends NodeJS.EventEmitter {
    */
   output: IImgInfo[]
   /**
-   * the origin input
+   * the processed input
    */
   input: any[]
+  /**
+   * the origin input
+   */
+  rawInput: any[]
   /**
    * register\unregister\get picgo's plugin
    */

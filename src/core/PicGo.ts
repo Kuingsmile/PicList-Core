@@ -32,6 +32,7 @@ export class PicGo extends EventEmitter implements IPicGo {
   cmd: Commander
   output: IImgInfo[]
   input: any[]
+  rawInput: any[]
   pluginHandler: PluginHandler
   /**
    * @deprecated will be removed in v1.5.0+
@@ -52,6 +53,7 @@ export class PicGo extends EventEmitter implements IPicGo {
     this.configPath = configPath
     this.output = []
     this.input = []
+    this.rawInput = []
     this.helper = {
       transformer: new LifecyclePlugins('transformer'),
       uploader: new LifecyclePlugins('uploader'),
