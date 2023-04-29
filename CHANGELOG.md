@@ -1,3 +1,22 @@
+## :tada: 0.5.3 (2023-04-29)
+
+
+### :sparkles: Features
+
+* add auth user upload for imgur ([ebfe657](https://github.com/Kuingsmile/PicList-Core/commit/ebfe657))
+
+
+### :bug: Bug Fixes
+
+* compatibility with auto-delete ([f9248d5](https://github.com/Kuingsmile/PicList-Core/commit/f9248d5))
+
+
+### :pencil: Documentation
+
+* update docs ([2ffac40](https://github.com/Kuingsmile/PicList-Core/commit/2ffac40))
+
+
+
 ## :tada: 0.5.2 (2023-04-18)
 
 

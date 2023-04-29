@@ -22,7 +22,6 @@ export const isUrlEncode = (url: string): boolean => {
     // the whole url encode or decode shold not use encodeURIComponent or decodeURIComponent
     return url !== decodeURI(url)
   } catch (e) {
-    // if some error caught, try to let it go
     return false
   }
 }
