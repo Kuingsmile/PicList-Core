@@ -521,6 +521,11 @@
   dependencies:
     "@types/node" "*"
 
+"@types/heic-convert@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.npmjs.org/@types/heic-convert/-/heic-convert-1.2.0.tgz#6870676cf8dd95c34c3ca5d84898b9db2ffa47d4"
+  integrity sha512-+BcpzoXYcg29LX7bMwYXHy9cauU/k8FVzJYPl5R8iUN9hONj7QSDTdbZZs5jMNUZClNdMCslylLLGjT/ZnhwKw==
+
 "@types/image-size@^0.0.29":
   version "0.0.29"
   resolved "https://registry.npmjs.org/@types/image-size/-/image-size-0.0.29.tgz"
@@ -3084,6 +3089,22 @@ has@^1.0.3:
   dependencies:
     function-bind "^1.1.1"
 
+heic-convert@^1.2.4:
+  version "1.2.4"
+  resolved "https://registry.npmjs.org/heic-convert/-/heic-convert-1.2.4.tgz#605820f98ace3949a40fc7b263ee0bc573a0176b"
+  integrity sha512-klJHyv+BqbgKiCQvCqI9IKIvweCcohDuDl0Jphearj8+16+v8eff2piVevHqq4dW9TK0r1onTR6PKHP1I4hdbA==
+  dependencies:
+    heic-decode "^1.1.2"
+    jpeg-js "^0.4.1"
+    pngjs "^3.4.0"
+
+heic-decode@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.npmjs.org/heic-decode/-/heic-decode-1.1.2.tgz#974701666432e31ed64b2263a1ece7cff5218209"
+  integrity sha512-UF8teegxvzQPdSTcx5frIUhitNDliz/9Pui0JFdIqVRE00spVE33DcCYtZqaLNyd4y5RP/QQWZFIc1YWVKKm2A==
+  dependencies:
+    libheif-js "^1.10.0"
+
 homedir-polyfill@^1.0.1:
   version "1.0.3"
   resolved "https://registry.npmjs.org/homedir-polyfill/-/homedir-polyfill-1.0.3.tgz"
@@ -3540,6 +3561,11 @@ jest-worker@^26.2.1:
     merge-stream "^2.0.0"
     supports-color "^7.0.0"
 
+jpeg-js@^0.4.1:
+  version "0.4.4"
+  resolved "https://registry.npmjs.org/jpeg-js/-/jpeg-js-0.4.4.tgz#a9f1c6f1f9f0fa80cdb3484ed9635054d28936aa"
+  integrity sha512-WZzeDOEtTOBK4Mdsar0IqEU5sMr3vSV2RqkAIzUEV2BHnUfKGyswWFPFwK5EeDo93K3FohSHbLAjj0s1Wzd+dg==
+
 js-tokens@^4.0.0:
   version "4.0.0"
   resolved "https://registry.npmjs.org/js-tokens/-/js-tokens-4.0.0.tgz"
@@ -3655,6 +3681,11 @@ levn@~0.3.0:
   dependencies:
     prelude-ls "~1.1.2"
     type-check "~0.3.2"
+
+libheif-js@^1.10.0:
+  version "1.15.1"
+  resolved "https://registry.npmjs.org/libheif-js/-/libheif-js-1.15.1.tgz#4693d664c2c512c6d907153c7ec4e320625470ad"
+  integrity sha512-1nIVY1IFYLglxHPuLMqMBpjx4wigEEUVnSj2d3pRzeOjzKetwXlVejHJJgomZwEARu0PZ3HeGOW7ID/hZr13cg==
 
 lines-and-columns@^1.1.6:
   version "1.1.6"
@@ -4531,6 +4562,11 @@ please-upgrade-node@^3.1.1:
   integrity sha512-gQR3WpIgNIKwBMVLkpMUeR3e1/E1y42bqDQZfql+kDeXd8COYfM8PQA4X6y7a8u9Ua9FHmsrrmirW2vHs45hWg==
   dependencies:
     semver-compare "^1.0.0"
+
+pngjs@^3.4.0:
+  version "3.4.0"
+  resolved "https://registry.npmjs.org/pngjs/-/pngjs-3.4.0.tgz#99ca7d725965fb655814eaf65f38f12bbdbf555f"
+  integrity sha512-NCrCHhWmnQklfH4MtJMRjZ2a8c80qXeMlQMv2uVp9ISJMTt562SbGd6n2oq0PaPgKm7Z6pL9E2UlLIhC+SHL3w==
 
 pre-commit@^1.2.2:
   version "1.2.2"

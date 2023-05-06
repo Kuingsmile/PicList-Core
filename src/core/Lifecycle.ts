@@ -7,6 +7,7 @@ import path from 'path'
 import fs from 'fs-extra'
 import axios from 'axios'
 import { cloneDeep } from 'lodash'
+import heicConvert from 'heic-convert'
 
 export class Lifecycle extends EventEmitter {
   private readonly ctx: IPicGo
@@ -115,7 +116,19 @@ export class Lifecycle extends EventEmitter {
             }
             if (needCompress(compressOptions, path.extname(item))) {
               ctx.log.info(compressMsg)
-              transformedBuffer = await imageProcess(transformedBuffer ?? fs.readFileSync(item), compressOptions, path.extname(item))
+              if (path.extname(item) === '.heic' || path.extname(item) === '.heif') {
+                const heicBuffer = fs.readFileSync(item)
+                const heicResult = await heicConvert({
+                  buffer: heicBuffer,
+                  format: 'JPEG',
+                  quality: 1
+                })
+                const tempHeicConvertFile = path.join(tempFilePath, `${path.basename(item, path.extname(item))}.jpg`)
+                fs.writeFileSync(tempHeicConvertFile, Buffer.from(heicResult))
+                transformedBuffer = await imageProcess(fs.readFileSync(tempHeicConvertFile), compressOptions, '.jpg')
+              } else {
+                transformedBuffer = await imageProcess(transformedBuffer ?? fs.readFileSync(item), compressOptions, path.extname(item))
+              }
             }
             if (!transformedBuffer && compressOptions?.isRemoveExif) {
               ctx.log.info('Remove exif info.')
