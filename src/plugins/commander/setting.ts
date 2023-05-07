@@ -12,6 +12,16 @@ const handleConfig = async (ctx: IPicGo, prompts: IPluginConfig[], module: strin
   ctx.saveConfig({
     [configName]: answer
   })
+  if (module === 'uploader') {
+    ctx.saveConfig({
+      'picBed.current': name,
+      'picBed.uploader': name
+    })
+  } else if (module === 'transformer') {
+    ctx.saveConfig({
+      'picBed.transformer': name
+    })
+  }
 }
 
 const setting = {
@@ -109,10 +119,9 @@ const setting = {
                 ctx.log.warn(`No module named ${module}`)
                 return ctx.log.warn('Available modules are uploader|transformer|plugin|buildin')
             }
-            const useModuleName = module === 'plugin' ? 'plugins' : module
             ctx.log.success('Configure config successfully!')
-            if (module !== 'buildin') {
-              ctx.log.info(`If you want to use this config, please run 'picgo use ${useModuleName}'`)
+            if (module === 'plugin') {
+              ctx.log.info('If you want to use this config, please run \'picgo use plugins\'')
             }
           } catch (e: any) {
             ctx.log.error(e)

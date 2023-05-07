@@ -8,7 +8,7 @@ const postOptions = (fileName: string, options: IGithubConfig, data: any): IOldR
   const { token, repo } = options
   return {
     method: 'PUT',
-    url: `https://api.github.com/repos/${repo}/contents/${encodeURI(path)}${encodeURI(fileName)}`,
+    url: `https://api.github.com/repos/${repo}/contents/${encodeURI(path)}${encodeURIComponent(fileName)}`,
     headers: {
       Authorization: `token ${token}`,
       'User-Agent': 'PicGo',
@@ -17,6 +17,20 @@ const postOptions = (fileName: string, options: IGithubConfig, data: any): IOldR
     body: data,
     json: true
   } as const
+}
+
+const getOptions = (fileName: string, options: IGithubConfig): IOldReqOptionsWithJSON => {
+  const path = options.path || ''
+  const { token, repo, branch } = options
+  return {
+    method: 'GET',
+    url: `https://api.github.com/repos/${repo}/contents/${encodeURI(path)}${encodeURIComponent(fileName)}?ref=${branch}`,
+    headers: {
+      Authorization: `token ${token}`,
+      'User-Agent': 'PicGo'
+    },
+    json: true
+  }
 }
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
@@ -36,23 +50,43 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           path: githubOptions.path + encodeURI(img.fileName)
         }
         const postConfig = postOptions(img.fileName, githubOptions, data)
-        const body: {
-          content: {
-            download_url: string
-            sha: string
-          }
-        } = await ctx.request(postConfig)
-        if (body) {
-          delete img.base64Image
-          delete img.buffer
-          if (githubOptions.customUrl) {
-            img.imgUrl = `${githubOptions.customUrl}/${githubOptions.path}${img.fileName}`
+        try {
+          const body: {
+            content: {
+              download_url: string
+              sha: string
+            }
+          } = await ctx.request(postConfig)
+          if (body) {
+            delete img.base64Image
+            delete img.buffer
+            if (githubOptions.customUrl) {
+              img.imgUrl = `${githubOptions.customUrl}/${encodeURI(githubOptions.path)}${encodeURIComponent(img.fileName)}`
+            } else {
+              img.imgUrl = body.content.download_url
+            }
+            img.hash = body.content.sha
           } else {
-            img.imgUrl = body.content.download_url
+            throw new Error('Server error, please try again')
           }
-          img.hash = body.content.sha
-        } else {
-          throw new Error('Server error, please try again')
+        } catch (err: any) {
+          if (err.statusCode === 422) {
+            delete img.base64Image
+            delete img.buffer
+            const res = await ctx.request(getOptions(img.fileName, githubOptions)) as any
+            if (Object.keys(res).length) {
+              img.hash = res.sha
+              if (githubOptions.customUrl) {
+                img.imgUrl = `${githubOptions.customUrl}/${encodeURI(githubOptions.path)}${encodeURIComponent(img.fileName)}`
+              } else {
+                img.imgUrl = res.download_url
+              }
+            } else {
+              throw new Error('Get Contents error, please try again')
+            }
+          } else {
+            throw err
+          }
         }
       }
     }
