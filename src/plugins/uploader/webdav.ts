@@ -6,10 +6,10 @@ import mime from 'mime-types'
 const postOptions = (options: IWebdavPlistConfig, fileName: string, image: Buffer): IOldReqOptionsWithFullResponse => {
   return {
     method: 'PUT',
-    url: `${options.host}/${encodeURI(options.path)}${encodeURI(fileName)}`,
+    url: `${options.host}/${encodeURI(options.path)}${encodeURIComponent(fileName)}`,
     headers: {
       Authorization: `Basic ${Buffer.from(`${options.username}:${options.password}`).toString('base64')}`,
-      'Content-Type': mime.lookup(fileName),
+      'Content-Type': mime.lookup(fileName) || 'application/octet-stream',
       'Content-Length': image.length
     },
     body: image,
@@ -22,13 +22,9 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   if (!webdavplistOptions) {
     throw new Error('Can\'t find webdavplist config')
   }
-  webdavplistOptions.host = webdavplistOptions.host.replace('https://', '').replace('http://', '').replace(/\/+$/, '')
-  if (webdavplistOptions.sslEnabled) {
-    webdavplistOptions.host = 'https://' + webdavplistOptions.host
-  } else {
-    webdavplistOptions.host = 'http://' + webdavplistOptions.host
-  }
-  webdavplistOptions.path = webdavplistOptions.path.replace(/^\/*/, '').replace(/\/*$/, '') + '/'
+  webdavplistOptions.host = webdavplistOptions.host.replace(/^https?:\/\/|\/+$/g, '')
+  webdavplistOptions.host = (webdavplistOptions.sslEnabled ? 'https://' : 'http://') + webdavplistOptions.host
+  webdavplistOptions.path = webdavplistOptions.path.replace(/^\/+|\/+$/g, '') + '/'
   try {
     const imgList = ctx.output
     const customUrl = webdavplistOptions.customUrl
@@ -44,11 +40,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
         if (body.statusCode >= 200 && body.statusCode < 300) {
           delete img.base64Image
           delete img.buffer
-          if (customUrl) {
-            img.imgUrl = `${customUrl}/${path === '/' ? '' : path}${img.fileName}`
-          } else {
-            img.imgUrl = `${webdavplistOptions.host}/${path === '/' ? '' : path}${img.fileName}`
-          }
+          const baseUrl = customUrl || webdavplistOptions.host
+          img.imgUrl = `${baseUrl}/${path === '/' ? '' : encodeURI(path)}${encodeURIComponent(img.fileName)}`
         } else {
           throw new Error('Upload failed')
         }

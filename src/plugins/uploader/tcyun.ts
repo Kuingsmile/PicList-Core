@@ -75,7 +75,7 @@ const postOptions = (options: ITcyunConfig, fileName: string, signature: ISignat
       headers: {
         Host: `${options.bucket}.cos.${options.area}.myqcloud.com`,
         Authorization: `q-sign-algorithm=sha1&q-ak=${options.secretId}&q-sign-time=${signature.signTime}&q-key-time=${signature.signTime}&q-header-list=host&q-url-param-list=&q-signature=${signature.signature}`,
-        contentType: mime.lookup(fileName),
+        contentType: mime.lookup(fileName) || 'application/octet-stream',
         'User-Agent': `PicGo;${version};null;null`
       },
       body: image,

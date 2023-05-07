@@ -12,7 +12,7 @@ const postOptions = (fileName: string, options: IGithubConfig, data: any): IOldR
     headers: {
       Authorization: `token ${token}`,
       'User-Agent': 'PicGo',
-      'Content-Type': mime.lookup(fileName)
+      'Content-Type': mime.lookup(fileName) || 'application/octet-stream'
     },
     body: data,
     json: true
