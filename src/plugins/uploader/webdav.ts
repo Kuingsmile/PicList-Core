@@ -2,11 +2,31 @@ import { IPicGo, IPluginConfig, IWebdavPlistConfig, IOldReqOptionsWithFullRespon
 import { IBuildInEvent } from '../../utils/enum'
 import { ILocalesKey } from '../../i18n/zh-CN'
 import mime from 'mime-types'
+import path from 'path'
 
-const postOptions = (options: IWebdavPlistConfig, fileName: string, image: Buffer): IOldReqOptionsWithFullResponse => {
+const postOptions = async (ctx: IPicGo, options: IWebdavPlistConfig, fileName: string, image: Buffer): Promise<IOldReqOptionsWithFullResponse> => {
+  const paths = [...options.path.replace(/\/+$/g, '').split('/'), ...path.dirname(fileName).split('/')]
+  let currentPath = ''
+  for (const p of paths) {
+    if (p) {
+      currentPath += `/${p}`
+      const diroptions = {
+        method: 'MKCOL',
+        url: `${options.host}${encodeURI(currentPath)}`.replace(/%2F/g, '/'),
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${options.username}:${options.password}`).toString('base64')}`
+        }
+      }
+      try {
+        await ctx.request(diroptions)
+      } catch (err) {
+        console.log(err)
+      }
+    }
+  }
   return {
     method: 'PUT',
-    url: `${options.host}/${encodeURI(options.path)}${encodeURIComponent(fileName)}`,
+    url: `${options.host}/${options.path === '/' ? '' : encodeURI(options.path)}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/'),
     headers: {
       Authorization: `Basic ${Buffer.from(`${options.username}:${options.password}`).toString('base64')}`,
       'Content-Type': mime.lookup(fileName) || 'application/octet-stream',
@@ -25,25 +45,24 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   webdavplistOptions.host = webdavplistOptions.host.replace(/^https?:\/\/|\/+$/g, '')
   webdavplistOptions.host = (webdavplistOptions.sslEnabled ? 'https://' : 'http://') + webdavplistOptions.host
   webdavplistOptions.path = (webdavplistOptions.path || '').replace(/^\/+|\/+$/g, '') + '/'
-  webdavplistOptions.webpath = (webdavplistOptions.webpath || '').replace(/^\/+|\/+$/g, '') + '/'
+  const webpath = (webdavplistOptions.webpath || '').replace(/^\/+|\/+$/g, '') + '/'
   try {
     const imgList = ctx.output
     const customUrl = webdavplistOptions.customUrl
     const path = webdavplistOptions.path
-    const webpath = webdavplistOptions.webpath
     for (const img of imgList) {
       if (img.fileName && img.buffer) {
         let image = img.buffer
         if (!image && img.base64Image) {
           image = Buffer.from(img.base64Image, 'base64')
         }
-        const options = postOptions(webdavplistOptions, img.fileName, image)
+        const options = await postOptions(ctx, webdavplistOptions, img.fileName, image)
         const body = await ctx.request(options)
         if (body.statusCode >= 200 && body.statusCode < 300) {
           delete img.base64Image
           delete img.buffer
           const baseUrl = customUrl || webdavplistOptions.host
-          if (webpath) {
+          if (webdavplistOptions.webpath) {
             img.imgUrl = `${baseUrl}/${webpath === '/' ? '' : encodeURI(webpath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
           } else {
             img.imgUrl = `${baseUrl}/${path === '/' ? '' : encodeURI(path)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')

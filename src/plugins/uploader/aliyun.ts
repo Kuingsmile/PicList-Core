@@ -19,7 +19,7 @@ const generateSignature = (options: IAliyunConfig, fileName: string): string => 
 const postOptions = (options: IAliyunConfig, fileName: string, signature: string, image: Buffer): IOldReqOptionsWithFullResponse => {
   return {
     method: 'PUT',
-    url: `https://${options.bucket}.${options.area}.aliyuncs.com/${encodeURIComponent(options.path)}${encodeURIComponent(fileName)}`,
+    url: `https://${options.bucket}.${options.area}.aliyuncs.com/${encodeURI(options.path)}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/'),
     headers: {
       Host: `${options.bucket}.${options.area}.aliyuncs.com`,
       Authorization: signature,

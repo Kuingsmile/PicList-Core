@@ -13,7 +13,7 @@ const generateSignature = (options: IUpyunConfig, fileName: string): string => {
   const password = options.password
   const md5Password = MD5(password)
   const date = new Date().toUTCString()
-  const uri = `/${options.bucket}/${encodeURI(path)}${encodeURIComponent(fileName)}`
+  const uri = `/${options.bucket}/${encodeURI(path)}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/')
   const value = `PUT&${uri}&${date}`
   const sign = crypto.createHmac('sha1', md5Password).update(value).digest('base64')
   return `UPYUN ${operator}:${sign}`
@@ -24,7 +24,7 @@ const postOptions = (options: IUpyunConfig, fileName: string, signature: string,
   const path = options.path || ''
   return {
     method: 'PUT',
-    url: `https://v0.api.upyun.com/${bucket}/${encodeURI(path)}${encodeURIComponent(fileName)}`,
+    url: `https://v0.api.upyun.com/${bucket}/${encodeURI(path)}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/'),
     headers: {
       Authorization: signature,
       Date: new Date().toUTCString(),
