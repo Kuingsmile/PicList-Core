@@ -61,7 +61,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
             delete img.base64Image
             delete img.buffer
             if (githubOptions.customUrl) {
-              img.imgUrl = `${githubOptions.customUrl}/${encodeURI(githubOptions.path)}${encodeURIComponent(img.fileName)}`
+              img.imgUrl = `${githubOptions.customUrl}/${encodeURI(githubOptions.path)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
             } else {
               img.imgUrl = body.content.download_url
             }
@@ -77,7 +77,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
             if (Object.keys(res).length) {
               img.hash = res.sha
               if (githubOptions.customUrl) {
-                img.imgUrl = `${githubOptions.customUrl}/${encodeURI(githubOptions.path)}${encodeURIComponent(img.fileName)}`
+                img.imgUrl = `${githubOptions.customUrl}/${encodeURI(githubOptions.path)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
               } else {
                 img.imgUrl = res.download_url
               }
