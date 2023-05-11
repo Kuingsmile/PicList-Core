@@ -142,9 +142,9 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
           delete img.base64Image
           delete img.buffer
           if (customUrl) {
-            img.imgUrl = `${customUrl}/${encodeURI(path)}${encodeURIComponent(img.fileName)}${optionUrl}`.replace(/%2F/g, '/')
+            img.imgUrl = `${customUrl}/${encodeURIComponent(path)}${encodeURIComponent(img.fileName)}${optionUrl}`.replace(/%2F/g, '/')
           } else {
-            img.imgUrl = `https://${tcYunOptions.bucket}.cos.${tcYunOptions.area}.myqcloud.com/${encodeURI(path)}${encodeURIComponent(img.fileName)}${optionUrl}`.replace(/%2F/g, '/')
+            img.imgUrl = `https://${tcYunOptions.bucket}.cos.${tcYunOptions.area}.myqcloud.com/${encodeURIComponent(path)}${encodeURIComponent(img.fileName)}${optionUrl}`.replace(/%2F/g, '/')
           }
         } else {
           throw new Error(res.body.msg)

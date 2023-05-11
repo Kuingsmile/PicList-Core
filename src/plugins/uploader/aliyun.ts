@@ -58,9 +58,9 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           delete img.buffer
           const optionUrl = aliYunOptions.options || ''
           if (customUrl) {
-            img.imgUrl = `${customUrl}/${encodeURI(path)}${encodeURIComponent(img.fileName)}${optionUrl}`.replace(/%2F/g, '/')
+            img.imgUrl = `${customUrl}/${encodeURIComponent(path)}${encodeURIComponent(img.fileName)}${optionUrl}`.replace(/%2F/g, '/')
           } else {
-            img.imgUrl = `https://${aliYunOptions.bucket}.${aliYunOptions.area}.aliyuncs.com/${encodeURI(path)}${encodeURIComponent(img.fileName)}${optionUrl}`.replace(/%2F/g, '/')
+            img.imgUrl = `https://${aliYunOptions.bucket}.${aliYunOptions.area}.aliyuncs.com/${encodeURIComponent(path)}${encodeURIComponent(img.fileName)}${optionUrl}`.replace(/%2F/g, '/')
           }
         } else {
           throw new Error('Upload failed')

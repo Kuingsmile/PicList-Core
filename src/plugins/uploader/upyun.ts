@@ -55,7 +55,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         if (body.statusCode === 200) {
           delete img.base64Image
           delete img.buffer
-          img.imgUrl = `${upyunOptions.url}/${encodeURI(path)}${encodeURIComponent(img.fileName)}${upyunOptions.options}`.replace(/%2F/g, '/')
+          img.imgUrl = `${upyunOptions.url}/${encodeURIComponent(path)}${encodeURIComponent(img.fileName)}${upyunOptions.options}`.replace(/%2F/g, '/')
         } else {
           throw new Error('Upload failed')
         }
