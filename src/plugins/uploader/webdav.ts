@@ -24,11 +24,13 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   }
   webdavplistOptions.host = webdavplistOptions.host.replace(/^https?:\/\/|\/+$/g, '')
   webdavplistOptions.host = (webdavplistOptions.sslEnabled ? 'https://' : 'http://') + webdavplistOptions.host
-  webdavplistOptions.path = webdavplistOptions.path.replace(/^\/+|\/+$/g, '') + '/'
+  webdavplistOptions.path = (webdavplistOptions.path || '').replace(/^\/+|\/+$/g, '') + '/'
+  webdavplistOptions.webpath = (webdavplistOptions.webpath || '').replace(/^\/+|\/+$/g, '') + '/'
   try {
     const imgList = ctx.output
     const customUrl = webdavplistOptions.customUrl
     const path = webdavplistOptions.path
+    const webpath = webdavplistOptions.webpath
     for (const img of imgList) {
       if (img.fileName && img.buffer) {
         let image = img.buffer
@@ -41,7 +43,11 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
           delete img.base64Image
           delete img.buffer
           const baseUrl = customUrl || webdavplistOptions.host
-          img.imgUrl = `${baseUrl}/${path === '/' ? '' : encodeURI(path)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
+          if (webpath) {
+            img.imgUrl = `${baseUrl}/${webpath === '/' ? '' : encodeURI(webpath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
+          } else {
+            img.imgUrl = `${baseUrl}/${path === '/' ? '' : encodeURI(path)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
+          }
         } else {
           throw new Error('Upload failed')
         }
@@ -102,6 +108,15 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       required: false,
       get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_PATH') },
       get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_PATH') }
+    },
+    {
+      name: 'webpath',
+      type: 'input',
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_WEBSITE_PATH') },
+      default: userConfig.path || '',
+      required: false,
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_WEBSITE_PATH') },
+      get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_WEBSITE_PATH') }
     },
     {
       name: 'customUrl',

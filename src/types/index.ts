@@ -388,6 +388,8 @@ export interface IWebdavPlistConfig{
   password: string
   /** webdav 的 `path` */
   path: string
+  /** webdav 的 `webpath` */
+  webpath: string
   /** webdav 的 `customUrl` */
   customUrl: string
 }
