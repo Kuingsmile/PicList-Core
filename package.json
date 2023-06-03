@@ -1,15 +1,15 @@
 {
   "name": "piclist",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "description": "Modified PicGo core, A tool for picture uploading",
   "author": {
     "name": "Kuingsmile",
-    "email": "msq@msq.pub"
+    "email": "pkukuing@gmail.com"
   },
   "homepage": "https://piclist.cn",
   "bugs": {
     "url": "https://github.com/Kuingsmile/PicList/issues",
-    "email": "msq@msq.pub"
+    "email": "pkukuing@gmail.com"
   },
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
@@ -39,7 +39,6 @@
   ],
   "husky": {
     "hooks": {
-      "pre-commit": "npm run lint"
     }
   },
   "config": {
@@ -79,6 +78,7 @@
     "@types/sharp": "^0.31.1",
     "@types/text-to-svg": "^3.1.1",
     "@types/tunnel": "^0.0.3",
+    "@types/uuid": "^9.0.1",
     "@typescript-eslint/eslint-plugin": "3",
     "@typescript-eslint/parser": "^3.2.0",
     "babel-eslint": "^10.1.0",
@@ -132,7 +132,8 @@
     "rimraf": "^3.0.2",
     "sharp": "^0.32.1",
     "text-to-svg": "^3.1.5",
-    "tunnel": "^0.0.6"
+    "tunnel": "^0.0.6",
+    "uuid": "^9.0.0"
   },
   "repository": {
     "type": "git",

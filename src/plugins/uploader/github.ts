@@ -11,7 +11,7 @@ const postOptions = (fileName: string, options: IGithubConfig, data: any): IOldR
     url: `https://api.github.com/repos/${repo}/contents/${encodeURI(path)}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/'),
     headers: {
       Authorization: `token ${token}`,
-      'User-Agent': 'PicGo',
+      'User-Agent': 'PicList',
       'Content-Type': mime.lookup(fileName) || 'application/octet-stream'
     },
     body: data,
@@ -44,7 +44,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       if (img.fileName && img.buffer) {
         const base64Image = img.base64Image || Buffer.from(img.buffer).toString('base64')
         const data = {
-          message: 'Upload by PicGo',
+          message: 'Upload by PicList',
           branch: githubOptions.branch,
           content: base64Image,
           path: githubOptions.path + encodeURI(img.fileName)

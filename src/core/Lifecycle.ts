@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
-import { IBuildInWaterMarkOptions, IBuildInCompressOptions, ILifecyclePlugins, IPathTransformedImgInfo, IPicGo, IPlugin, Undefinable } from '../types'
-import { getURLFile, handleUrlEncode, imageProcess, isUrl, needCompress, needAddWatermark, imageAddWaterMark, removeExif } from '../utils/common'
+import { IBuildInWaterMarkOptions, IBuildInCompressOptions, ILifecyclePlugins, IPathTransformedImgInfo, IPicGo, IPlugin, Undefinable, IImgInfo } from '../types'
+import { getURLFile, handleUrlEncode, imageProcess, isUrl, needCompress, needAddWatermark, imageAddWaterMark, removeExif, renameFileNameWithCustomString } from '../utils/common'
 import { IBuildInEvent } from '../utils/enum'
 import { createContext } from '../utils/createContext'
 import path from 'path'
@@ -52,8 +52,9 @@ export class Lifecycle extends EventEmitter {
         throw new Error('Input must be an array.')
       }
       ctx.input = input
+      ctx.rawInputPath = [] as string[]
       ctx.rawInput = cloneDeep(input)
-      ctx.output = []
+      ctx.output = [] as IImgInfo[]
       const compressOptions = ctx.getConfig<IBuildInCompressOptions>('buildIn.compress')
       const watermarkOptions = ctx.getConfig<IBuildInWaterMarkOptions>('buildIn.watermark')
       if (compressOptions || watermarkOptions) {
@@ -66,6 +67,7 @@ export class Lifecycle extends EventEmitter {
         await Promise.allSettled(ctx.input.map(async (item: string, index: number) => {
           let info: IPathTransformedImgInfo
           if (isUrl(item)) {
+            ctx.rawInputPath![index] = item
             info = await getURLFile(item, ctx)
             if (info.success && info.buffer) {
               let transformedBuffer
@@ -97,6 +99,7 @@ export class Lifecycle extends EventEmitter {
                 const tempFile = path.join(tempFilePath, `${info.fileName
                   ? `${path.basename(info.fileName, path.extname(info.fileName))}${newExt}`
                   : new Date().getTime()}${newExt}`)
+                ctx.rawInputPath![index] = path.join(path.dirname(item), path.basename(tempFile))
                 fs.writeFileSync(tempFile, transformedBuffer)
                 ctx.input[index] = tempFile
               }
@@ -105,6 +108,7 @@ export class Lifecycle extends EventEmitter {
             }
           } else {
             let transformedBuffer
+            ctx.rawInputPath![index] = item
             if (needAddWatermark(watermarkOptions, path.extname(item))) {
               const downloadTTFRet = await this.downloadTTF()
               if (!downloadTTFRet) {
@@ -143,15 +147,36 @@ export class Lifecycle extends EventEmitter {
               }
               newExt = newExt.startsWith('.') ? newExt : `.${newExt}`
               const tempFile = path.join(tempFilePath, `${path.basename(item, path.extname(item))}${newExt}`)
+              ctx.rawInputPath![index] = path.join(path.dirname(item), `${path.basename(item, path.extname(item))}${newExt}`)
               fs.writeFileSync(tempFile, transformedBuffer)
               ctx.input[index] = tempFile
             }
           }
         }))
+      } else {
+        for (const item of ctx.input) {
+          ctx.rawInputPath.push(item)
+        }
       }
       // lifecycle main
       await this.beforeTransform(ctx)
       await this.doTransform(ctx)
+      const renameConfig = ctx.getConfig<any>('buildIn.rename') || {}
+      if (renameConfig.enable) {
+        const format = renameConfig.format || '{filename}'
+        ctx.output = ctx.output.map((item: IImgInfo, index: number) => {
+          let fileName = item.fileName
+          if (format) {
+            fileName = renameFileNameWithCustomString(ctx.rawInputPath![index], format)
+            fileName = fileName.replace(/\/+/g, '/')
+            if (fileName.slice(-1) === '/') {
+              fileName = fileName + index.toString()
+            }
+          }
+          item.fileName = fileName
+          return item
+        })
+      }
       await this.beforeUpload(ctx)
       await this.doUpload(ctx)
       ctx.input = ctx.rawInput

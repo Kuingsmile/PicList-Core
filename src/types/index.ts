@@ -71,6 +71,8 @@ export interface IPicGo extends NodeJS.EventEmitter {
    */
   request: IRequest['request']
 
+  rawInputPath?: string[]
+
   i18n: II18nManager
 
   /**

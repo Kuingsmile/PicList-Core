@@ -116,6 +116,9 @@ export const EN: ILocales = {
   PICBED_WEBDAVPLIST_MESSAGE_WEBSITE_PATH: 'Used to generate the URL of the image',
   PICBED_WEBDAVPLIST_MESSAGE_CUSTOMURL: 'Ex. https://test.com',
 
+  BUILDIN_RENAME_FORMAT: 'Set rename format',
+  BUILDIN_RENAME_ENABLE: 'Enable rename',
+
   BUILDIN_WATERMARK_ISADDWATERMARK: 'Whether to add watermark',
   BUILDIN_WATERMARK_MESSAGE_ISADDWATERMARK: 'Enable when watermark is required',
   BUILDIN_WATERMARK_WATERMARKTYPE: 'Set watermark type',

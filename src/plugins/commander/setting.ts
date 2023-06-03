@@ -1,6 +1,7 @@
 import { IPicGo, IPluginConfig, IStringKeyMap } from '../../types'
 import compress from '../beforetransformer/compress'
 import watermark from '../beforetransformer/watermark'
+import rename from '../beforeupload/buildInRename'
 
 // handle modules config -> save to picgo config file
 const handleConfig = async (ctx: IPicGo, prompts: IPluginConfig[], module: string, name: string): Promise<void> => {
@@ -44,12 +45,14 @@ const setting = {
                   await handleConfig(ctx, compress.config(ctx), module, name)
                 } else if (name === 'watermark') {
                   await handleConfig(ctx, watermark.config(ctx), module, name)
+                } else if (name === 'rename') {
+                  await handleConfig(ctx, rename.config(ctx), module, name)
                 } else {
                   const prompts = [
                     {
                       type: 'list',
                       name: 'buildin',
-                      choices: ['compress', 'watermark'],
+                      choices: ['compress', 'watermark', 'rename'],
                       message: 'Choose a buildin module'
                     }
                   ]
@@ -58,6 +61,8 @@ const setting = {
                     await handleConfig(ctx, compress.config(ctx), module, answer.buildin)
                   } else if (answer.buildin === 'watermark') {
                     await handleConfig(ctx, watermark.config(ctx), module, answer.buildin)
+                  } else if (answer.buildin === 'rename') {
+                    await handleConfig(ctx, rename.config(ctx), module, answer.buildin)
                   }
                 }
                 break

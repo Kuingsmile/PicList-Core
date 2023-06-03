@@ -13,6 +13,54 @@ import {
 import { URL } from 'url'
 import TextToSVG from 'text-to-svg'
 import sharp from 'sharp'
+import crypto from 'crypto'
+import { v4 as uuidv4 } from 'uuid'
+
+export function randomStringGenerator (length: number): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  return Array.from({ length }).map(() => chars.charAt(Math.floor(Math.random() * chars.length))).join('')
+}
+
+export function renameFileNameWithTimestamp (oldName: string): string {
+  return `${Math.floor(Date.now() / 1000)}${randomStringGenerator(5)}${path.extname(oldName)}`
+}
+
+export function renameFileNameWithRandomString (oldName: string, length: number = 5): string {
+  return `${randomStringGenerator(length)}${path.extname(oldName)}`
+}
+
+export function renameFileNameWithCustomString (oldName: string, customFormat: string, affixFileName?: string): string {
+  const conversionMap: {[key: string]: () => string} = {
+    '{Y}': () => new Date().getFullYear().toString(),
+    '{y}': () => new Date().getFullYear().toString().slice(2),
+    '{m}': () => (new Date().getMonth() + 1).toString().length === 1 ? `0${new Date().getMonth() + 1}` : (new Date().getMonth() + 1).toString(),
+    '{d}': () => new Date().getDate().toString().length === 1 ? `0${new Date().getDate()}` : new Date().getDate().toString(),
+    '{h}': () => new Date().getHours().toString().length === 1 ? `0${new Date().getHours()}` : new Date().getHours().toString(),
+    '{i}': () => new Date().getMinutes().toString().length === 1 ? `0${new Date().getMinutes()}` : new Date().getMinutes().toString(),
+    '{s}': () => new Date().getSeconds().toString().length === 1 ? `0${new Date().getSeconds()}` : new Date().getSeconds().toString(),
+    '{md5}': () => crypto.createHash('md5').update(path.basename(oldName, path.extname(oldName))).digest('hex'),
+    '{md5-16}': () => crypto.createHash('md5').update(path.basename(oldName, path.extname(oldName))).digest('hex').slice(0, 16),
+    '{str-10}': () => randomStringGenerator(10),
+    '{str-20}': () => randomStringGenerator(20),
+    '{filename}': () => affixFileName ? path.basename(affixFileName, path.extname(affixFileName)) : path.basename(oldName, path.extname(oldName)),
+    '{uuid}': () => uuidv4().replace(/-/g, ''),
+    '{timestamp}': () => Math.floor(Date.now() / 1000).toString()
+  }
+  if (customFormat === undefined || (!Object.keys(conversionMap).some(item => customFormat.includes(item)) && !customFormat.includes('localFolder'))) {
+    return oldName
+  }
+  const ext = path.extname(oldName)
+  let newName = Object.keys(conversionMap).reduce((acc, cur) => {
+    return acc.replace(new RegExp(cur, 'g'), conversionMap[cur]())
+  }, customFormat) + ext
+  newName = newName.replace(/{(localFolder:?(\d+)?)}/gi, (_result, key, count) => {
+    count = Math.max(1, count || 0)
+    const paths = path.dirname(oldName).split(path.sep)
+    key = paths.slice(0 - count).reduce((a, b) => `${a}/${b}`)
+    return key.replace(/:/g, '')
+  })
+  return newName
+}
 
 export const isUrl = (url: string): boolean => (/^https?:\/\//).test(url)
 
