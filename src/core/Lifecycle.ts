@@ -56,6 +56,13 @@ export class Lifecycle extends EventEmitter {
       ctx.rawInput = cloneDeep(input)
       ctx.output = [] as IImgInfo[]
       const compressOptions = ctx.getConfig<IBuildInCompressOptions>('buildIn.compress')
+      const type = ctx.getConfig<Undefinable<string>>('picBed.uploader') || ctx.getConfig<Undefinable<string>>('picBed.current') || 'smms'
+      const uploader = ctx.helper.uploader.get(type)
+      if (!uploader) {
+        compressOptions.picBed = 'smms'
+      } else {
+        compressOptions.picBed = type
+      }
       const watermarkOptions = ctx.getConfig<IBuildInWaterMarkOptions>('buildIn.watermark')
       if (compressOptions || watermarkOptions) {
         const tempFilePath = path.join(ctx.baseDir, 'piclistTemp')

@@ -650,7 +650,10 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
       image = image.rotate(options.rotateDegree, { background: { r: 255, g: 255, b: 255, alpha: 0 } })
     }
     if (options.isConvert && rawFormat !== 'gif') {
-      const newFormat = options.convertFormat || 'jpg'
+      let newFormat = options.convertFormat || 'jpg'
+      if (options.picBed === 'imgur' && newFormat === 'webp') {
+        newFormat = 'jpg'
+      }
       image = image.toFormat(newFormat, {
         quality
       })
