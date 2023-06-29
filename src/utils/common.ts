@@ -606,7 +606,8 @@ function formatOptions (options: IBuildInCompressOptions): IBuildInCompressOptio
     isReSizeByPercent: options.isReSizeByPercent || false,
     reSizePercent: forceNumber(options.reSizePercent),
     isRotate: options.isRotate || false,
-    rotateDegree: forceNumber(options.rotateDegree)
+    rotateDegree: forceNumber(options.rotateDegree),
+    picBed: options.picBed || 'smms'
   }
 }
 
