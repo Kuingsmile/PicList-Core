@@ -58,9 +58,9 @@ export class Lifecycle extends EventEmitter {
       const compressOptions = ctx.getConfig<IBuildInCompressOptions>('buildIn.compress')
       const type = ctx.getConfig<Undefinable<string>>('picBed.uploader') || ctx.getConfig<Undefinable<string>>('picBed.current') || 'smms'
       const uploader = ctx.helper.uploader.get(type)
-      if (!uploader) {
+      if (!uploader && compressOptions) {
         compressOptions.picBed = 'smms'
-      } else {
+      } else if (compressOptions) {
         compressOptions.picBed = type
       }
       const watermarkOptions = ctx.getConfig<IBuildInWaterMarkOptions>('buildIn.watermark')
