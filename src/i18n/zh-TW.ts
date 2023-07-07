@@ -15,6 +15,15 @@ export const ZH_TW: ILocales = {
   PICBED_SMMS_BACKUP_DOMAIN: '備用上傳網址',
   PICBED_SMMS_MESSAGE_BACKUP_DOMAIN: '例如 smms.app',
 
+  // local
+  PICBED_LOCAL: '本地',
+  PICBED_LOCAL_PATH: '設定儲存路徑',
+  PICBED_LOCAL_MESSAGE_PATH: '例如 /usr/local/images/',
+  PICBED_LOCAL_CUSTOMURL: '設定自訂網址',
+  PICBED_LOCAL_MESSAGE_CUSTOMURL: '例如 https://test.com',
+  PICBED_LOCAL_WEBPATH: '設定網址路徑',
+  PICBED_LOCAL_MESSAGE_WEBPATH: '用于網頁顯示的路徑',
+
   // Ali-cloud
   PICBED_ALICLOUD: '阿里云OSS',
   PICBED_ALICLOUD_ACCESSKEYID: '設定KeyId',

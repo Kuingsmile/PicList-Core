@@ -289,6 +289,12 @@ export interface ISmmsConfig {
   token: string
   backupDomain?: string
 }
+/** 本地图床配置项 */
+export interface ILocalConfig {
+  path: string
+  customUrl?: string
+  webPath?: string
+}
 /** 七牛云图床配置项 */
 export interface IQiniuConfig {
   accessKey: string

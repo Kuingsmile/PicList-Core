@@ -15,6 +15,15 @@ export const EN: ILocales = {
   PICBED_SMMS_BACKUP_DOMAIN: 'Set Backup Upload Domain',
   PICBED_SMMS_MESSAGE_BACKUP_DOMAIN: 'Ex. smms.app',
 
+  // local
+  PICBED_LOCAL: 'Local',
+  PICBED_LOCAL_PATH: 'Set Path',
+  PICBED_LOCAL_MESSAGE_PATH: 'Ex. /Users/name/Pictures/',
+  PICBED_LOCAL_CUSTOMURL: 'Set Custom URL',
+  PICBED_LOCAL_MESSAGE_CUSTOMURL: 'Ex. https://test.com',
+  PICBED_LOCAL_WEBPATH: 'Set Web Path',
+  PICBED_LOCAL_MESSAGE_WEBPATH: 'Used to generate url path',
+
   // Ali-cloud
   PICBED_ALICLOUD: 'Ali Cloud',
   PICBED_ALICLOUD_ACCESSKEYID: 'Set KeyId',

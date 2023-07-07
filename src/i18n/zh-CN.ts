@@ -13,6 +13,15 @@ export const ZH_CN = {
   PICBED_SMMS_BACKUP_DOMAIN: '备用上传域名',
   PICBED_SMMS_MESSAGE_BACKUP_DOMAIN: '例如 smms.app',
 
+  // local
+  PICBED_LOCAL: '本地上传',
+  PICBED_LOCAL_PATH: '设定路径',
+  PICBED_LOCAL_MESSAGE_PATH: '例如 /usr/local/images/',
+  PICBED_LOCAL_CUSTOMURL: '设定自定义域名',
+  PICBED_LOCAL_MESSAGE_CUSTOMURL: '例如 https://test.com',
+  PICBED_LOCAL_WEBPATH: '设定网站路径',
+  PICBED_LOCAL_MESSAGE_WEBPATH: '用于拼接网址路径',
+
   // Ali-cloud
   PICBED_ALICLOUD: '阿里云OSS',
   PICBED_ALICLOUD_ACCESSKEYID: '设定KeyId',
