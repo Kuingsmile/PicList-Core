@@ -43,7 +43,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   try {
     const imgList = ctx.output
     const customUrl = aliYunOptions.customUrl
-    const path = aliYunOptions.path
+    const path = aliYunOptions.path ?? ''
     for (const img of imgList) {
       if (img.fileName && img.buffer) {
         const signature = generateSignature(aliYunOptions, img.fileName)

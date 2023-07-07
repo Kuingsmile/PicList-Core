@@ -92,7 +92,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   try {
     const imgList = ctx.output
     const customUrl = tcYunOptions.customUrl
-    const path = tcYunOptions.path
+    const path = tcYunOptions.path ?? ''
     const useV4 = !tcYunOptions.version || tcYunOptions.version === 'v4'
     for (const img of imgList) {
       if (img.fileName && img.buffer) {
