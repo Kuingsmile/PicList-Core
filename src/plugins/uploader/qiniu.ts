@@ -51,8 +51,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           delete img.base64Image
           delete img.buffer
           const baseUrl = qiniuOptions.url
-          const options = qiniuOptions.options
-          img.imgUrl = `${baseUrl}/${body.key as string}${options}`
+          const urlOptions = qiniuOptions.options || ''
+          img.imgUrl = `${baseUrl}/${body.key as string}${urlOptions}`
         } else {
           ctx.emit(IBuildInEvent.NOTIFICATION, {
             title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),

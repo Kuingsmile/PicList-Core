@@ -51,11 +51,12 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         }
         const signature = generateSignature(upyunOptions, img.fileName)
         const options = postOptions(upyunOptions, img.fileName, signature, image)
+        const suffix = upyunOptions.options || ''
         const body = await ctx.request(options)
         if (body.statusCode === 200) {
           delete img.base64Image
           delete img.buffer
-          img.imgUrl = `${upyunOptions.url}/${encodeURIComponent(path)}${encodeURIComponent(img.fileName)}${upyunOptions.options}`.replace(/%2F/g, '/')
+          img.imgUrl = `${upyunOptions.url}/${encodeURIComponent(path)}${encodeURIComponent(img.fileName)}${suffix}`.replace(/%2F/g, '/')
         } else {
           throw new Error('Upload failed')
         }

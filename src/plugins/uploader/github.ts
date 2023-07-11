@@ -40,6 +40,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   }
   try {
     const imgList = ctx.output
+    const uploadPath = githubOptions.path || ''
     for (const img of imgList) {
       if (img.fileName && img.buffer) {
         const base64Image = img.base64Image || Buffer.from(img.buffer).toString('base64')
@@ -47,7 +48,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           message: 'Upload by PicList',
           branch: githubOptions.branch,
           content: base64Image,
-          path: githubOptions.path + encodeURI(img.fileName)
+          path: uploadPath + encodeURI(img.fileName)
         }
         const postConfig = postOptions(img.fileName, githubOptions, data)
         try {
@@ -61,7 +62,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
             delete img.base64Image
             delete img.buffer
             if (githubOptions.customUrl) {
-              img.imgUrl = `${githubOptions.customUrl}/${encodeURIComponent(githubOptions.path)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
+              img.imgUrl = `${githubOptions.customUrl}/${encodeURIComponent(uploadPath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
             } else {
               img.imgUrl = body.content.download_url
             }
@@ -77,7 +78,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
             if (Object.keys(res).length) {
               img.hash = res.sha
               if (githubOptions.customUrl) {
-                img.imgUrl = `${githubOptions.customUrl}/${encodeURIComponent(githubOptions.path)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
+                img.imgUrl = `${githubOptions.customUrl}/${encodeURIComponent(uploadPath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
               } else {
                 img.imgUrl = res.download_url
               }
