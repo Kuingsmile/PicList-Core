@@ -18,7 +18,6 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   if (webPath) {
     webPath = webPath.replace(/\\/g, '/').replace(/^\//, '').replace(/\/$/, '')
   }
-  console.log(`webPath: ${webPath}`)
   const imgList = ctx.output
   for (const img of imgList) {
     if (img.fileName && img.buffer) {
@@ -41,6 +40,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           } else {
             img.imgUrl = path.join(uploadPath, img.fileName)
           }
+          img.hash = path.join(uploadPath, img.fileName)
         } catch (e: any) {
           ctx.emit(IBuildInEvent.NOTIFICATION, {
             title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
