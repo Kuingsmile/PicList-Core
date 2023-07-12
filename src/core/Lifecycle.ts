@@ -18,6 +18,8 @@ export class Lifecycle extends EventEmitter {
     super()
     this.ctx = ctx
     const tempFilePath = path.join(ctx.baseDir, 'piclistTemp')
+    const imgFlePath = path.join(ctx.baseDir, 'imgTemp')
+    fs.ensureDirSync(imgFlePath)
     fs.emptyDirSync(tempFilePath)
     this.ttfPath = path.join(ctx.baseDir, 'assets', 'simhei.ttf')
   }

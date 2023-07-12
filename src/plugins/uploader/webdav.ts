@@ -2,6 +2,7 @@ import { IPicGo, IPluginConfig, IWebdavPlistConfig, IOldReqOptionsWithFullRespon
 import { IBuildInEvent } from '../../utils/enum'
 import { ILocalesKey } from '../../i18n/zh-CN'
 import mime from 'mime-types'
+import fs from 'fs-extra'
 import path from 'path'
 
 const postOptions = async (ctx: IPicGo, options: IWebdavPlistConfig, fileName: string, image: Buffer): Promise<IOldReqOptionsWithFullResponse> => {
@@ -49,7 +50,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   try {
     const imgList = ctx.output
     const customUrl = webdavplistOptions.customUrl
-    const path = webdavplistOptions.path
+    const uploadPath = webdavplistOptions.path
     for (const img of imgList) {
       if (img.fileName && img.buffer) {
         let image = img.buffer
@@ -59,14 +60,18 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
         const options = await postOptions(ctx, webdavplistOptions, img.fileName, image)
         const body = await ctx.request(options)
         if (body.statusCode >= 200 && body.statusCode < 300) {
+          const imgTempPath = path.join(ctx.baseDir, 'imgTemp')
+          fs.ensureDirSync(imgTempPath)
+          fs.writeFileSync(path.join(imgTempPath, img.fileName), image)
           delete img.base64Image
           delete img.buffer
           const baseUrl = customUrl || webdavplistOptions.host
           if (webdavplistOptions.webpath) {
             img.imgUrl = `${baseUrl}/${webpath === '/' ? '' : encodeURIComponent(webpath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
           } else {
-            img.imgUrl = `${baseUrl}/${path === '/' ? '' : encodeURIComponent(path)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
+            img.imgUrl = `${baseUrl}/${uploadPath === '/' ? '' : encodeURIComponent(uploadPath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
           }
+          img.galleryPath = `http://localhost:36699/${encodeURIComponent(img.fileName)}`
         } else {
           throw new Error('Upload failed')
         }

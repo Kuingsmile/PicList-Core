@@ -29,6 +29,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         try {
           fs.ensureDirSync(uploadPath)
           fs.writeFileSync(path.join(uploadPath, img.fileName), image)
+          fs.copyFileSync(path.join(uploadPath, img.fileName), path.join(ctx.baseDir, 'imgTemp', img.fileName))
           delete img.base64Image
           delete img.buffer
           if (customUrl) {
@@ -41,6 +42,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
             img.imgUrl = path.join(uploadPath, img.fileName)
           }
           img.hash = path.join(uploadPath, img.fileName)
+          img.galleryPath = `http://localhost:36699/${encodeURIComponent(img.fileName)}`
         } catch (e: any) {
           ctx.emit(IBuildInEvent.NOTIFICATION, {
             title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
