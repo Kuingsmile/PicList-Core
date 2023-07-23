@@ -568,7 +568,7 @@ const validOutputFormat = (format: string): boolean => {
   return availableConvertFormatList.includes(format)
 }
 
-const imageExtList = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'avif', 'heif', 'heic']
+const imageExtList = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'avif', 'heif', 'heic']
 
 export async function imageAddWaterMark (img: Buffer, options: IBuildInWaterMarkOptions, defaultWatermarkFontPath: string): Promise<Buffer> {
   try {
@@ -650,7 +650,7 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
     if (options.isRotate && options.rotateDegree) {
       image = image.rotate(options.rotateDegree, { background: { r: 255, g: 255, b: 255, alpha: 0 } })
     }
-    if (options.isConvert && rawFormat !== 'gif') {
+    if (options.isConvert) {
       let newFormat = options.convertFormat || 'jpg'
       if (options.picBed === 'imgur' && newFormat === 'webp') {
         newFormat = 'jpg'
@@ -676,7 +676,7 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
   }
 }
 
-const imageFormatList = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'avif', 'heif', 'heic']
+const imageFormatList = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'avif', 'heif', 'heic']
 
 export const needAddWatermark = (watermarkOptions: IBuildInWaterMarkOptions | undefined, fileExt: string): boolean => {
   fileExt = fileExt.toLowerCase().replace('.', '')
