@@ -61,7 +61,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
         const body = await ctx.request(options)
         if (body.statusCode >= 200 && body.statusCode < 300) {
           const imgTempPath = path.join(ctx.baseDir, 'imgTemp')
-          fs.ensureDirSync(imgTempPath)
+          fs.ensureDirSync(path.dirname(path.join(imgTempPath, img.fileName)))
           fs.writeFileSync(path.join(imgTempPath, img.fileName), image)
           delete img.base64Image
           delete img.buffer
@@ -101,8 +101,8 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       name: 'sslEnabled',
       type: 'confirm',
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_SSLENABLED') },
-      required: true,
-      default: userConfig.sslEnabled || true,
+      required: false,
+      default: userConfig.sslEnabled ?? false,
       get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_SSLENABLED') },
       get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_SSLENABLED') }
     },
