@@ -131,10 +131,20 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
           })
         clearTimeout(timeoutId)
         const urlPath = new URL(url).pathname
+        let extname = ''
+        try {
+          const urlParams = new URL(url).searchParams
+          extname = urlParams.get('wx_fmt') || path.extname(urlPath) || ''
+        } catch (error) {
+          extname = path.extname(urlPath) || ''
+        }
+        if (!extname.startsWith('.')) {
+          extname = `.${extname}`
+        }
         resolve({
           buffer: res,
           fileName: path.basename(urlPath),
-          extname: path.extname(urlPath),
+          extname,
           success: true
         })
       } catch (error: any) {
