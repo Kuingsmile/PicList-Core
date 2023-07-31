@@ -138,7 +138,7 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
         } catch (error) {
           extname = path.extname(urlPath) || ''
         }
-        if (!extname.startsWith('.')) {
+        if (!extname.startsWith('.') && extname) {
           extname = `.${extname}`
         }
         resolve({
