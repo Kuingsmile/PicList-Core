@@ -647,14 +647,40 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
         }
       }
     } else if (options.isReSize) {
-      if (validParam(options.reSizeHeight, options.reSizeWidth)) {
+      if ((typeof options.reSizeHeight === 'number' && options.reSizeHeight > 0) && (typeof options.reSizeWidth === 'number' && options.reSizeWidth > 0)) {
         image = image.resize(
           options.reSizeWidth,
           options.reSizeHeight,
           {
-            fit: 'inside'
+            fit: 'fill'
           }
         )
+      } else if ((typeof options.reSizeHeight === 'number' && options.reSizeHeight > 0) && (typeof options.reSizeWidth !== 'number' || options.reSizeWidth === 0)) {
+        const imageWidth = await image.metadata().then(metadata => metadata.width)
+        const imageHeight = await image.metadata().then(metadata => metadata.height)
+        if (imageWidth && imageHeight) {
+          const scaleRatio = options.reSizeHeight / imageHeight
+          image = image.resize(
+            Math.round(imageWidth * scaleRatio),
+            options.reSizeHeight,
+            {
+              fit: 'inside'
+            }
+          )
+        }
+      } else if ((typeof options.reSizeWidth === 'number' && options.reSizeWidth > 0) && (typeof options.reSizeHeight !== 'number' || options.reSizeHeight === 0)) {
+        const imageWidth = await image.metadata().then(metadata => metadata.width)
+        const imageHeight = await image.metadata().then(metadata => metadata.height)
+        if (imageWidth && imageHeight) {
+          const scaleRatio = options.reSizeWidth / imageWidth
+          image = image.resize(
+            options.reSizeWidth,
+            Math.round(imageHeight * scaleRatio),
+            {
+              fit: 'inside'
+            }
+          )
+        }
       }
     }
     if (options.isRotate && options.rotateDegree) {
@@ -698,25 +724,28 @@ export const needCompress = (compressOptions: IBuildInCompressOptions | undefine
   if (!imageFormatList.includes(fileExt)) {
     return false
   }
-  if (compressOptions) {
-    compressOptions = formatOptions(compressOptions)
-    if (validParam(compressOptions.quality) && compressOptions.quality! < 100) {
-      return true
-    }
-    if (compressOptions.isReSizeByPercent && validParam(compressOptions.reSizePercent)) {
-      return true
-    }
-    if (compressOptions.isReSize && validParam(compressOptions.reSizeHeight, compressOptions.reSizeWidth)) {
-      return true
-    }
-    if (compressOptions.isRotate && compressOptions.rotateDegree) {
-      return true
-    }
-    if (compressOptions.isConvert) {
-      const newFormat = compressOptions.convertFormat || 'jpg'
-      return fileExt !== newFormat
-    }
+  if (!compressOptions) {
     return false
+  }
+
+  compressOptions = formatOptions(compressOptions)
+  const { quality, isReSizeByPercent, reSizePercent, isReSize, reSizeHeight, reSizeWidth, isRotate, rotateDegree, isConvert, convertFormat } = compressOptions
+
+  if (validParam(quality) && quality! < 100) {
+    return true
+  }
+  if (isReSizeByPercent && validParam(reSizePercent)) {
+    return true
+  }
+  if (isReSize && ((typeof reSizeHeight === 'number' && reSizeHeight > 0) || (typeof reSizeWidth === 'number' && reSizeWidth > 0))) {
+    return true
+  }
+  if (isRotate && rotateDegree) {
+    return true
+  }
+  if (isConvert) {
+    const newFormat = convertFormat || 'jpg'
+    return fileExt !== newFormat
   }
   return false
 }
