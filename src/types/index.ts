@@ -657,6 +657,7 @@ export interface IBuildInCompressOptions {
   isReSize?: boolean
   reSizeWidth?: number
   reSizeHeight?: number
+  skipReSizeOfSmallImg?: boolean
   isReSizeByPercent?: boolean
   reSizePercent?: number
   isRotate?: boolean

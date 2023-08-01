@@ -165,6 +165,7 @@ export const EN: ILocales = {
   BUILDIN_COMPRESS_MESSAGE_ISRESIZEBYPERCENT: 'Enable when resizing by percentage is required',
   BUILDIN_COMPRESS_RESIZEPERCENT: 'Set resizing percentage',
   BUILDIN_COMPRESS_MESSAGE_RESIZEPERCENT: 'Please enter a number',
+  BUILDIN_COMPRESS_SKIPRESIZEOFSMALLIMG: 'Whether to skip resizing of small images',
   BUILDIN_COMPRESS_ISROTATE: 'Whether to rotate the image',
   BUILDIN_COMPRESS_MESSAGE_ISROTATE: 'Enable when image rotation is required',
   BUILDIN_COMPRESS_ROTATEDEGREE: 'Set rotation angle',

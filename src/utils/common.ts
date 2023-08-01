@@ -613,6 +613,7 @@ function formatOptions (options: IBuildInCompressOptions): IBuildInCompressOptio
     isReSize: options.isReSize || false,
     reSizeHeight: forceNumber(options.reSizeHeight),
     reSizeWidth: forceNumber(options.reSizeWidth),
+    skipReSizeOfSmallImg: options.skipReSizeOfSmallImg || false,
     isReSizeByPercent: options.isReSizeByPercent || false,
     reSizePercent: forceNumber(options.reSizePercent),
     isRotate: options.isRotate || false,
@@ -659,27 +660,31 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
         const imageWidth = await image.metadata().then(metadata => metadata.width)
         const imageHeight = await image.metadata().then(metadata => metadata.height)
         if (imageWidth && imageHeight) {
-          const scaleRatio = options.reSizeHeight / imageHeight
-          image = image.resize(
-            Math.round(imageWidth * scaleRatio),
-            options.reSizeHeight,
-            {
-              fit: 'inside'
-            }
-          )
+          if (!options.skipReSizeOfSmallImg || (options.skipReSizeOfSmallImg && options.reSizeHeight < imageHeight)) {
+            const scaleRatio = options.reSizeHeight / imageHeight
+            image = image.resize(
+              Math.round(imageWidth * scaleRatio),
+              options.reSizeHeight,
+              {
+                fit: 'inside'
+              }
+            )
+          }
         }
       } else if ((typeof options.reSizeWidth === 'number' && options.reSizeWidth > 0) && (typeof options.reSizeHeight !== 'number' || options.reSizeHeight === 0)) {
         const imageWidth = await image.metadata().then(metadata => metadata.width)
         const imageHeight = await image.metadata().then(metadata => metadata.height)
         if (imageWidth && imageHeight) {
-          const scaleRatio = options.reSizeWidth / imageWidth
-          image = image.resize(
-            options.reSizeWidth,
-            Math.round(imageHeight * scaleRatio),
-            {
-              fit: 'inside'
-            }
-          )
+          if (!options.skipReSizeOfSmallImg || (options.skipReSizeOfSmallImg && options.reSizeWidth < imageWidth)) {
+            const scaleRatio = options.reSizeWidth / imageWidth
+            image = image.resize(
+              options.reSizeWidth,
+              Math.round(imageHeight * scaleRatio),
+              {
+                fit: 'inside'
+              }
+            )
+          }
         }
       }
     }

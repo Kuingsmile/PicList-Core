@@ -49,6 +49,13 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       default: userConfig.reSizeHeight || 500
     },
     {
+      name: 'skipReSizeOfSmallImg',
+      type: 'confirm',
+      get alias () { return ctx.i18n.translate<ILocalesKey>('BUILDIN_COMPRESS_SKIPRESIZEOFSMALLIMG') },
+      required: false,
+      default: userConfig.skipReSizeOfSmallImg || false
+    },
+    {
       name: 'isReSizeByPercent',
       type: 'confirm',
       get alias () { return ctx.i18n.translate<ILocalesKey>('BUILDIN_COMPRESS_ISRESIZEBYPERCENT') },
