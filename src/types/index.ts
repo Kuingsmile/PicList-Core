@@ -414,6 +414,7 @@ export interface ISftpPlistConfig{
   webPath?: string
   fileUser?: string
   fileMode?: string
+  dirMode?: string
 }
 /** PicGo 配置文件类型定义 */
 export interface IConfig {

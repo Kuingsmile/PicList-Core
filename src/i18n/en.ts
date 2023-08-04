@@ -126,7 +126,7 @@ export const EN: ILocales = {
   PICBED_WEBDAVPLIST_MESSAGE_CUSTOMURL: 'Ex. https://test.com',
 
   // sftpplist
-  PICBED_SFTPPLIST: 'SFTP',
+  PICBED_SFTPPLIST: 'SFTP Buildin',
   PICBED_SFTPPLIST_HOST: 'Set Host',
   PICBED_SFTPPLIST_PORT: 'Set Port',
   PICBED_SFTPPLIST_USERNAME: 'Set Username',
@@ -138,6 +138,7 @@ export const EN: ILocales = {
   PICBED_SFTPPLIST_WEBSITE_PATH: 'Set Website Path',
   PICBED_SFTPPLIST_FILE_USER: 'Set File User:Group',
   PICBED_SFTPPLIST_FILE_MODE: 'Set File Mode',
+  PICBED_SFTPPLIST_DIR_MODE: 'Set Directory Mode',
   PICBED_SFTPPLIST_MESSAGE_HOST: 'Ex. 1.1.1.3',
   PICBED_SFTPPLIST_MESSAGE_PORT: 'Default 22',
   PICBED_SFTPPLIST_MESSAGE_PRIVATEKEY: 'Ex. /Users/xxx/.ssh/id_rsa',
@@ -147,6 +148,7 @@ export const EN: ILocales = {
   PICBED_SFTPPLIST_MESSAGE_WEBSITE_PATH: 'Used to generate the URL of the image',
   PICBED_SFTPPLIST_MESSAGE_FILE_USER: 'Ex. www:data',
   PICBED_SFTPPLIST_MESSAGE_FILE_MODE: 'Ex. 0664',
+  PICBED_SFTPPLIST_MESSAGE_DIR_MODE: 'Ex. 0775',
 
   BUILDIN_RENAME_FORMAT: 'Set rename format',
   BUILDIN_RENAME_ENABLE: 'Enable rename',

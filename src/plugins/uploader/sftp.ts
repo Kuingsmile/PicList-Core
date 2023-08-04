@@ -30,7 +30,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         const client = SSHClient.instance
         await client.connect(sftpplistConfig)
         const remotePath = path.join(`/${sftpplistConfig.uploadPath}`, img.fileName)
-        await client.upload(tempFilePath, remotePath)
+        await client.upload(tempFilePath, remotePath, sftpplistConfig)
+        sftpplistConfig.fileUser && await client.chown(remotePath, sftpplistConfig.fileUser)
         delete img.base64Image
         delete img.buffer
         const baseUrl = sftpplistConfig.customUrl || sftpplistConfig.host
@@ -39,10 +40,9 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         } else {
           img.imgUrl = `${baseUrl}/${sftpplistConfig.uploadPath === '/' ? '' : encodeURIComponent(sftpplistConfig.uploadPath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
         }
-        fs.copyFileSync(tempFilePath, path.join(imgTempPath, img.fileName))
+        fs.moveSync(tempFilePath, path.join(imgTempPath, img.fileName))
         img.galleryPath = `http://localhost:36699/${encodeURIComponent(img.fileName)}`
         client.close()
-        fs.emptyDirSync(uploadTempPath)
       }
     }
     return ctx
@@ -160,6 +160,16 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_FILE_MODE') },
       default: userConfig.fileMode || '',
+      required: false
+    },
+    {
+      name: 'dirMode',
+      type: 'input',
+      get message () {
+        return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_MESSAGE_DIR_MODE')
+      },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_DIR_MODE') },
+      default: userConfig.dirMode || '',
       required: false
     }
   ]
