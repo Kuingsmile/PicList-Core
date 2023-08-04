@@ -401,6 +401,20 @@ export interface IWebdavPlistConfig{
   /** webdav 的 `customUrl` */
   customUrl: string
 }
+/** 内置sftp 图床配置项 */
+export interface ISftpPlistConfig{
+  host: string
+  port?: number
+  username: string
+  password?: string
+  privateKey?: string
+  passphrase?: string
+  uploadPath?: string
+  customUrl?: string
+  webPath?: string
+  fileUser?: string
+  fileMode?: string
+}
 /** PicGo 配置文件类型定义 */
 export interface IConfig {
   picBed: {
@@ -414,6 +428,7 @@ export interface IConfig {
     aliyun?: IAliyunConfig
     imgur?: IImgurConfig
     webdavplist?: IWebdavPlistConfig
+    local?: ILocalConfig
     transformer?: string
     /** for uploader */
     proxy?: string
