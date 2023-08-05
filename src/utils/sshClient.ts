@@ -1,4 +1,4 @@
-import { NodeSSH, Config } from 'node-ssh'
+import { NodeSSH, Config } from 'node-ssh-no-cpu-features'
 import path from 'path'
 import { ISftpPlistConfig } from '../types'
 
@@ -45,10 +45,13 @@ class SSHClient {
       remote = this.changeWinStylePathToUnix(remote)
       await this.mkdir(path.dirname(remote).replace(/^\/+|\/+$/g, ''), config)
       await SSHClient.client.putFile(local, remote)
-      const fileMode = config.fileMode || '0664'
-      const script = `chmod ${fileMode} ${remote}`
-      const result = await this.exec(script)
-      return result
+      const fileMode = config.fileMode || '0644'
+      if (fileMode !== '0644') {
+        const script = `chmod ${fileMode} ${remote}`
+        const result = await this.exec(script)
+        return result
+      }
+      return true
     } catch (err: any) {
       return false
     }
@@ -59,14 +62,19 @@ class SSHClient {
       throw new Error('SSH 未连接')
     }
     const directoryMode = config.dirMode || '0755'
-    const dirs = dirPath.split('/')
-    let currentPath = ''
-    for (const dir of dirs) {
-      if (dir) {
-        currentPath += `/${dir}`
-        const script = `mkdir ${currentPath} && chmod ${directoryMode} ${currentPath}`
-        await this.exec(script)
+    if (directoryMode !== '0755') {
+      const dirs = dirPath.split('/')
+      let currentPath = ''
+      for (const dir of dirs) {
+        if (dir) {
+          currentPath += `/${dir}`
+          const script = `mkdir ${currentPath} && chmod ${directoryMode} ${currentPath}`
+          await this.exec(script)
+        }
       }
+    } else {
+      const script = `mkdir -p ${dirPath}`
+      await this.exec(script)
     }
   }
 

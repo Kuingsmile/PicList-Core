@@ -29,7 +29,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         fs.writeFileSync(tempFilePath, image)
         const client = SSHClient.instance
         await client.connect(sftpplistConfig)
-        const remotePath = path.join(`/${sftpplistConfig.uploadPath}`, img.fileName)
+        const remotePath = path.join(`/${sftpplistConfig.uploadPath}`.replace(/\/\/+/g, '/'), img.fileName)
         await client.upload(tempFilePath, remotePath, sftpplistConfig)
         sftpplistConfig.fileUser && await client.chown(remotePath, sftpplistConfig.fileUser)
         delete img.base64Image
@@ -41,7 +41,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           img.imgUrl = `${baseUrl}/${sftpplistConfig.uploadPath === '/' ? '' : encodeURIComponent(sftpplistConfig.uploadPath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
         }
         fs.moveSync(tempFilePath, path.join(imgTempPath, img.fileName))
-        img.galleryPath = `http://localhost:36699/${encodeURIComponent(img.fileName)}`
+        img.galleryPath = `http://localhost:36699/sftpplist/${encodeURIComponent(img.fileName)}`
         client.close()
       }
     }
