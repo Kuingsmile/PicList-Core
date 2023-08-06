@@ -7,8 +7,7 @@ import { ILocalesKey } from '../../i18n/zh-CN'
 // generate OSS signature
 const generateSignature = (options: IAliyunConfig, fileName: string): string => {
   const date = new Date().toUTCString()
-  const mimeType = mime.lookup(fileName)
-  if (!mimeType) throw Error(`No mime type found for file ${fileName}`)
+  const mimeType = mime.lookup(fileName) || 'application/octet-stream'
 
   const signString = `PUT\n\n${mimeType}\n${date}\n/${options.bucket}/${options.path}${fileName}`
 
