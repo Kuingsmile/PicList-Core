@@ -47,7 +47,7 @@ class SSHClient {
       await SSHClient.client.putFile(local, remote)
       const fileMode = config.fileMode || '0644'
       if (fileMode !== '0644') {
-        const script = `chmod ${fileMode} ${remote}`
+        const script = `chmod ${fileMode} "${remote}"`
         const result = await this.exec(script)
         return result
       }
@@ -68,12 +68,12 @@ class SSHClient {
       for (const dir of dirs) {
         if (dir) {
           currentPath += `/${dir}`
-          const script = `mkdir ${currentPath} && chmod ${directoryMode} ${currentPath}`
+          const script = `mkdir "${currentPath}" && chmod ${directoryMode} "${currentPath}"`
           await this.exec(script)
         }
       }
     } else {
-      const script = `mkdir -p ${dirPath}`
+      const script = `mkdir -p "${dirPath}"`
       await this.exec(script)
     }
   }
@@ -82,7 +82,7 @@ class SSHClient {
     remote = this.changeWinStylePathToUnix(remote)
     const [_user, _group] = group ? [user, group] : user.includes(':') ? user.split(':') : [user, user]
 
-    const script = `chown ${_user}:${_group} ${remote}`
+    const script = `chown ${_user}:${_group} "${remote}"`
     return this.exec(script)
   }
 
