@@ -335,6 +335,8 @@ export interface ITcyunConfig {
   /** 存储区域，例如 ap-beijing-1 */
   area: string
   /** 自定义存储路径，比如 img/ */
+  /** endpoint: string */
+  endpoint: string
   path: string
   /** 自定义域名，注意要加 `http://` 或者 `https://` */
   customUrl: string
@@ -342,6 +344,8 @@ export interface ITcyunConfig {
   version: 'v5' | 'v4'
   /** 针对图片的一些后缀处理参数 PicGo 2.4.0+ PicGo-Core 1.5.0+ */
   options: string
+  /** 是否支持极智压缩 */
+  slim: boolean
 }
 /** GitHub 图床配置项 */
 export interface IGithubConfig {
@@ -560,6 +564,7 @@ export interface IImgSize {
   width: number
   height: number
   real?: boolean
+  extname?: string
 }
 
 /**

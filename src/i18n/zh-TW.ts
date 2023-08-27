@@ -46,6 +46,7 @@ export const ZH_TW: ILocales = {
   PICBED_TENCENTCLOUD_APPID: '設定AppId',
   PICBED_TENCENTCLOUD_BUCKET: '設定Bucket',
   PICBED_TENCENTCLOUD_AREA: '設定儲存區域',
+  PICBED_TENCENTCLOUD_ENDPOINT: '設定接入點',
   PICBED_TENCENTCLOUD_PATH: '設定儲存路徑',
   PICBED_TENCENTCLOUD_OPTIONS: '設定網址後綴',
   PICBED_TENCENTCLOUD_CUSTOMURL: '設定自訂網址',
@@ -54,6 +55,11 @@ export const ZH_TW: ILocales = {
   PICBED_TENCENTCLOUD_MESSAGE_PATH: '例如：test/',
   PICBED_TENCENTCLOUD_MESSAGE_CUSTOMURL: '例如：https://test.com',
   PICBED_TENCENTCLOUD_MESSAGE_OPTIONS: '例如：?imageMogr2',
+  PICBED_TENCENTCLOUD_MESSAGE_ENDPOINT: '例如：cos-internal.accelerate.tencentcos.cn',
+  PICBED_TENCENTCLOUD_SLIM: 'Set ImageSlim',
+  PICBED_TENCENTCLOUD_SLIM_TIP: 'Image extremely intelligent compression, please refer to the [document description](https://cloud.tencent.com/document/product/436/49259)',
+  PICBED_TENCENTCLOUD_SLIM_CONFIRM: 'OPEN',
+  PICBED_TENCENTCLOUD_SLIM_CANCEL: 'CLOSE',
 
   // GitHub
   PICBED_GITHUB: 'GitHub',

@@ -1,6 +1,6 @@
 {
   "name": "piclist",
-  "version": "0.8.12",
+  "version": "0.8.14",
   "description": "Modified PicGo core, A tool for picture uploading",
   "author": {
     "name": "Kuingsmile",
@@ -105,12 +105,12 @@
   "dependencies": {
     "@picgo/i18n": "^1.0.0",
     "@picgo/store": "^2.0.4",
-    "axios": "^1.4.0",
+    "axios": "^1.5.0",
     "chalk": "^2.4.1",
     "commander": "^8.1.0",
     "comment-json": "^2.3.1",
     "cross-spawn": "^6.0.5",
-    "dayjs": "^1.11.8",
+    "dayjs": "^1.11.9",
     "download-git-repo": "^3.0.2",
     "ejs": "^2.6.1",
     "form-data": "^4.0.0",
@@ -127,7 +127,7 @@
     "minimatch": "^3.0.4",
     "minimist": "^1.2.5",
     "node-ssh-no-cpu-features": "^1.0.1",
-    "qiniu": "^7.8.0",
+    "qiniu": "^7.9.0",
     "resolve": "^1.8.1",
     "rimraf": "^3.0.2",
     "sharp": "^0.32.1",

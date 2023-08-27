@@ -44,6 +44,7 @@ export const ZH_CN = {
   PICBED_TENCENTCLOUD_APPID: '设定AppId',
   PICBED_TENCENTCLOUD_BUCKET: '设定Bucket',
   PICBED_TENCENTCLOUD_AREA: '设定存储区域',
+  PICBED_TENCENTCLOUD_ENDPOINT: '设定接入点',
   PICBED_TENCENTCLOUD_PATH: '设定存储路径',
   PICBED_TENCENTCLOUD_OPTIONS: '设定网址后缀',
   PICBED_TENCENTCLOUD_CUSTOMURL: '设定自定义域名',
@@ -52,6 +53,11 @@ export const ZH_CN = {
   PICBED_TENCENTCLOUD_MESSAGE_PATH: '例如：test/',
   PICBED_TENCENTCLOUD_MESSAGE_CUSTOMURL: '例如：https://test.com',
   PICBED_TENCENTCLOUD_MESSAGE_OPTIONS: '例如：?imageMogr2',
+  PICBED_TENCENTCLOUD_MESSAGE_ENDPOINT: '例如：cos-internal.accelerate.tencentcos.cn',
+  PICBED_TENCENTCLOUD_SLIM: '极智压缩',
+  PICBED_TENCENTCLOUD_SLIM_TIP: '图片极智压缩，详情请参考[文档说明](https://cloud.tencent.com/document/product/436/49259)',
+  PICBED_TENCENTCLOUD_SLIM_CONFIRM: '开启',
+  PICBED_TENCENTCLOUD_SLIM_CANCEL: '关闭',
 
   // GitHub
   PICBED_GITHUB: 'GitHub',
