@@ -108,6 +108,8 @@ export const ZH_TW: ILocales = {
   PICBED_UPYUN_PATH: '設定儲存路徑',
   PICBED_UPYUN_URL: '設定加速網址',
   PICBED_UPYUN_OPTIONS: '設定網址後綴',
+  PICBED_UPYUN_ANTI_LEECH_TOKEN: '設定防盜鏈Token',
+  PICBED_UPYUN_EXPIRE_TIME: '設定過期時間(秒)',
   PICBED_UPYUN_MESSAGE_OPERATOR: '例如：me',
   PICBED_UPYUN_MESSAGE_PASSWORD: '輸入操作員密碼',
   PICBED_UPYUN_MESSAGE_URL: '例如：http://xxx.test.upcdn.net',

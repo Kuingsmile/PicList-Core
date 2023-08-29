@@ -324,6 +324,10 @@ export interface IUpyunConfig {
   path: string
   /** 加速域名，注意要加 `http://` 或者 `https://` */
   url: string
+  /** 防盗链密钥 */
+  antiLeechToken: string
+  /** 防盗链过期时间，单位为秒 */
+  expireTime: number
 }
 /** 腾讯云图床配置项 */
 export interface ITcyunConfig {

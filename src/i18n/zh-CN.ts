@@ -106,6 +106,8 @@ export const ZH_CN = {
   PICBED_UPYUN_PATH: '设定存储路径',
   PICBED_UPYUN_URL: '设定加速域名',
   PICBED_UPYUN_OPTIONS: '设定网址后缀',
+  PICBED_UPYUN_ANTI_LEECH_TOKEN: '设定防盗链Token',
+  PICBED_UPYUN_EXPIRE_TIME: '设定过期时间(秒)',
   PICBED_UPYUN_MESSAGE_OPERATOR: '例如：me',
   PICBED_UPYUN_MESSAGE_PASSWORD: '输入操作员密码',
   PICBED_UPYUN_MESSAGE_URL: '例如：http://xxx.test.upcdn.net',

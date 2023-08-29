@@ -108,6 +108,8 @@ export const EN: ILocales = {
   PICBED_UPYUN_PATH: 'Set Path',
   PICBED_UPYUN_URL: 'Set URL',
   PICBED_UPYUN_OPTIONS: 'Set URL Suffix',
+  PICBED_UPYUN_ANTI_LEECH_TOKEN: 'Set Anti-Leech Token',
+  PICBED_UPYUN_EXPIRE_TIME: 'Set Expire Time(seconds)',
   PICBED_UPYUN_MESSAGE_OPERATOR: 'Ex. me',
   PICBED_UPYUN_MESSAGE_PASSWORD: 'Please type the operator password',
   PICBED_UPYUN_MESSAGE_URL: 'Ex. http://xxx.test.upcdn.net',

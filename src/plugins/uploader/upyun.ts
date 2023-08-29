@@ -35,6 +35,15 @@ const postOptions = (options: IUpyunConfig, fileName: string, signature: string,
   }
 }
 
+const getAntiLeechParam = (antiLeechToken: string, expireTime: string | number | undefined, options: IUpyunConfig, fileName: string): string => {
+  const uri = `/${encodeURI(options.path || '')}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/').replace(/^\/+/g, '/')
+  const now = Math.round(new Date().getTime() / 1000)
+  const expire = expireTime ? now + parseInt(expireTime.toString(), 10) : now + 1800
+  const sign = MD5(`${antiLeechToken}&${expire}&${uri}`)
+  const upt = `${sign.substring(12, 20)}${expire}`
+  return `_upt=${upt}`
+}
+
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const upyunOptions = ctx.getConfig<IUpyunConfig>('picBed.upyun')
   if (!upyunOptions) {
@@ -57,6 +66,10 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           delete img.base64Image
           delete img.buffer
           img.imgUrl = `${upyunOptions.url}/${encodeURIComponent(path)}${encodeURIComponent(img.fileName)}${suffix}`.replace(/%2F/g, '/')
+          if (upyunOptions.antiLeechToken) {
+            const upt = getAntiLeechParam(upyunOptions.antiLeechToken, upyunOptions.expireTime, upyunOptions, img.fileName)
+            img.imgUrl = img.imgUrl.includes('?') ? `${img.imgUrl}&${upt}` : `${img.imgUrl}?${upt}`
+          }
         } else {
           throw new Error('Upload failed')
         }
@@ -137,6 +150,24 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_PATH') },
       get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_PATH') },
       default: userConfig.path || '',
+      required: false
+    },
+    {
+      name: 'antiLeechToken',
+      type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_ANTI_LEECH_TOKEN') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_ANTI_LEECH_TOKEN') },
+      get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_ANTI_LEECH_TOKEN') },
+      default: userConfig.antiLeechToken || '',
+      required: false
+    },
+    {
+      name: 'expireTime',
+      type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_EXPIRE_TIME') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_EXPIRE_TIME') },
+      get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_EXPIRE_TIME') },
+      default: userConfig.expireTime || '',
       required: false
     }
   ]
