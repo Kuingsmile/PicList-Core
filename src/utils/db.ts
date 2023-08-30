@@ -1,6 +1,6 @@
-import { IConfig, IPicGo } from '../types'
+import { type IConfig, type IPicGo } from '../types'
 import { JSONStore } from '@picgo/store'
-import { IJSON } from '@picgo/store/dist/types'
+import { type IJSON } from '@picgo/store/dist/types'
 
 class DB {
   private readonly ctx: IPicGo
@@ -41,7 +41,7 @@ class DB {
 
   set (key: string, value: any): void {
     this.read(true)
-    return this.db.set(key, value)
+    this.db.set(key, value)
   }
 
   has (key: string): boolean {

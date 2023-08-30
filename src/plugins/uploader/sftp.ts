@@ -1,6 +1,6 @@
-import { IPicGo, IPluginConfig, ISftpPlistConfig } from '../../types'
+import { type IPicGo, type IPluginConfig, type ISftpPlistConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
-import { ILocalesKey } from '../../i18n/zh-CN'
+import { type ILocalesKey } from '../../i18n/zh-CN'
 import path from 'path'
 import SSHClient from '../../utils/sshClient'
 import fs from 'fs-extra'

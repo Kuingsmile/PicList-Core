@@ -4,7 +4,7 @@ import {
   getFSFile,
   getURLFile
 } from '../../utils/common'
-import { IPicGo, IPathTransformedImgInfo, IImgInfo, IImgSize } from '../../types'
+import { type IPicGo, type IPathTransformedImgInfo, type IImgInfo, type IImgSize } from '../../types'
 import dayjs from 'dayjs'
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {

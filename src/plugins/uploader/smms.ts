@@ -1,6 +1,6 @@
-import { IPicGo, IPluginConfig, ISmmsConfig, IOldReqOptions } from '../../types'
+import { type IPicGo, type IPluginConfig, type ISmmsConfig, type IOldReqOptions } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
-import { ILocalesKey } from '../../i18n/zh-CN'
+import { type ILocalesKey } from '../../i18n/zh-CN'
 
 const postOptions = (fileName: string, image: Buffer, apiToken: string, backupDomain = ''): IOldReqOptions => {
   const domain = backupDomain || 'sm.ms'

@@ -4,7 +4,7 @@ import fs from 'fs-extra'
 import { generate } from '../../utils/initUtils'
 import { homedir } from 'os'
 import download from 'download-git-repo'
-import { IOptions, IPlugin, IPicGo } from '../../types'
+import { type IOptions, type IPlugin, type IPicGo } from '../../types'
 import rm from 'rimraf'
 
 const run = (ctx: IPicGo, options: IOptions): void => {
@@ -35,7 +35,7 @@ const downloadAndGenerate = (ctx: IPicGo, options: IOptions): void => {
   ctx.log.info('Template files are downloading...')
   download(options.template, options.tmp, { clone: options.clone }, (err: Error) => {
     if (err) {
-      return ctx.log.error(err)
+      ctx.log.error(err); return
     }
     ctx.log.success('Template files are downloaded!')
     generate(ctx, options).catch((e) => { ctx.log.error(e) })

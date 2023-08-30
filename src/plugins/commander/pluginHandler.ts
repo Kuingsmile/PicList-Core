@@ -1,4 +1,4 @@
-import { IPicGo, IPlugin } from '../../types'
+import { type IPicGo, type IPlugin } from '../../types'
 
 const pluginHandler: IPlugin = {
   handle: (ctx: IPicGo) => {

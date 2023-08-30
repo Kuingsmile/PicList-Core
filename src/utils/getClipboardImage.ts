@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import os from 'os'
 import fs from 'fs-extra'
 import isWsl from 'is-wsl'
-import { IPicGo, IClipboardImage } from '../types'
+import { type IPicGo, type IClipboardImage } from '../types'
 import { IBuildInEvent } from './enum'
 import macClipboardScript from './clipboard/mac.applescript'
 import windowsClipboardScript from './clipboard/windows.ps1'
@@ -69,7 +69,7 @@ const getClipboardImage = async (ctx: IPicGo): Promise<IClipboardImage> => {
   createImageFolder(ctx)
   // add an clipboard image folder to control the image cache file
   const imagePath = path.join(ctx.baseDir, CLIPBOARD_IMAGE_FOLDER, `${dayjs().format('YYYYMMDDHHmmss')}.png`)
-  return await new Promise<IClipboardImage>((resolve: Function, reject: Function): void => {
+  return await new Promise<IClipboardImage>((resolve: any, reject: any): void => {
     const platform = getCurrentPlatform()
     const scriptPath = path.join(ctx.baseDir, platform2ScriptFilename[platform])
     // If the script does not exist yet, we need to write the content to the script file

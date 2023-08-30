@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/promise-function-async */
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
-import { IPicGo, Undefinable, IConfigChangePayload, IConfig, IRequestConfig, IOldReqOptions, IResponse, IFullResponse, IRequest } from '../types'
+import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
+import { type IPicGo, type Undefinable, type IConfigChangePayload, type IConfig, type IRequestConfig, type IOldReqOptions, type IResponse, type IFullResponse, type IRequest } from '../types'
 import { IBusEvent } from '../utils/enum'
 import { eventBus } from '../utils/eventBus'
 import { URL } from 'url'
@@ -73,13 +73,13 @@ function requestInterceptor (options: IOldReqOptions | AxiosRequestConfig): Axio
     opt.data = form
     opt.headers = Object.assign(opt.headers || {}, form.getHeaders())
     __isOldOptions = true
-    // @ts-expect-error
+    // @ts-expect-error this is old option
     delete opt.formData
   }
   if ('body' in options) {
     opt.data = options.body
     __isOldOptions = true
-    // @ts-expect-error
+    // @ts-expect-error this is old options
     delete opt.body
   }
   if ('qs' in options) {

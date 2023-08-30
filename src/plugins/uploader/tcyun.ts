@@ -1,8 +1,8 @@
 import crypto from 'crypto'
 import mime from 'mime-types'
-import { IPicGo, IPluginConfig, ITcyunConfig, IOldReqOptionsWithFullResponse } from '../../types'
+import { type IPicGo, type IPluginConfig, type ITcyunConfig, type IOldReqOptionsWithFullResponse } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
-import { ILocalesKey } from '../../i18n/zh-CN'
+import { type ILocalesKey } from '../../i18n/zh-CN'
 
 // generate COS signature string
 

@@ -1,6 +1,5 @@
-
-import { IPicGo, IPluginConfig, IBuildInCompressOptions } from '../../types'
-import { ILocalesKey } from '../../i18n/zh-CN'
+import { type IPicGo, type IPluginConfig, type IBuildInCompressOptions } from '../../types'
+import { type ILocalesKey } from '../../i18n/zh-CN'
 
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IBuildInCompressOptions>('buildIn.compress') || {}

@@ -1,7 +1,7 @@
-import { Command } from 'commander'
-import { Inquirer } from 'inquirer'
-import { FormatEnum, GravityEnum } from 'sharp'
-import { IRequestPromiseOptions } from './oldRequest'
+import { type Command } from 'commander'
+import { type Inquirer } from 'inquirer'
+import { type FormatEnum, type GravityEnum } from 'sharp'
+import { type IRequestPromiseOptions } from './oldRequest'
 
 export interface IPicGo extends NodeJS.EventEmitter {
   /**
@@ -242,8 +242,8 @@ export type IResponse<T, U> = U extends IRequestOptionsWithFullResponse ? IFullR
 export interface IRequestLibOnlyOptions {
   proxy?: string
   body?: any
-  formData?: { [key: string]: any } | undefined
-  form?: { [key: string]: any } | string | undefined
+  formData?: Record<string, any> | undefined
+  form?: Record<string, any> | string | undefined
 }
 
 export type IRequestConfig<T> = T extends IRequestLibOnlyOptions ? IOldReqOptions : AxiosRequestConfig
@@ -276,13 +276,9 @@ export interface IPathTransformedImgInfo extends IImgInfo {
   success: boolean
 }
 
-export interface IStringKeyMap<T> {
-  [key: string]: T extends T ? T : any
-}
+export type IStringKeyMap<T> = Record<string, T extends T ? T : any>
 
-export interface ICLIConfigs {
-  [module: string]: IStringKeyMap<any>
-}
+export type ICLIConfigs = Record<string, IStringKeyMap<any>>
 
 /** SM.MS 图床配置项 */
 export interface ISmmsConfig {
@@ -393,7 +389,7 @@ export interface IImgurConfig {
   album: string
 }
 /** Webdav 图床配置项 */
-export interface IWebdavPlistConfig{
+export interface IWebdavPlistConfig {
   /** webdav 的 `host` */
   host: string
   /** webdav 的 `sslEnabled` */
@@ -410,7 +406,7 @@ export interface IWebdavPlistConfig{
   customUrl: string
 }
 /** 内置sftp 图床配置项 */
-export interface ISftpPlistConfig{
+export interface ISftpPlistConfig {
   host: string
   port?: number
   username: string
@@ -443,9 +439,7 @@ export interface IConfig {
     proxy?: string
     [others: string]: any
   }
-  picgoPlugins: {
-    [pluginName: string]: boolean
-  }
+  picgoPlugins: Record<string, boolean>
   debug?: boolean
   silent?: boolean
   settings?: {
@@ -574,9 +568,7 @@ export interface IImgSize {
 /**
  * for initUtils
  */
-export interface IFileTree {
-  [filePath: string]: string | Buffer
-}
+export type IFileTree = Record<string, string | Buffer>
 
 export interface IOptions {
   template: string // template name
@@ -604,9 +596,7 @@ export interface IClipboardImage {
 /**
  * for install command environment variable
  */
-export interface IProcessEnv {
-  [propName: string]: Undefinable<string>
-}
+export type IProcessEnv = Record<string, Undefinable<string>>
 
 export type ILogArgvType = string | number
 
@@ -628,9 +618,7 @@ export interface IConfigChangePayload<T> {
   value: T
 }
 
-export interface ILocale {
-  [key: string]: any
-}
+export type ILocale = Record<string, any>
 
 export interface II18nManager {
   /**

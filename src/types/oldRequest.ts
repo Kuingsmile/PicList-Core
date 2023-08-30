@@ -10,15 +10,13 @@ export type IMethod =
   | 'link' | 'LINK'
   | 'unlink' | 'UNLINK'
 
-export interface IHeaders {
-  [key: string]: any
-}
+export type IHeaders = Record<string, any>
 
 export interface IRequestPromiseOptions {
   baseUrl?: string | undefined
   url?: string
   method?: IMethod
-  formData?: { [key: string]: any } | undefined
+  formData?: Record<string, any> | undefined
   qs?: any
   json?: boolean
   body?: any

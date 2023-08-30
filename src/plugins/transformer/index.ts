@@ -1,4 +1,4 @@
-import { IPicGo, IPicGoPlugin } from '../../types'
+import { type IPicGo, type IPicGoPlugin } from '../../types'
 import ImgFromPath from './path'
 import ImgFromBase64 from './base64'
 

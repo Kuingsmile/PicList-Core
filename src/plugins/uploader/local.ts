@@ -1,6 +1,6 @@
-import { IPicGo, IPluginConfig, ILocalConfig } from '../../types'
+import { type IPicGo, type IPluginConfig, type ILocalConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
-import { ILocalesKey } from '../../i18n/zh-CN'
+import { type ILocalesKey } from '../../i18n/zh-CN'
 import fs from 'fs-extra'
 import path from 'path'
 

@@ -1,8 +1,8 @@
-import { IPicGo, IPluginConfig, IAliyunConfig, IOldReqOptionsWithFullResponse } from '../../types'
+import { type IPicGo, type IPluginConfig, type IAliyunConfig, type IOldReqOptionsWithFullResponse } from '../../types'
 import crypto from 'crypto'
 import mime from 'mime-types'
 import { IBuildInEvent } from '../../utils/enum'
-import { ILocalesKey } from '../../i18n/zh-CN'
+import { type ILocalesKey } from '../../i18n/zh-CN'
 
 // generate OSS signature
 const generateSignature = (options: IAliyunConfig, fileName: string): string => {

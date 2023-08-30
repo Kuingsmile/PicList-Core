@@ -2,13 +2,13 @@ import fs from 'fs-extra'
 import path from 'path'
 import { imageSize } from 'image-size'
 import {
-  IImgSize,
-  IPathTransformedImgInfo,
-  IPluginNameType,
-  ILogger,
-  IPicGo,
-  IBuildInCompressOptions,
-  IBuildInWaterMarkOptions
+  type IImgSize,
+  type IPathTransformedImgInfo,
+  type IPluginNameType,
+  type ILogger,
+  type IPicGo,
+  type IBuildInCompressOptions,
+  type IBuildInWaterMarkOptions
 } from '../types'
 import { URL } from 'url'
 import TextToSVG from 'text-to-svg'
@@ -30,7 +30,7 @@ export function renameFileNameWithRandomString (oldName: string, length: number 
 }
 
 export function renameFileNameWithCustomString (oldName: string, customFormat: string, affixFileName?: string): string {
-  const conversionMap: {[key: string]: () => string} = {
+  const conversionMap: Record<string, () => string> = {
     '{Y}': () => new Date().getFullYear().toString(),
     '{y}': () => new Date().getFullYear().toString().slice(2),
     '{m}': () => (new Date().getMonth() + 1).toString().length === 1 ? `0${new Date().getMonth() + 1}` : (new Date().getMonth() + 1).toString(),
@@ -451,7 +451,7 @@ async function text2SVG (
   return svg
 }
 
-const defaultWatermarkImagePath = `${__dirname}/assets/piclist.png`
+const defaultWatermarkImagePath = path.join(__dirname, 'assets', 'piclist.png')
 
 export async function AddWatermark (
   img: Buffer,

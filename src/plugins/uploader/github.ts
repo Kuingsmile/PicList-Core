@@ -1,6 +1,6 @@
-import { IPicGo, IPluginConfig, IGithubConfig, IOldReqOptionsWithJSON } from '../../types'
+import { type IPicGo, type IPluginConfig, type IGithubConfig, type IOldReqOptionsWithJSON } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
-import { ILocalesKey } from '../../i18n/zh-CN'
+import { type ILocalesKey } from '../../i18n/zh-CN'
 import mime from 'mime-types'
 
 const postOptions = (fileName: string, options: IGithubConfig, data: any): IOldReqOptionsWithJSON => {

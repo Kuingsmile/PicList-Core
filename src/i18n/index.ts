@@ -1,13 +1,13 @@
-import { ZH_CN, ILocalesKey, ILocales } from './zh-CN'
+import { ZH_CN, type ILocalesKey, type ILocales } from './zh-CN'
 import { merge } from 'lodash'
-import { IPicGo } from '../types'
+import { type IPicGo } from '../types'
 import path from 'path'
 import fs from 'fs-extra'
 import yaml from 'js-yaml'
 
 import { ObjectAdapter, I18n } from '@picgo/i18n'
-import { IStringKeyMap, II18nManager } from '../types/index'
-import { ILocale } from '@picgo/i18n/dist/types'
+import { type IStringKeyMap, type II18nManager } from '../types/index'
+import { type ILocale } from '@picgo/i18n/dist/types'
 import { EN } from './en'
 import { ZH_TW } from './zh-TW'
 

@@ -1,6 +1,6 @@
-import { IPicGo, IPluginConfig, IImgurConfig, IOldReqOptions, IFullResponse } from '../../types'
+import { type IPicGo, type IPluginConfig, type IImgurConfig, type IOldReqOptions, type IFullResponse } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
-import { ILocalesKey } from '../../i18n/zh-CN'
+import { type ILocalesKey } from '../../i18n/zh-CN'
 
 const formatAccessToken = (accessToken: string): string => accessToken ? accessToken.startsWith('Bearer') ? accessToken : `Bearer ${accessToken}` : ''
 
@@ -104,7 +104,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS_AND_NETWORK'),
       text: 'http://docs.imgur.com/api/errno/'
     })
-    // @ts-expect-error
+    // @ts-expect-error string | IError
     throw err?.response?.data || err
   }
 }

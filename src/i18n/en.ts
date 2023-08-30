@@ -1,4 +1,4 @@
-import { ILocales } from './zh-CN'
+import { type ILocales } from './zh-CN'
 
 /* eslint-disable no-template-curly-in-string */
 export const EN: ILocales = {

@@ -1,6 +1,6 @@
-import { IPicGo, IPluginConfig, IWebdavPlistConfig, IOldReqOptionsWithFullResponse } from '../../types'
+import { type IPicGo, type IPluginConfig, type IWebdavPlistConfig, type IOldReqOptionsWithFullResponse } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
-import { ILocalesKey } from '../../i18n/zh-CN'
+import { type ILocalesKey } from '../../i18n/zh-CN'
 import mime from 'mime-types'
 import fs from 'fs-extra'
 import path from 'path'

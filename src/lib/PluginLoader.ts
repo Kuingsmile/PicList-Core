@@ -2,7 +2,7 @@ import fs from 'fs-extra'
 import path from 'path'
 import resolve from 'resolve'
 import { IBuildInEvent } from '../utils/enum'
-import { IPicGo, IPicGoPlugin, IPluginLoader, IPicGoPluginInterface } from '../types/index'
+import { type IPicGo, type IPicGoPlugin, type IPluginLoader, type IPicGoPluginInterface } from '../types/index'
 import { setCurrentPluginName } from './LifecyclePlugins'
 
 /**
@@ -11,8 +11,8 @@ import { setCurrentPluginName } from './LifecyclePlugins'
 export class PluginLoader implements IPluginLoader {
   private readonly ctx: IPicGo
   private list: string[] = []
-  private readonly fullList: Set<string> = new Set()
-  private readonly pluginMap: Map<string, IPicGoPluginInterface> = new Map()
+  private readonly fullList = new Set<string>()
+  private readonly pluginMap = new Map<string, IPicGoPluginInterface>()
   constructor (ctx: IPicGo) {
     this.ctx = ctx
     this.init()

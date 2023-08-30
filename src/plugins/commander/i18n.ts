@@ -1,4 +1,4 @@
-import { IPlugin, IPicGo, IStringKeyMap } from '../../types'
+import { type IPlugin, type IPicGo, type IStringKeyMap } from '../../types'
 
 const i18n: IPlugin = {
   handle: (ctx: IPicGo) => {
@@ -25,7 +25,7 @@ const i18n: IPlugin = {
           return
         }
         if (!list.includes(lang)) {
-          return ctx.log.warn('No such language')
+          ctx.log.warn('No such language'); return
         }
         ctx.i18n.setLanguage(lang)
         ctx.log.success(`Language set to ${lang}`)

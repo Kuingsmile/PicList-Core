@@ -5,12 +5,12 @@ import path from 'path'
 import util from 'util'
 import { ILogType } from '../utils/enum'
 import {
-  ILogArgvType,
-  ILogArgvTypeWithError,
-  Undefinable,
-  ILogColor,
-  ILogger,
-  IPicGo
+  type ILogArgvType,
+  type ILogArgvTypeWithError,
+  type Undefinable,
+  type ILogColor,
+  type ILogger,
+  type IPicGo
 } from '../types'
 import { forceNumber, isDev } from '../utils/common'
 
@@ -116,19 +116,19 @@ export class Logger implements ILogger {
   }
 
   success (...msg: ILogArgvType[]): void {
-    return this.handleLog(ILogType.success, ...msg)
+    this.handleLog(ILogType.success, ...msg)
   }
 
   info (...msg: ILogArgvType[]): void {
-    return this.handleLog(ILogType.info, ...msg)
+    this.handleLog(ILogType.info, ...msg)
   }
 
   error (...msg: ILogArgvTypeWithError[]): void {
-    return this.handleLog(ILogType.error, ...msg)
+    this.handleLog(ILogType.error, ...msg)
   }
 
   warn (...msg: ILogArgvType[]): void {
-    return this.handleLog(ILogType.warn, ...msg)
+    this.handleLog(ILogType.warn, ...msg)
   }
 
   debug (...msg: ILogArgvType[]): void {

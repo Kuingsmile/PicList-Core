@@ -1,8 +1,8 @@
 /** This file is deprecated */
 
-import { PicGo } from '../core/PicGo'
-import LifecyclePlugins from '../lib/LifecyclePlugins'
-import { IWebdavPlistConfig } from '../types'
+import { type PicGo } from '../core/PicGo'
+import type LifecyclePlugins from '../lib/LifecyclePlugins'
+import { type IWebdavPlistConfig } from '../types'
 
 /**
  * for plugin config
@@ -144,9 +144,7 @@ export interface IConfig {
     transformer?: string
     proxy: string
   }
-  picgoPlugins: {
-    [propName: string]: boolean
-  }
+  picgoPlugins: Record<string, boolean>
   debug?: boolean
   silent?: boolean
   settings?: {
@@ -207,9 +205,7 @@ export interface IClipboardImage {
 /**
  * for install command environment variable
  */
-export interface IProcessEnv {
-  [propName: string]: Undefinable<string>
-}
+export type IProcessEnv = Record<string, Undefinable<string>>
 
 export type ILogArgvType = string | number
 

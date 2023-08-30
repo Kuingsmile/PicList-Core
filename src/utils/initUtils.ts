@@ -1,5 +1,5 @@
 import match from 'minimatch'
-import { IPicGo, IOptions, IFileTree } from '../types'
+import { type IPicGo, type IOptions, type IFileTree } from '../types'
 import fs from 'fs-extra'
 import path from 'path'
 import globby from 'globby'
@@ -33,7 +33,7 @@ const generate = async (ctx: IPicGo, options: IOptions): Promise<any> => {
       }
     })
     if (_files.length === 0) {
-      return ctx.log.warn('Template files not found!')
+      ctx.log.warn('Template files not found!'); return
     }
     const files = render(_files, source, answers)
     writeFileTree(options.dest, files)
@@ -45,7 +45,7 @@ const generate = async (ctx: IPicGo, options: IOptions): Promise<any> => {
     }
     ctx.log.success('Done!')
   } catch (e: any) {
-    return ctx.log.error(e)
+    ctx.log.error(e)
   }
 }
 

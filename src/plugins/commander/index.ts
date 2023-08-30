@@ -6,7 +6,7 @@ import use from './use'
 import proxy from './proxy'
 import init from './init'
 import i18n from './i18n'
-import { IPicGo } from '../../types'
+import { type IPicGo } from '../../types'
 
 export default (ctx: IPicGo): void => {
   ctx.cmd.register('pluginHandler', pluginHandler)

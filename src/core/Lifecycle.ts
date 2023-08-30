@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import { IBuildInWaterMarkOptions, IBuildInCompressOptions, ILifecyclePlugins, IPathTransformedImgInfo, IPicGo, IPlugin, Undefinable, IImgInfo } from '../types'
+import { type IBuildInWaterMarkOptions, type IBuildInCompressOptions, type ILifecyclePlugins, type IPathTransformedImgInfo, type IPicGo, type IPlugin, type Undefinable, type IImgInfo } from '../types'
 import { getURLFile, handleUrlEncode, imageProcess, isUrl, needCompress, needAddWatermark, imageAddWaterMark, removeExif, renameFileNameWithCustomString } from '../utils/common'
 import { IBuildInEvent } from '../utils/enum'
 import { createContext } from '../utils/createContext'

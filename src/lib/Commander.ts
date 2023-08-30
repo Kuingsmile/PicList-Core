@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 import { Command } from 'commander'
-import inquirer, { Inquirer } from 'inquirer'
-import { IPlugin, ICommander, IPicGo } from '../types'
+import inquirer, { type Inquirer } from 'inquirer'
+import { type IPlugin, type ICommander, type IPicGo } from '../types'
 import commanders from '../plugins/commander'
 import { getCurrentPluginName } from './LifecyclePlugins'
 
 export class Commander implements ICommander {
   private readonly name = 'commander'
   static currentPlugin: string | null
-  private readonly list: Map<string, IPlugin> = new Map()
-  private readonly pluginIdMap: Map<string, string[]> = new Map()
+  private readonly list = new Map<string, IPlugin>()
+  private readonly pluginIdMap = new Map<string, string[]>()
   private readonly ctx: IPicGo
 
   program: Command

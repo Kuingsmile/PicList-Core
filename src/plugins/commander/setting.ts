@@ -1,4 +1,4 @@
-import { IPicGo, IPluginConfig, IStringKeyMap } from '../../types'
+import { type IPicGo, type IPluginConfig, type IStringKeyMap } from '../../types'
 import compress from '../beforetransformer/compress'
 import watermark from '../beforetransformer/watermark'
 import rename from '../beforeupload/buildInRename'
@@ -7,9 +7,12 @@ import rename from '../beforeupload/buildInRename'
 const handleConfig = async (ctx: IPicGo, prompts: IPluginConfig[], module: string, name: string): Promise<void> => {
   const answer = await ctx.cmd.inquirer.prompt(prompts)
   const configName = module === 'uploader'
-    ? `picBed.${name}` : module === 'transformer'
-      ? `transformer.${name}` : module === 'buildin'
-        ? `buildIn.${name}` : name
+    ? `picBed.${name}`
+    : module === 'transformer'
+      ? `transformer.${name}`
+      : module === 'buildin'
+        ? `buildIn.${name}`
+        : name
   ctx.saveConfig({
     [configName]: answer
   })
@@ -71,7 +74,7 @@ const setting = {
                 if (name) {
                   const item = ctx.helper[module].get(name)
                   if (!item) {
-                    return ctx.log.error(`No ${module} named ${name}`)
+                    ctx.log.error(`No ${module} named ${name}`); return
                   }
                   if (item.config) {
                     await handleConfig(ctx, item.config(ctx), module, name)
@@ -103,7 +106,7 @@ const setting = {
                       await handleConfig(ctx, ctx.pluginLoader.getPlugin(name)!.config!(ctx), 'plugin', name)
                     }
                   } else {
-                    return ctx.log.error(`No plugin named ${name}`)
+                    ctx.log.error(`No plugin named ${name}`); return
                   }
                 } else {
                   const prompts = [
@@ -122,7 +125,7 @@ const setting = {
                 break
               default:
                 ctx.log.warn(`No module named ${module}`)
-                return ctx.log.warn('Available modules are uploader|transformer|plugin|buildin')
+                ctx.log.warn('Available modules are uploader|transformer|plugin|buildin'); return
             }
             ctx.log.success('Configure config successfully!')
             if (module === 'plugin') {

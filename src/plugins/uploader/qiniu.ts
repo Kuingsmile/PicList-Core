@@ -1,7 +1,7 @@
 import qiniu from 'qiniu'
-import { IPluginConfig, IQiniuConfig, IPicGo, IOldReqOptions } from '../../types'
+import { type IPluginConfig, type IQiniuConfig, type IPicGo, type IOldReqOptions } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
-import { ILocalesKey } from '../../i18n/zh-CN'
+import { type ILocalesKey } from '../../i18n/zh-CN'
 import mime from 'mime-types'
 
 function postOptions (options: IQiniuConfig, fileName: string, token: string, imgBase64: string): IOldReqOptions {

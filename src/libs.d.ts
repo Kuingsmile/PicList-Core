@@ -3,6 +3,6 @@ declare module 'download-git-repo' {
   export = download
 }
 declare module 'lodash-id' {
-  var lodashId: any
+  let lodashId: any
   export = lodashId
 }

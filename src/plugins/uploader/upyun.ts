@@ -1,8 +1,7 @@
-import { IPicGo, IPluginConfig, IUpyunConfig, IOldReqOptionsWithFullResponse } from '../../types'
+import { type IPicGo, type IPluginConfig, type IUpyunConfig, type IOldReqOptionsWithFullResponse } from '../../types'
 import crypto from 'crypto'
-import MD5 from 'md5'
 import { IBuildInEvent } from '../../utils/enum'
-import { ILocalesKey } from '../../i18n/zh-CN'
+import { type ILocalesKey } from '../../i18n/zh-CN'
 import { safeParse } from '../../utils/common'
 import mime from 'mime-types'
 
@@ -33,6 +32,10 @@ const postOptions = (options: IUpyunConfig, fileName: string, signature: string,
     body: image,
     resolveWithFullResponse: true
   }
+}
+
+function MD5 (content: string): string {
+  return crypto.createHash('md5').update(content).digest('hex')
 }
 
 const getAntiLeechParam = (antiLeechToken: string, expireTime: string | number | undefined, options: IUpyunConfig, fileName: string): string => {

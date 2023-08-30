@@ -1,4 +1,4 @@
-import { IPicGo, IPlugin, Undefinable, ICLIConfigs, IStringKeyMap } from '../../types'
+import { type IPicGo, type IPlugin, type Undefinable, type ICLIConfigs, type IStringKeyMap } from '../../types'
 
 const use: IPlugin = {
   handle: async (ctx: IPicGo) => {
@@ -42,7 +42,7 @@ const use: IPlugin = {
                 prompts.push(config[module])
               } else {
                 ctx.log.warn(`No module named ${module}`)
-                return ctx.log.warn('Available modules are uploader|transformer|plugins')
+                ctx.log.warn('Available modules are uploader|transformer|plugins'); return
               }
             } else {
               prompts = Object.keys(config).map((item: string) => config[item])
@@ -52,7 +52,7 @@ const use: IPlugin = {
             // handle for plugins option from Array to object
             if (answer.plugins) {
               const plugins = ctx.getConfig<IStringKeyMap<boolean>>('picgoPlugins')
-              Object.keys(plugins).map((item: string) => {
+              Object.keys(plugins).forEach((item: string) => {
                 if (answer.plugins.includes(item)) {
                   plugins[item] = true
                 } else {
