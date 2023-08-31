@@ -8,7 +8,7 @@ const postOptions = (fileName: string, options: IGithubConfig, data: any): IOldR
   const { token, repo } = options
   return {
     method: 'PUT',
-    url: `https://api.github.com/repos/${repo}/contents/${encodeURI(path)}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/'),
+    url: `https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path)}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/'),
     headers: {
       Authorization: `token ${token}`,
       'User-Agent': 'PicList',
@@ -24,7 +24,7 @@ const getOptions = (fileName: string, options: IGithubConfig): IOldReqOptionsWit
   const { token, repo, branch } = options
   return {
     method: 'GET',
-    url: `https://api.github.com/repos/${repo}/contents/${encodeURI(path)}${encodeURIComponent(fileName)}?ref=${branch}`.replace(/%2F/g, '/'),
+    url: `https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path)}${encodeURIComponent(fileName)}?ref=${branch}`.replace(/%2F/g, '/'),
     headers: {
       Authorization: `token ${token}`,
       'User-Agent': 'PicGo'

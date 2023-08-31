@@ -1,6 +1,6 @@
 {
   "name": "piclist",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Modified PicGo core, A tool for picture uploading",
   "author": {
     "name": "Kuingsmile",
@@ -34,7 +34,9 @@
     "util"
   ],
   "husky": {
-    "hooks": {}
+    "hooks": {
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
   },
   "config": {
     "commitizen": {

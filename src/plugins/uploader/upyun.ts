@@ -12,7 +12,7 @@ const generateSignature = (options: IUpyunConfig, fileName: string): string => {
   const password = options.password
   const md5Password = MD5(password)
   const date = new Date().toUTCString()
-  const uri = `/${options.bucket}/${encodeURI(path)}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/')
+  const uri = `/${options.bucket}/${encodeURIComponent(path)}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/')
   const value = `PUT&${uri}&${date}`
   const sign = crypto.createHmac('sha1', md5Password).update(value).digest('base64')
   return `UPYUN ${operator}:${sign}`
@@ -23,7 +23,7 @@ const postOptions = (options: IUpyunConfig, fileName: string, signature: string,
   const path = options.path || ''
   return {
     method: 'PUT',
-    url: `https://v0.api.upyun.com/${bucket}/${encodeURI(path)}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/'),
+    url: `https://v0.api.upyun.com/${bucket}/${encodeURIComponent(path)}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/'),
     headers: {
       Authorization: signature,
       Date: new Date().toUTCString(),
@@ -39,7 +39,7 @@ function MD5 (content: string): string {
 }
 
 const getAntiLeechParam = (antiLeechToken: string, expireTime: string | number | undefined, options: IUpyunConfig, fileName: string): string => {
-  const uri = `/${encodeURI(options.path || '')}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/').replace(/^\/+/g, '/')
+  const uri = `/${options.path || ''}${fileName}`.replace(/%2F/g, '/').replace(/^\/+/g, '/')
   const now = Math.round(new Date().getTime() / 1000)
   const expire = expireTime ? now + parseInt(expireTime.toString(), 10) : now + 1800
   const sign = MD5(`${antiLeechToken}&${expire}&${uri}`)
