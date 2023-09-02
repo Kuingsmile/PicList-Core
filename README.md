@@ -2,28 +2,25 @@
 
 ![standard](https://img.shields.io/badge/code%20style-standard-green.svg?style=flat-square)
 ![GitHub](https://img.shields.io/github/license/mashape/apistatus.svg?style=flat-square)
-[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fpicgo%2Fpicgo-core%2Fbadge%3Fref%3Dmaster&style=flat-square)](https://actions-badge.atrox.dev/picgo/picgo-core/goto?ref=master)
-![npm](https://img.shields.io/npm/v/picgo.svg?style=flat-square)
-[![PicGo Convention](https://img.shields.io/badge/picgo-convention-blue.svg?style=flat-square)](https://github.com/PicGo/bump-version)
-![node](https://img.shields.io/badge/node-%3E%3D12.0.0-blue?style=flat-square)
+![node](https://img.shields.io/badge/node-%3E%3D16.0.0-blue?style=flat-square)
 
 ![picgo-core](https://cdn.jsdelivr.net/gh/Molunerfinn/test/picgo/picgo-core-fix.jpg)
 
 A tool for picture uploading. Both CLI & api supports. It also supports plugin system, please check [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) to find powerful plugins.
 
-Based on Picgo-Core and add some features.
+Based on Picgo-Core and add more features.
 
 **Typora support natively**.
 
-## 修改列表
+## New Features
 
-* 增加了水印添加、图片压缩和图片格式转换功能
-  - CLI命令下通过 `picgo set buildin watermark`和 `picgo set buildin compress`设置水印和压缩参数
-  - 图片处理位于beforeTransform之前，不与任何插件冲突
-* smms, imgur和github图床增加hash返回参数，配合piclist的删除功能
-* 增加了webdav内置支持
-* imgur图床添加了对账户上传的支持
-* axios等依赖升级到最新版本
+- Add watermark, compress and convert image format features
+  - Set watermark and compress parameters through `picgo set buildin watermark` and `picgo set buildin compress` under CLI command
+  - Image processing is beforeTransform, which does not conflict with any plugin
+- Add support for advanced rename, you can set the rename rule through `picgo set buildin rename` under the CLI command
+- Add new built-in picbed: WebDAV, SFTP, Local path
+- Adds support for imgur account uploads
+- Fix several bugs of PicGo-Core
 
 ## Installation
 
@@ -63,7 +60,7 @@ yarn add piclist -D
 
 ### Use in CLI
 
-> PicGo uses `SM.MS` as the default upload pic-bed.
+> PicList-Core uses `SM.MS` as the default upload pic-bed.
 
 Show help:
 
@@ -105,8 +102,6 @@ picgo upload /xxx/xx/xx.jpg
 picgo upload
 ```
 
-Thanks to [vs-picgo](https://github.com/Spades-S/vs-picgo) && [Spades-S](https://github.com/Spades-S) for providing the method to upload picture from clipboard.
-
 ### Use in node project
 
 #### Common JS
@@ -135,4 +130,4 @@ picgo.upload()
 
 ## Documentation
 
-For more details, you can checkout [documentation](https://picgo.github.io/PicGo-Core-Doc/).
+For more details, you can checkout [documentation of PicGo-Core](https://picgo.github.io/PicGo-Core-Doc/).
