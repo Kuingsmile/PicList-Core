@@ -280,6 +280,11 @@ export type IStringKeyMap<T> = Record<string, T extends T ? T : any>
 
 export type ICLIConfigs = Record<string, IStringKeyMap<any>>
 
+/** Telegraph 图床配置项 */
+export interface ITelegraphConfig {
+  proxy?: string
+}
+
 /** SM.MS 图床配置项 */
 export interface ISmmsConfig {
   token: string

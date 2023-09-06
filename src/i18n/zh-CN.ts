@@ -84,7 +84,7 @@ export const ZH_CN = {
   PICBED_QINIU_MESSAGE_AREA: '例如：z0',
   PICBED_QINIU_MESSAGE_OPTIONS: '例如：?imageslim',
   PICBED_QINIU_MESSAGE_URL: '例如：https://xxx.yyy.glb.clouddn.com',
-
+  PICBED_TELEGRAPH: 'Telegraph',
   // imgur
   PICBED_IMGUR: 'Imgur',
   PICBED_IMGUR_CLIENTID: '设定ClientId',
