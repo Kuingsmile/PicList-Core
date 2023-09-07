@@ -199,6 +199,8 @@ export const EN: ILocales = {
   BUILDIN_COMPRESS_MESSAGE_RESIZEHEIGHT: 'Please enter a number',
   BUILDIN_COMPRESS_ISRESIZEBYPERCENT: 'Whether to resize the image by percentage',
   BUILDIN_COMPRESS_MESSAGE_ISRESIZEBYPERCENT: 'Enable when resizing by percentage is required',
+  BUILDIN_COMPRESS_ISFLIP: 'Whether to flip the image vertically',
+  BUILDIN_COMPRESS_ISFLOP: 'Whether to flip the image horizontally',
   BUILDIN_COMPRESS_RESIZEPERCENT: 'Set resizing percentage',
   BUILDIN_COMPRESS_MESSAGE_RESIZEPERCENT: 'Please enter a number',
   BUILDIN_COMPRESS_SKIPRESIZEOFSMALLIMG: 'Whether to skip resizing of small images',

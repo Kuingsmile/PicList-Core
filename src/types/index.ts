@@ -681,5 +681,7 @@ export interface IBuildInCompressOptions {
   isRotate?: boolean
   rotateDegree?: number
   isRemoveExif?: boolean
+  isFlip?: boolean
+  isFlop?: boolean
   [propName: string]: any
 }

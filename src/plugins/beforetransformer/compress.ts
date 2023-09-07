@@ -69,6 +69,20 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       default: userConfig.reSizePercent || 50
     },
     {
+      name: 'isFlip',
+      type: 'confirm',
+      get alias () { return ctx.i18n.translate<ILocalesKey>('BUILDIN_COMPRESS_ISFLIP') },
+      required: false,
+      default: userConfig.isFlip || false
+    },
+    {
+      name: 'isFlop',
+      type: 'confirm',
+      get alias () { return ctx.i18n.translate<ILocalesKey>('BUILDIN_COMPRESS_ISFLOP') },
+      required: false,
+      default: userConfig.isFlop || false
+    },
+    {
       name: 'isRotate',
       type: 'confirm',
       get alias () { return ctx.i18n.translate<ILocalesKey>('BUILDIN_COMPRESS_ISROTATE') },

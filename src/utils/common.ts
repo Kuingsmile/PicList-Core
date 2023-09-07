@@ -620,6 +620,8 @@ function formatOptions (options: IBuildInCompressOptions): IBuildInCompressOptio
     isReSizeByPercent: options.isReSizeByPercent || false,
     reSizePercent: forceNumber(options.reSizePercent),
     isRotate: options.isRotate || false,
+    isFlip: options.isFlip || false,
+    isFlop: options.isFlop || false,
     rotateDegree: forceNumber(options.rotateDegree),
     picBed: options.picBed || 'smms'
   }
@@ -694,6 +696,13 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
     if (options.isRotate && options.rotateDegree) {
       image = image.rotate(options.rotateDegree, { background: { r: 255, g: 255, b: 255, alpha: 0 } })
     }
+    if (options.isFlip) {
+      console.log('flip')
+      image = image.flip()
+    }
+    if (options.isFlop) {
+      image = image.flop()
+    }
     if (options.isConvert) {
       let newFormat = options.convertFormat || 'jpg'
       if (options.picBed === 'imgur' && newFormat === 'webp') {
@@ -728,16 +737,26 @@ export const needAddWatermark = (watermarkOptions: IBuildInWaterMarkOptions | un
 }
 
 export const needCompress = (compressOptions: IBuildInCompressOptions | undefined, fileExt: string): boolean => {
-  fileExt = fileExt.toLowerCase().replace('.', '')
-  if (!imageFormatList.includes(fileExt)) {
-    return false
-  }
-  if (!compressOptions) {
+  const normalizedExt = fileExt.toLowerCase().replace('.', '')
+
+  if (!imageFormatList.includes(normalizedExt) || !compressOptions) {
     return false
   }
 
-  compressOptions = formatOptions(compressOptions)
-  const { quality, isReSizeByPercent, reSizePercent, isReSize, reSizeHeight, reSizeWidth, isRotate, rotateDegree, isConvert, convertFormat } = compressOptions
+  const {
+    quality,
+    isReSizeByPercent,
+    reSizePercent,
+    isReSize,
+    reSizeHeight,
+    reSizeWidth,
+    isRotate,
+    rotateDegree,
+    isConvert,
+    convertFormat,
+    isFlip,
+    isFlop
+  } = formatOptions(compressOptions)
 
   if (validParam(quality) && quality! < 100) {
     return true
@@ -749,6 +768,9 @@ export const needCompress = (compressOptions: IBuildInCompressOptions | undefine
     return true
   }
   if (isRotate && rotateDegree) {
+    return true
+  }
+  if (isFlip || isFlop) {
     return true
   }
   if (isConvert) {
