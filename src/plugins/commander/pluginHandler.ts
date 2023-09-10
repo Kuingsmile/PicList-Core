@@ -8,8 +8,8 @@ const pluginHandler: IPlugin = {
       .command('install <plugins...>')
       .description('install picgo plugin')
       .alias('add')
-      .option('-p, --proxy <proxy>', 'Add proxy for installing')
-      .option('-r, --registry <registry>', 'Choose a registry for installing')
+      .option('-p, --proxy <proxy>', 'Add proxy for installing plugins')
+      .option('-r, --registry <registry>', 'Choose a registry for installing plugins')
       .action((plugins: string[], program: any) => {
         const { proxy, registry } = program
         const options = {

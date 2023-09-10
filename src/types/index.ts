@@ -448,7 +448,7 @@ export interface IConfig {
   debug?: boolean
   silent?: boolean
   settings?: {
-    logLevel?: string
+    logLevel?: string[]
     logPath?: string
     /** for npm */
     registry?: string

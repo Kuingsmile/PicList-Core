@@ -411,10 +411,10 @@
     chalk "4.1.2"
     tslib "^2.3.1"
 
-"@picgo/store@^2.0.4":
-  version "2.0.4"
-  resolved "https://registry.npmjs.org/@picgo/store/-/store-2.0.4.tgz"
-  integrity sha512-QWBF/vxLkCOCwFmjPPwPW8ZJdcko+kFY4dBSJYi8spsKp/7FmKCHmSWIkOpkdH/ww0Gh7UbtSBveKgm5u4t42w==
+"@picgo/store@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmjs.org/@picgo/store/-/store-2.1.0.tgz#542cd37c2f4f139a9701d602322e7971fa8aa6df"
+  integrity sha512-oD/+4hGaioSVqWmaV5/LEXJ/xfpDrwUYPDGgJx3gEYoNPG2IdIZiO++asSZsafAc03TGPlvtR3L9eOTqPaKj9w==
   dependencies:
     "@commonify/lowdb" "^3.0.0"
     "@commonify/steno" "^2.1.0"
