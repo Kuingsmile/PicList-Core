@@ -467,7 +467,7 @@ export async function AddWatermark (
   position?: sharp.Gravity
 ): Promise<Buffer> {
   watermarkScaleRatio = !watermarkScaleRatio || watermarkScaleRatio < 0 || watermarkScaleRatio > 1 ? 0.15 : watermarkScaleRatio
-  const image = sharp(img)
+  const image = sharp(img, { animated: true })
   const { width: imgWidth = 200 } = await image.metadata()
   const watermark = await createWatermark(
     watermarkType,
@@ -585,7 +585,7 @@ const imageExtList = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'svg',
 
 export async function imageAddWaterMark (img: Buffer, options: IBuildInWaterMarkOptions, defaultWatermarkFontPath: string): Promise<Buffer> {
   try {
-    let image: sharp.Sharp = sharp(img)
+    let image: sharp.Sharp = sharp(img, { animated: true })
     if (validParam(options.watermarkText)) {
       image = sharp(await AddWatermark(
         img,
@@ -599,7 +599,7 @@ export async function imageAddWaterMark (img: Buffer, options: IBuildInWaterMark
         options.watermarkColor,
         options.watermarkImagePath,
         options.watermarkPosition
-      ))
+      ), { animated: true })
     }
     return await image.toBuffer()
   } catch (error) {
@@ -634,7 +634,7 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
     if (!imageExtList.includes(rawFormat)) {
       return img
     }
-    let image: sharp.Sharp = sharp(img)
+    let image: sharp.Sharp = sharp(img, { animated: true })
     let quality = 100
     if (validParam(options.quality) && options.quality! < 100) {
       quality = options.quality!
@@ -729,7 +729,7 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
   }
 }
 
-const imageFormatList = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'avif', 'heif', 'heic']
+const imageFormatList = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'avif', 'heif', 'heic', 'gif']
 
 export const needAddWatermark = (watermarkOptions: IBuildInWaterMarkOptions | undefined, fileExt: string): boolean => {
   fileExt = fileExt.toLowerCase().replace('.', '')
@@ -785,5 +785,7 @@ export const removeExif = async (img: Buffer, fileExt: string): Promise<Buffer> 
   if (!imageFormatList.includes(fileExt)) {
     return img
   }
-  return await sharp(img).toBuffer()
+  return await sharp(img, {
+    animated: true
+  }).toBuffer()
 }
