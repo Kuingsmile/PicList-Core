@@ -71,7 +71,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'token',
       message: 'api token',
-      type: 'password',
+      type: 'input',
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SMMS_TOKEN') },
       default: userConfig.token || '',
       required: true

@@ -1,42 +1,10 @@
-import { type IPicGo, type IPluginConfig, type IWebdavPlistConfig, type IOldReqOptionsWithFullResponse } from '../../types'
+import { type IPicGo, type IPluginConfig, type IWebdavPlistConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { type ILocalesKey } from '../../i18n/zh-CN'
-import mime from 'mime-types'
 import fs from 'fs-extra'
 import path from 'path'
-
-const postOptions = async (ctx: IPicGo, options: IWebdavPlistConfig, fileName: string, image: Buffer): Promise<IOldReqOptionsWithFullResponse> => {
-  const paths = [...options.path.replace(/\/+$/g, '').split('/'), ...path.dirname(fileName).split('/')]
-  let currentPath = ''
-  for (const p of paths) {
-    if (p) {
-      currentPath += `/${p}`
-      const diroptions = {
-        method: 'MKCOL',
-        url: `${options.host}${encodeURI(currentPath)}`.replace(/%2F/g, '/'),
-        headers: {
-          Authorization: `Basic ${Buffer.from(`${options.username}:${options.password}`).toString('base64')}`
-        }
-      }
-      try {
-        await ctx.request(diroptions)
-      } catch (err) {
-        console.log(err)
-      }
-    }
-  }
-  return {
-    method: 'PUT',
-    url: `${options.host}/${options.path === '/' ? '' : encodeURI(options.path)}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/'),
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${options.username}:${options.password}`).toString('base64')}`,
-      'Content-Type': mime.lookup(fileName) || 'application/octet-stream',
-      'Content-Length': image.length
-    },
-    body: image,
-    resolveWithFullResponse: true
-  }
-}
+import type { WebDAVClient, WebDAVClientOptions } from 'webdav'
+import { AuthType, createClient } from 'webdav'
 
 const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   const webdavplistOptions = ctx.getConfig<IWebdavPlistConfig>('picBed.webdavplist')
@@ -46,6 +14,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   webdavplistOptions.host = webdavplistOptions.host.replace(/^https?:\/\/|\/+$/g, '')
   webdavplistOptions.host = (webdavplistOptions.sslEnabled ? 'https://' : 'http://') + webdavplistOptions.host
   webdavplistOptions.path = (webdavplistOptions.path || '').replace(/^\/+|\/+$/g, '') + '/'
+  const authType = webdavplistOptions.authType || 'basic'
   const webpath = (webdavplistOptions.webpath || '').replace(/^\/+|\/+$/g, '') + '/'
   try {
     const imgList = ctx.output
@@ -57,12 +26,28 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
         if (!image && img.base64Image) {
           image = Buffer.from(img.base64Image, 'base64')
         }
-        const options = await postOptions(ctx, webdavplistOptions, img.fileName, image)
-        const body = await ctx.request(options)
-        if (body.statusCode >= 200 && body.statusCode < 300) {
-          const imgTempPath = path.join(ctx.baseDir, 'imgTemp')
-          fs.ensureDirSync(path.dirname(path.join(imgTempPath, img.fileName)))
-          fs.writeFileSync(path.join(imgTempPath, img.fileName), image)
+        const clientOptions: WebDAVClientOptions = {
+          username: webdavplistOptions.username,
+          password: webdavplistOptions.password,
+          maxBodyLength: 4 * 1024 * 1024 * 1024,
+          maxContentLength: 4 * 1024 * 1024 * 1024
+        }
+        if (authType === 'digest') {
+          clientOptions.authType = AuthType.Digest
+        }
+        const client: WebDAVClient = createClient(webdavplistOptions.host, clientOptions)
+        const pathToCreate = uploadPath === '/' ? '' : uploadPath
+        if (pathToCreate) {
+          await client.createDirectory(pathToCreate, { recursive: true })
+        }
+        const res = await client.putFileContents(`${uploadPath}${img.fileName}`.replace(/^\/+|\/+$/g, ''), image, {
+          overwrite: true
+        })
+        if (res) {
+          const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'webdavplist')
+          const imgTempFilePath = path.join(imgTempPath, img.fileName)
+          fs.ensureDirSync(imgTempPath)
+          fs.writeFileSync(imgTempFilePath, image)
           delete img.base64Image
           delete img.buffer
           const baseUrl = customUrl || webdavplistOptions.host
@@ -71,7 +56,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
           } else {
             img.imgUrl = `${baseUrl}/${uploadPath === '/' ? '' : encodeURIComponent(uploadPath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
           }
-          img.galleryPath = `http://localhost:36699/${encodeURIComponent(img.fileName)}`
+          img.galleryPath = `http://localhost:36699/webdavplist/${encodeURIComponent(img.fileName)}`
         } else {
           throw new Error('Upload failed')
         }
@@ -117,7 +102,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     },
     {
       name: 'password',
-      type: 'password',
+      type: 'input',
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_PASSWORD') },
       default: userConfig.password || '',
       required: true,
@@ -150,6 +135,14 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       required: false,
       get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_CUSTOMURL') },
       get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_CUSTOMURL') }
+    },
+    {
+      name: 'authType',
+      type: 'list',
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_AUTHTYPE') },
+      choices: ['basic', 'digest'],
+      default: userConfig.authType || 'basic',
+      required: false
     }
   ]
   return config

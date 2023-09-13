@@ -88,7 +88,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     },
     {
       name: 'accessKeySecret',
-      type: 'password',
+      type: 'input',
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_ACCESSKEYSECRET') },
       default: userConfig.accessKeySecret || '',
       required: true

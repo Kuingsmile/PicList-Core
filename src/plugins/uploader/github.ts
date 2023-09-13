@@ -124,7 +124,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     },
     {
       name: 'token',
-      type: 'password',
+      type: 'input',
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_TOKEN') },
       default: userConfig.token || '',
       required: true

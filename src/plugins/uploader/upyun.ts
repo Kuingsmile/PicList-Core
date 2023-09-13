@@ -122,7 +122,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     },
     {
       name: 'password',
-      type: 'password',
+      type: 'input',
       get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_PASSWORD') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_PASSWORD') },
       get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_PASSWORD') },

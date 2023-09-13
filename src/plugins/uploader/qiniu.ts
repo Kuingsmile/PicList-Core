@@ -91,7 +91,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     },
     {
       name: 'secretKey',
-      type: 'password',
+      type: 'input',
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_SECRETKEY') },
       default: userConfig.secretKey || '',
       required: true
