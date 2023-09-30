@@ -53,7 +53,7 @@ class SSHClient {
       }
       return true
     } catch (err: any) {
-      return false
+      throw new Error(err)
     }
   }
 
@@ -73,7 +73,7 @@ class SSHClient {
         }
       }
     } else {
-      const script = `mkdir -p "${dirPath}"`
+      const script = `cd / && mkdir -p "${dirPath}"`
       await this.exec(script)
     }
   }
