@@ -27,6 +27,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       }
       try {
         try {
+          const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'local')
+          fs.ensureDirSync(imgTempPath)
           fs.ensureDirSync(uploadPath)
           fs.writeFileSync(path.join(uploadPath, img.fileName), image)
           fs.copyFileSync(path.join(uploadPath, img.fileName), path.join(ctx.baseDir, 'imgTemp', 'local', img.fileName))
