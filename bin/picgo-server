@@ -1,0 +1,336 @@
+#!/usr/bin/env node
+const http = require('http')
+const multer = require('multer')
+const axios = require('axios')
+const minimist = require('minimist')
+const fs = require('fs-extra')
+const path = require('path')
+const os = require('os')
+
+const tempDir = path.join(os.homedir(), '.piclist', 'serverTemp')
+fs.ensureDirSync(tempDir)
+
+const argv = minimist(process.argv.slice(2))
+let configPath = argv.c || argv.config || ''
+if (configPath !== true && configPath !== '') {
+  configPath = path.resolve(configPath)
+} else {
+  configPath = ''
+}
+const { PicGo } = require('..')
+const picgo = new PicGo(configPath)
+const errorMessage = 'Upload failed, please check your network and config'
+
+handleResponse = ({
+  response,
+  statusCode = 200,
+  header = {
+    'Content-Type': 'application/json',
+    'access-control-allow-headers': '*',
+    'access-control-allow-methods': 'POST, GET, OPTIONS',
+    'access-control-allow-origin': '*'
+  },
+  body = {
+    success: false
+  }
+}) => {
+  if (body && body.success === false) {
+    console.log('[PicList Server] upload failed, see log for more detail ↑')
+  }
+  response.writeHead(statusCode, header)
+  response.write(JSON.stringify(body))
+  response.end()
+}
+
+ensureHTTPLink = url => {
+  return url.startsWith('http') ? url : `http://${url}`
+}
+
+class Router {
+  constructor() {
+    this.router = new Map()
+  }
+
+  get(url, callback, urlparams) {
+    this.router.set(url, { handler: callback, urlparams })
+  }
+
+  post(url, callback, urlparams) {
+    this.router.set(url, { handler: callback, urlparams })
+  }
+
+  getHandler(url) {
+    if (this.router.has(url)) {
+      return this.router.get(url)
+    } else {
+      return null
+    }
+  }
+}
+
+let router = new Router()
+
+const multerStorage = multer.diskStorage({
+  destination: function (_req, _file, cb) {
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir)
+    }
+    cb(null, tempDir)
+  },
+  filename: function (_req, file, cb) {
+    cb(null, file.originalname)
+  }
+})
+
+const uploadMulter = multer({
+  storage: multerStorage
+})
+
+router.post('/upload', async ({response, list = [], urlparams }) => {
+  try {
+    const picbed = urlparams?.get('picbed')
+    let currentPicBedType = ''
+    let needRestore = false
+    if (picbed) {
+      const currentPicBed = picgo.getConfig('picBed') || {}
+      currentPicBedType = currentPicBed?.uploader || currentPicBed?.current || 'smms'
+      if (picbed === currentPicBedType) {
+        // do nothing
+      } else {
+        needRestore = true
+        picgo.setConfig({
+          'picBed.current': picbed
+        })
+        picgo.setConfig({
+          'picBed.uploader': picbed
+        })
+      }
+    }
+    if (list.length === 0) {
+      // upload with clipboard
+      console.log('[PicList Server] upload clipboard file')
+      const result = await picgo.upload()
+      const res = result.imgUrl
+      console.log('[PicList Server] upload result:', res)
+      if (res) {
+        handleResponse({
+          response,
+          body: {
+            success: true,
+            result: [res]
+          }
+        })
+      } else {
+        handleResponse({
+          response,
+          body: {
+            success: false,
+            message: errorMessage
+          }
+        })
+      }
+    } else {
+      console.log('[PicList Server] upload files in list')
+      //  upload with files
+      const result = await picgo.upload(list)
+      const res = result.map(item => {
+        return item.imgUrl
+      })
+      console.log('[PicList Server] upload result\n', res.join('\n'))
+      if (res.length) {
+        handleResponse({
+          response,
+          body: {
+            success: true,
+            result: res
+          }
+        })
+      } else {
+        handleResponse({
+          response,
+          body: {
+            success: false,
+            message: errorMessage
+          }
+        })
+      }
+    }
+    fs.emptyDirSync(tempDir)
+    if (needRestore) {
+      picgo.setConfig({
+        'picBed.current': currentPicBedType
+      })
+      picgo.setConfig({
+        'picBed.uploader': currentPicBedType
+      })
+    }
+  } catch (err) {
+    console.log(err)
+    handleResponse({
+      response,
+      body: {
+        success: false,
+        message: errorMessage
+      }
+    })
+  }
+})
+
+router.post('/heartbeat', async ({ response }) => {
+  handleResponse({
+    response,
+    body: {
+      success: true,
+      result: 'alive'
+    }
+  })
+})
+
+class Server {
+  constructor() {
+    let config = picgo.getConfig('settings.server')
+    const result = this.checkIfConfigIsValid(config)
+    if (result) {
+      this.config = config
+    } else {
+      config = {
+        port: 36677,
+        host: '127.0.0.1',
+        enable: true
+      }
+      this.config = config
+      picgo.saveConfig({
+        'settings.server': config
+      })
+    }
+    this.httpServer = http.createServer(this.handleRequest)
+  }
+
+  checkIfConfigIsValid(config) {
+    return config && config.port && config.host && config.enable !== undefined
+  }
+
+  handleRequest(request, response) {
+    if (request.method === 'OPTIONS') {
+      handleResponse({ response })
+      return
+    }
+
+    if (request.method === 'POST') {
+      const [url, query] = (request.url || '').split('?')
+      if (!router.getHandler(url)) {
+        console.log(`[PicList Server] don't support [${url}] url`)
+        handleResponse({
+          response,
+          statusCode: 404,
+          body: {
+            success: false
+          }
+        })
+      } else {
+        if (request.headers['content-type'] && request.headers['content-type'].startsWith('multipart/form-data')) {
+          console
+          uploadMulter.any()(request, response, err => {
+            if (err) {
+              console.log('[PicList Server]', err)
+              return handleResponse({
+                response,
+                body: {
+                  success: false,
+                  message: 'Error processing formData'
+                }
+              })
+            }
+
+            const list = request.files.map(file => file.path)
+
+            const handler = router.getHandler(url)?.handler
+            if (handler) {
+              handler({
+                list: list,
+                response,
+                urlparams: query ? new URLSearchParams(query) : undefined
+              })
+            }
+          })
+        } else {
+          let body = ''
+          let postObj
+          request.on('data', chunk => {
+            body += chunk
+          })
+          request.on('end', () => {
+            try {
+              postObj = body === '' ? {} : JSON.parse(body)
+            } catch (err) {
+              console.log('[PicList Server]', err)
+              return handleResponse({
+                response,
+                body: {
+                  success: false,
+                  message: 'Not sending data in JSON format'
+                }
+              })
+            }
+            console.log('[PicList Server] get the request', body)
+            const handler = router.getHandler(url)?.handler
+            if (handler) {
+              handler({
+                ...postObj,
+                response,
+                urlparams: query ? new URLSearchParams(query) : undefined
+              })
+            }
+          })
+        }
+      }
+    } else {
+      console.log(`[PicList Server] don't support [${request.method}] method`)
+      response.statusCode = 404
+      response.end()
+    }
+  }
+
+  listen(port) {
+    console.log(`[PicList Server] is listening at ${port}`)
+    if (typeof port === 'string') {
+      port = parseInt(port, 10)
+    }
+    this.httpServer.listen(port, this.config.host).on('error', async err => {
+      if (err.errno === 'EADDRINUSE') {
+        try {
+          await axios.post(ensureHTTPLink(`${this.config.host}:${port}/heartbeat`))
+          this.shutdown(true)
+        } catch (e) {
+          console.log(`[PicList Server] ${port} is busy, trying with port ${port + 1}`)
+          this.listen(port + 1)
+        }
+      }
+    })
+  }
+
+  startup() {
+    console.log('startup', this.config.enable)
+    if (this.config.enable) {
+      this.listen(this.config.port)
+    }
+  }
+
+  shutdown(hasStarted) {
+    this.httpServer.close()
+    if (!hasStarted) {
+      console.log('[PicList Server] shutdown')
+    }
+  }
+
+  restart() {
+    this.config = picgo.getConfig('settings.server')
+    this.shutdown()
+    this.startup()
+  }
+}
+
+const server = new Server()
+server.startup()
+
+module.exports = server

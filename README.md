@@ -20,6 +20,7 @@ Based on Picgo-Core and add more features.
 - Add support for advanced rename, you can set the rename rule through `picgo set buildin rename` under the CLI command
 - Add new built-in picbed: WebDAV, SFTP, Local path
 - Adds support for imgur account uploads
+- Built-in server just like PicList-Desktop server, you can use `picgo-server` to start the server
 - Fix several bugs of PicGo-Core
 
 ## Installation
