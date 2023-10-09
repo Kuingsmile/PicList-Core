@@ -194,9 +194,7 @@ class Server {
       this.config = config
     } else {
       config = {
-        port: 36677,
-        host: '127.0.0.1',
-        enable: true
+        port: 36677
       }
       this.config = config
       picgo.saveConfig({
@@ -295,7 +293,7 @@ class Server {
     if (typeof port === 'string') {
       port = parseInt(port, 10)
     }
-    this.httpServer.listen(port, this.config.host).on('error', async err => {
+    this.httpServer.listen(port, '0.0.0.0').on('error', async err => {
       if (err.errno === 'EADDRINUSE') {
         try {
           await axios.post(ensureHTTPLink(`${this.config.host}:${port}/heartbeat`))
@@ -310,9 +308,7 @@ class Server {
 
   startup() {
     console.log('startup', this.config.enable)
-    if (this.config.enable) {
-      this.listen(this.config.port)
-    }
+    this.listen(this.config.port)
   }
 
   shutdown(hasStarted) {
