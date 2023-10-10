@@ -162,6 +162,14 @@ export const EN: ILocales = {
   PICBED_SFTPPLIST_MESSAGE_FILE_MODE: 'Ex. 0664',
   PICBED_SFTPPLIST_MESSAGE_DIR_MODE: 'Ex. 0775',
 
+  // PicList
+  PICBED_PICLIST: 'PicList',
+  PICBED_PICLIST_HOST: 'Set Host',
+  PICBED_PICLIST_PORT: 'Set Port',
+  PICBED_PICLIST_PICBED: 'Set PicBed',
+  PICBED_PICLIST_CONFIGNAME: 'Set Config Name',
+  PICBED_PICLIST_KEY: 'Set Key',
+
   BUILDIN_RENAME_FORMAT: 'Set rename format',
   BUILDIN_RENAME_ENABLE: 'Enable rename',
 

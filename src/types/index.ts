@@ -427,6 +427,14 @@ export interface ISftpPlistConfig {
   fileMode?: string
   dirMode?: string
 }
+/** PicList 图床配置项 */
+export interface IPicListConfig {
+  host: string
+  port?: number
+  picbed?: string
+  configName?: string
+  serverKey?: string
+}
 /** PicGo 配置文件类型定义 */
 export interface IConfig {
   picBed: {

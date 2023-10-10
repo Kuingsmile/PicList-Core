@@ -10,6 +10,7 @@ import webdavplistUploader from './webdav'
 import localUploader from './local'
 import sftpUploader from './sftp'
 import telegraphUploader from './telegraph'
+import piclistUploader from './piclist'
 
 const buildInUploaders: IPicGoPlugin = () => {
   return {
@@ -25,6 +26,7 @@ const buildInUploaders: IPicGoPlugin = () => {
       localUploader(ctx)
       sftpUploader(ctx)
       telegraphUploader(ctx)
+      piclistUploader(ctx)
     }
   }
 }
