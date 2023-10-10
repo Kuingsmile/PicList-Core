@@ -117,7 +117,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       type: 'input',
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_PICLIST_KEY') },
       default: userConfig.serverKey || '',
-      required: true
+      required: false
     }
   ]
   return config
