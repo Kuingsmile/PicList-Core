@@ -10,7 +10,57 @@ const os = require('os')
 const tempDir = path.join(os.homedir(), '.piclist', 'serverTemp')
 fs.ensureDirSync(tempDir)
 
+let key = ''
+let defaultPort = 36677
+let defaultHost = '0.0.0.0'
+
 const argv = minimist(process.argv.slice(2))
+
+if (argv.h || argv.help) {
+  showHelp()
+  process.exit(0)
+}
+
+if (argv.v || argv.version) {
+  showVersion()
+  process.exit(0)
+}
+
+if (argv.k || argv.key) {
+  key = String(argv.k || argv.key)
+}
+
+if (argv.p || argv.port) {
+  defaultPort = Number(argv.p || argv.port) || defaultPort
+}
+
+if (argv.host) {
+  defaultHost = String(argv.host)
+}
+
+function showVersion() {
+  const pkg = require('../package.json')
+  console.log(`PicList-Core ${pkg.version}`)
+}
+
+function showHelp() {
+  console.log(`
+    Usage: picgo-server [options]
+    Options:
+      -h, --help          Print this help message
+      -c, --config        Set config path
+      -p, --port          Set port, default port is 36677
+      --host              Set host, default host is 0.0.0.0
+      -k, --key           Set secret key to avoid unauthorized access
+      -v, --version       Print version number
+
+    Example:
+      picgo-server -c /path/to/config.json
+      picgo-server -k 123456
+      picgo-server -c /path/to/config.json -k 123456
+  `)
+}
+
 let configPath = argv.c || argv.config || ''
 if (configPath !== true && configPath !== '') {
   configPath = path.resolve(configPath)
@@ -86,9 +136,20 @@ const uploadMulter = multer({
   storage: multerStorage
 })
 
-router.post('/upload', async ({response, list = [], urlparams }) => {
+router.post('/upload', async ({ response, list = [], urlparams }) => {
   try {
     const picbed = urlparams?.get('picbed')
+    const passedKey = urlparams?.get('key')
+    if (key && key !== passedKey) {
+      console.log('[PicList Server] Unauthorized access')
+      return handleResponse({
+        response,
+        body: {
+          success: false,
+          message: 'Unauthorized access'
+        }
+      })
+    }
     let currentPicBedType = ''
     let needRestore = false
     if (picbed) {
@@ -188,24 +249,7 @@ router.post('/heartbeat', async ({ response }) => {
 
 class Server {
   constructor() {
-    let config = picgo.getConfig('settings.server')
-    const result = this.checkIfConfigIsValid(config)
-    if (result) {
-      this.config = config
-    } else {
-      config = {
-        port: 36677
-      }
-      this.config = config
-      picgo.saveConfig({
-        'settings.server': config
-      })
-    }
     this.httpServer = http.createServer(this.handleRequest)
-  }
-
-  checkIfConfigIsValid(config) {
-    return config && config.port && config.host && config.enable !== undefined
   }
 
   handleRequest(request, response) {
@@ -293,10 +337,10 @@ class Server {
     if (typeof port === 'string') {
       port = parseInt(port, 10)
     }
-    this.httpServer.listen(port, '0.0.0.0').on('error', async err => {
+    this.httpServer.listen(port, defaultHost).on('error', async err => {
       if (err.errno === 'EADDRINUSE') {
         try {
-          await axios.post(ensureHTTPLink(`${this.config.host}:${port}/heartbeat`))
+          await axios.post(ensureHTTPLink(`${defaultHost}:${port}/heartbeat`))
           this.shutdown(true)
         } catch (e) {
           console.log(`[PicList Server] ${port} is busy, trying with port ${port + 1}`)
@@ -307,8 +351,8 @@ class Server {
   }
 
   startup() {
-    console.log('startup', this.config.enable)
-    this.listen(this.config.port)
+    console.log('startup')
+    this.listen(defaultPort)
   }
 
   shutdown(hasStarted) {

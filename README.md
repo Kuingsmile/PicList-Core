@@ -59,6 +59,46 @@ yarn add piclist -D
 
 ## Usage
 
+### Server
+
+You can use `picgo-server` to start a server, default port is `36677`.
+
+Start server:
+
+```bash
+picgo-server
+node ./bin/picgo-server
+```
+
+> It's highly recommended to add `--key` to avoid unauthorized access. Example: `picgo-server --key 123456`，
+
+Show help:
+
+```bash
+$ picgo-server -h
+
+  Usage: picgo-server [options]
+
+  Options:
+
+    -h, --help          Print this help message
+    -c, --config        Set config path
+    -p, --port          Set port, default port is 36677
+    --host              Set host, default host is 0.0.0.0
+    -k, --key           Set secret key to avoid unauthorized access
+    -v, --version       Print version number
+
+  Examples:
+    picgo-server -c /path/to/config.json
+    picgo-server -k 123456
+    picgo-server -c /path/to/config.json -k 123456
+```
+
+#### endpoints
+
+- `/upload?picbed=xxx&key=xxx` upload picture, `picbed` to set pic-bed, `key` to set secret key
+- `/heartbeat` heartbeat
+
 ### Use in CLI
 
 > PicList-Core uses `SM.MS` as the default upload pic-bed.
