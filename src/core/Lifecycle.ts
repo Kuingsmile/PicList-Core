@@ -123,11 +123,16 @@ export class Lifecycle extends EventEmitter {
           } else {
             let transformedBuffer
             ctx.rawInputPath![index] = item
+            let isSkip = false
             if (needAddWatermark(watermarkOptions, path.extname(item))) {
-              const downloadTTFRet = await this.downloadTTF()
-              if (!downloadTTFRet) {
-                this.ctx.log.warn('Download ttf file failed, skip add watermark.')
-              } else {
+              if (!(watermarkOptions?.watermarkFontPath || watermarkOptions?.watermarkType === 'image')) {
+                const downloadTTFRet = await this.downloadTTF()
+                if (!downloadTTFRet) {
+                  this.ctx.log.warn('Download ttf file failed, skip add watermark.')
+                  isSkip = true
+                }
+              }
+              if (!isSkip) {
                 ctx.log.info(watermarkMsg)
                 transformedBuffer = await imageAddWaterMark(fs.readFileSync(item), watermarkOptions, this.ttfPath)
               }
