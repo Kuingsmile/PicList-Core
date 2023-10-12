@@ -46,17 +46,16 @@
       "path": "./node_modules/cz-customizable"
     },
     "cz-customizable": {
-      "config": "./node_modules/@picgo/bump-version/.cz-config.js"
+      "config": "./node_modules/node-bump-version/.cz-config.js"
     }
   },
   "commitlint": {
     "extends": [
-      "./node_modules/@picgo/bump-version/commitlint-picgo"
+      "./node_modules/node-bump-version/commitlint-node"
     ]
   },
   "license": "MIT",
   "devDependencies": {
-    "@picgo/bump-version": "^1.1.2",
     "@rollup/plugin-commonjs": "^25.0.4",
     "@rollup/plugin-json": "^6.0.0",
     "@rollup/plugin-node-resolve": "^15.2.1",
@@ -92,6 +91,7 @@
     "eslint-plugin-promise": "^6.1.1",
     "eslint-plugin-standard": "^5.0.0",
     "husky": "^1.3.1",
+    "node-bump-version": "^1.0.0",
     "pre-commit": "^1.2.2",
     "rollup": "^2.79.1",
     "rollup-plugin-copy": "^3.5.0",
