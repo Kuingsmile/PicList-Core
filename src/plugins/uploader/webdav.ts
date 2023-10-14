@@ -46,7 +46,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
         if (res) {
           const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'webdavplist')
           const imgTempFilePath = path.join(imgTempPath, img.fileName)
-          fs.ensureDirSync(imgTempPath)
+          fs.ensureDirSync(path.dirname(imgTempFilePath))
           fs.writeFileSync(imgTempFilePath, image)
           delete img.base64Image
           delete img.buffer

@@ -23,9 +23,9 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         }
         const uploadTempPath = path.join(ctx.baseDir, 'uploadTemp')
         const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'sftpplist')
-        fs.ensureDirSync(uploadTempPath)
         fs.ensureDirSync(imgTempPath)
         const tempFilePath = path.join(uploadTempPath, img.fileName)
+        fs.ensureDirSync(path.dirname(tempFilePath))
         fs.writeFileSync(tempFilePath, image)
         const client = SSHClient.instance
         await client.connect(sftpplistConfig)
