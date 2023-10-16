@@ -10,7 +10,8 @@ import https from 'https'
 import tunnel from 'tunnel'
 const httpsAgent = new https.Agent({
   maxVersion: 'TLSv1.2',
-  minVersion: 'TLSv1.2'
+  minVersion: 'TLSv1.2',
+  rejectUnauthorized: false
 })
 
 // thanks for https://github.dev/request/request/blob/master/index.js
