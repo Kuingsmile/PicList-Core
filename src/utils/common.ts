@@ -708,9 +708,11 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
       if (options.picBed === 'imgur' && newFormat === 'webp') {
         newFormat = 'jpg'
       }
-      image = image.toFormat(newFormat, {
-        quality
-      })
+      if (newFormat !== rawFormat) {
+        image = image.toFormat(newFormat, {
+          quality
+        })
+      }
     } else {
       if (rawFormat && validOutputFormat(rawFormat)) {
         image = image.toFormat(rawFormat as any, {
