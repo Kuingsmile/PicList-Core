@@ -5374,10 +5374,10 @@ q@^1.5.1:
   resolved "https://registry.npmjs.org/q/-/q-1.5.1.tgz"
   integrity sha1-fjL3W0E4EpHQRhHxvxQQmsAGUdc=
 
-qiniu@^7.10.0:
-  version "7.10.0"
-  resolved "https://registry.npmmirror.com/qiniu/-/qiniu-7.10.0.tgz#b6fceee7165c5354150d3924950331bdb4456753"
-  integrity sha512-LzTW6zmRkf8IpUuR3TEwOEE0Gpy8XGicThfit35lj4XhvJ3GFV/mJ1DGLhSO1rCIV4LF6rqfDWXw3U/i4yPF6g==
+qiniu@7.9.0:
+  version "7.9.0"
+  resolved "https://registry.npmmirror.com/qiniu/-/qiniu-7.9.0.tgz#2e976dac909cee7a682c2c4cc56dec491db48367"
+  integrity sha512-ivtGZnhd9vtQLNdTOWRqgN29Ay0UfiHqaSjrrDHa9TGz6l4DtjZlDxZuhg2wzcp43z2EiHUjeJ1+KE3tBdGAyg==
   dependencies:
     agentkeepalive "^4.0.2"
     before "^0.0.1"
@@ -5389,7 +5389,7 @@ qiniu@^7.10.0:
     mime "^2.4.4"
     mockdate "^3.0.5"
     tunnel-agent "^0.6.0"
-    urllib "^2.41.0"
+    urllib "^2.34.1"
 
 qs@^6.4.0:
   version "6.10.1"
@@ -6681,7 +6681,7 @@ url-to-options@^1.0.1:
   resolved "https://registry.npmjs.org/url-to-options/-/url-to-options-1.0.1.tgz"
   integrity sha1-FQWgOiiaSMvXpDTvuu7FBV9WM6k=
 
-urllib@^2.41.0:
+urllib@^2.34.1:
   version "2.41.0"
   resolved "https://registry.npmmirror.com/urllib/-/urllib-2.41.0.tgz#be15705e62af4eadcafcfeadda1014b526ae2d0d"
   integrity sha512-pNXdxEv52L67jahLT+/7QE+Fup1y2Gc6EdmrAhQ6OpQIC2rl14oWwv9hvk1GXOZqEnJNwRXHABuwgPOs1CtL7g==

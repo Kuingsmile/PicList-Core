@@ -1,6 +1,6 @@
 {
   "name": "piclist",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "description": "Modified PicGo core, A tool for picture uploading",
   "author": {
     "name": "Kuingsmile",
@@ -124,7 +124,7 @@
     "minimist": "^1.2.8",
     "multer": "^1.4.5-lts.1",
     "node-ssh-no-cpu-features": "^1.0.1",
-    "qiniu": "^7.10.0",
+    "qiniu": "7.9.0",
     "resolve": "^1.8.1",
     "rimraf": "^5.0.1",
     "sharp": "^0.32.1",
