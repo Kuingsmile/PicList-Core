@@ -3,16 +3,22 @@ import { IBuildInEvent } from '../../utils/enum'
 import { type ILocalesKey } from '../../i18n/zh-CN'
 import mime from 'mime-types'
 
+function buildGithubApiUrl (repo: string, path: string, fileName: string, extra: string = ''): string {
+  const encodedPath = encodeURIComponent(path)
+  const encodedFileName = encodeURIComponent(fileName)
+  return `https://api.github.com/repos/${repo}/contents/${encodedPath}${encodedFileName}${extra}`.replace(/%2F/g, '/')
+}
+
 const postOptions = (fileName: string, options: IGithubConfig, data: any): IOldReqOptionsWithJSON => {
-  const path = options.path || ''
   const { token, repo } = options
+  const contentType = mime.lookup(fileName) || 'application/octet-stream'
   return {
     method: 'PUT',
-    url: `https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path)}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/'),
+    url: buildGithubApiUrl(repo, options.path || '', fileName),
     headers: {
       Authorization: `token ${token}`,
       'User-Agent': 'PicList',
-      'Content-Type': mime.lookup(fileName) || 'application/octet-stream'
+      'Content-Type': contentType
     },
     body: data,
     json: true
@@ -20,11 +26,10 @@ const postOptions = (fileName: string, options: IGithubConfig, data: any): IOldR
 }
 
 const getOptions = (fileName: string, options: IGithubConfig): IOldReqOptionsWithJSON => {
-  const path = options.path || ''
   const { token, repo, branch } = options
   return {
     method: 'GET',
-    url: `https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path)}${encodeURIComponent(fileName)}?ref=${branch}`.replace(/%2F/g, '/'),
+    url: buildGithubApiUrl(repo, options.path || '', fileName, `?ref=${branch}`),
     headers: {
       Authorization: `token ${token}`,
       'User-Agent': 'PicGo'
@@ -61,11 +66,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           if (body) {
             delete img.base64Image
             delete img.buffer
-            if (githubOptions.customUrl) {
-              img.imgUrl = `${githubOptions.customUrl}/${encodeURIComponent(uploadPath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
-            } else {
-              img.imgUrl = body.content.download_url
-            }
+            img.imgUrl = githubOptions.customUrl ? `${githubOptions.customUrl}/${encodeURIComponent(uploadPath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/') : body.content.download_url
             img.hash = body.content.sha
           } else {
             throw new Error('Server error, please try again')
@@ -77,11 +78,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
             const res = await ctx.request(getOptions(img.fileName, githubOptions)) as any
             if (Object.keys(res).length) {
               img.hash = res.sha
-              if (githubOptions.customUrl) {
-                img.imgUrl = `${githubOptions.customUrl}/${encodeURIComponent(uploadPath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
-              } else {
-                img.imgUrl = res.download_url
-              }
+              img.imgUrl = githubOptions.customUrl ? `${githubOptions.customUrl}/${encodeURIComponent(uploadPath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/') : res.download_url
             } else {
               throw new Error('Get Contents error, please try again')
             }
