@@ -8,9 +8,14 @@
         "typescriptreact"
     ],
     "editor.codeActionsOnSave": {
-        "source.fixAll.eslint": true
+        "source.fixAll.eslint": "explicit"
     },
     "eslint.enable": true,
     "editor.tabSize": 2,
-    "typescript.tsdk": "node_modules/typescript/lib"
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "[go]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "explicit"
+        }
+    }
 }

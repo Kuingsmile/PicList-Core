@@ -4,13 +4,13 @@ import mime from 'mime-types'
 import { IBuildInEvent } from '../../utils/enum'
 import { type ILocalesKey } from '../../i18n/zh-CN'
 
+const getCurrentUTCDate = (): string => new Date().toUTCString()
+
 // generate OSS signature
 const generateSignature = (options: IAliyunConfig, fileName: string): string => {
-  const date = new Date().toUTCString()
+  const date = getCurrentUTCDate()
   const mimeType = mime.lookup(fileName) || 'application/octet-stream'
-
   const signString = `PUT\n\n${mimeType}\n${date}\n/${options.bucket}/${options.path}${fileName}`
-
   const signature = crypto.createHmac('sha1', options.accessKeySecret).update(signString).digest('base64')
   return `OSS ${options.accessKeyId}:${signature}`
 }
@@ -22,7 +22,7 @@ const postOptions = (options: IAliyunConfig, fileName: string, signature: string
     headers: {
       Host: `${options.bucket}.${options.area}.aliyuncs.com`,
       Authorization: signature,
-      Date: new Date().toUTCString(),
+      Date: getCurrentUTCDate(),
       'Content-Type': mime.lookup(fileName)
     },
     body: image,

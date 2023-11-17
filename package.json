@@ -1,6 +1,6 @@
 {
   "name": "piclist",
-  "version": "1.6.5",
+  "version": "1.6.6",
   "description": "Modified PicGo core, A tool for picture uploading",
   "author": {
     "name": "Kuingsmile",
@@ -75,8 +75,8 @@
     "@types/text-to-svg": "^3.1.4",
     "@types/tunnel": "^0.0.6",
     "@types/uuid": "^9.0.7",
-    "@typescript-eslint/eslint-plugin": "^6.10.0",
-    "@typescript-eslint/parser": "^6.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.11.0",
+    "@typescript-eslint/parser": "^6.11.0",
     "babel-eslint": "^10.1.0",
     "builtins": "^4.0.0",
     "conventional-changelog": "^3.0.6",
@@ -103,7 +103,7 @@
   "dependencies": {
     "@picgo/i18n": "^1.0.0",
     "@picgo/store": "^2.1.0",
-    "axios": "^1.6.1",
+    "axios": "^1.6.2",
     "chalk": "^2.4.1",
     "commander": "^8.1.0",
     "cross-spawn": "^7.0.3",
