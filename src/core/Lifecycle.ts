@@ -249,10 +249,10 @@ export class Lifecycle extends EventEmitter {
     let uploader = ctx.helper.uploader.get(type)
     let currentTransformer = type
     if (!uploader) {
+      ctx.log.warn(`Can't find uploader - ${type}, switch to default uploader - smms`)
       type = 'smms'
       currentTransformer = 'smms'
       uploader = ctx.helper.uploader.get('smms')
-      ctx.log.warn(`Can't find uploader - ${type}, switch to default uploader - smms`)
     }
     ctx.log.info(`Uploading... Current uploader is [${currentTransformer}]`)
     await uploader?.handle(ctx)

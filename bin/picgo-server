@@ -63,6 +63,7 @@ function showHelp() {
 
 let configPath = argv.c || argv.config || ''
 if (configPath !== true && configPath !== '') {
+  configPath = configPath.replace(/^~/, os.homedir())
   configPath = path.resolve(configPath)
 } else {
   configPath = ''
@@ -171,7 +172,7 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
       // upload with clipboard
       console.log('[PicList Server] upload clipboard file')
       const result = await picgo.upload()
-      const res = result.imgUrl
+      const res = result[0].imgUrl
       console.log('[PicList Server] upload result:', res)
       if (res) {
         handleResponse({
