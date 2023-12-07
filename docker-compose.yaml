@@ -1,0 +1,12 @@
+version: '3.3'
+
+services:
+  node:
+    image: 'kuingsmile/piclist:latest'
+    container_name: piclist
+    restart: always
+    ports:
+      - 36677:36677
+    volumes:
+      - './piclist:/root/.piclist'
+    command: node /usr/local/bin/picgo-server -k piclist123456
