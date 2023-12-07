@@ -59,6 +59,51 @@ yarn add piclist -D
 
 ## Usage
 
+### Docker
+
+You can use docker to run PicList-Core.
+
+#### docker run
+
+Change the `./piclist` to your own path, and change the `piclist123456` to your own secret key.
+
+```bash
+docker run -d \
+  --name piclist \
+  --restart always \
+  -p 36677:36677 \
+  -v "./piclist:/root/.piclist" \
+  kuingsmile/piclist:latest \
+  node /usr/local/bin/picgo-server -k piclist123456
+```
+
+#### docker-compose
+
+download `docker-compose.yml` from this repo, or copy the following content to `docker-compose.yml`:
+
+```yaml
+version: '3.3'
+
+services:
+  node:
+    image: 'kuingsmile/piclist:latest'
+    container_name: piclist
+    restart: always
+    ports:
+      - 36677:36677
+    volumes:
+      - './piclist:/root/.piclist'
+    command: node /usr/local/bin/picgo-server -k piclist123456
+```
+
+You can change the `volumes` to your own path and change the `command` to your own secret key.
+
+Then run:
+
+```bash
+docker-compose up -d
+```
+
 ### Server
 
 You can use `picgo-server` to start a server, default port is `36677`.
