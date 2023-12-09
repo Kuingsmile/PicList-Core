@@ -105,6 +105,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'bucket',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_BUCKET') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_BUCKET') },
       default: userConfig.bucket || '',
       required: true
@@ -112,10 +113,10 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'operator',
       type: 'input',
-      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_OPERATOR') },
       get prefix () {
         return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_OPERATOR')
       },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_OPERATOR') },
       get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_OPERATOR') },
       default: userConfig.operator || '',
       required: true
@@ -132,6 +133,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'url',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_URL') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_URL') },
       get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_URL') },
       default: userConfig.url || '',

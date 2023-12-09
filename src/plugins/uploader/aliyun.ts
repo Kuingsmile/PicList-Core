@@ -82,6 +82,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'accessKeyId',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_ACCESSKEYID') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_ACCESSKEYID') },
       default: userConfig.accessKeyId || '',
       required: true
@@ -89,6 +90,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'accessKeySecret',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_ACCESSKEYSECRET') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_ACCESSKEYSECRET') },
       default: userConfig.accessKeySecret || '',
       required: true
@@ -96,6 +98,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'bucket',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_BUCKET') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_BUCKET') },
       default: userConfig.bucket || '',
       required: true

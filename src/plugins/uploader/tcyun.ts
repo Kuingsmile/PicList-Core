@@ -186,6 +186,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'version',
       type: 'list',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_VERSION') },
       alias: ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_VERSION'),
       choices: ['v4', 'v5'],
       default: 'v5',
@@ -194,6 +195,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'secretId',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SECRETID') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SECRETID') },
       default: userConfig.secretId || '',
       required: true
@@ -201,6 +203,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'secretKey',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SECRETKEY') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SECRETKEY') },
       default: userConfig.secretKey || '',
       required: true
@@ -208,6 +211,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'bucket',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_BUCKET') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_BUCKET') },
       default: userConfig.bucket || '',
       required: true

@@ -85,10 +85,10 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'webPath',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_WEBPATH') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_WEBPATH') },
       default: userConfig.webPath || '',
       required: false,
-      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_WEBPATH') },
       get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_MESSAGE_WEBPATH') }
     }
   ]

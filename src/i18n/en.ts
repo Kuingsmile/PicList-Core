@@ -26,8 +26,8 @@ export const EN: ILocales = {
 
   // Ali-cloud
   PICBED_ALICLOUD: 'Ali Cloud',
-  PICBED_ALICLOUD_ACCESSKEYID: 'Set KeyId',
-  PICBED_ALICLOUD_ACCESSKEYSECRET: 'Set KeySecret',
+  PICBED_ALICLOUD_ACCESSKEYID: 'Set accessKeyId',
+  PICBED_ALICLOUD_ACCESSKEYSECRET: 'Set accessKeySecret',
   PICBED_ALICLOUD_BUCKET: 'Set Bucket',
   PICBED_ALICLOUD_AREA: 'Set Area',
   PICBED_ALICLOUD_PATH: 'Set Path',

@@ -85,6 +85,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'accessKey',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_ACCESSKEY') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_ACCESSKEY') },
       default: userConfig.accessKey || '',
       required: true
@@ -92,6 +93,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'secretKey',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_SECRETKEY') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_SECRETKEY') },
       default: userConfig.secretKey || '',
       required: true
@@ -99,6 +101,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'bucket',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_BUCKET') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_BUCKET') },
       default: userConfig.bucket || '',
       required: true

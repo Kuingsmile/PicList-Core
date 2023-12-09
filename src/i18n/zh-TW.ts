@@ -26,8 +26,8 @@ export const ZH_TW: ILocales = {
 
   // Ali-cloud
   PICBED_ALICLOUD: '阿里云OSS',
-  PICBED_ALICLOUD_ACCESSKEYID: '設定KeyId',
-  PICBED_ALICLOUD_ACCESSKEYSECRET: '設定KeySecret',
+  PICBED_ALICLOUD_ACCESSKEYID: '設定accessKeyId',
+  PICBED_ALICLOUD_ACCESSKEYSECRET: '設定accessKeySecret',
   PICBED_ALICLOUD_BUCKET: '設定Bucket',
   PICBED_ALICLOUD_AREA: '設定儲存區域',
   PICBED_ALICLOUD_PATH: '設定儲存路徑',

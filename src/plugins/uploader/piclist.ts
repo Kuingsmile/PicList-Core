@@ -87,6 +87,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'host',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_PICLIST_HOST') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_PICLIST_HOST') },
       default: userConfig.host || '127.0.0.1',
       required: true
@@ -94,6 +95,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'port',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_PICLIST_PORT') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_PICLIST_PORT') },
       default: userConfig.port || 36677,
       required: false
@@ -101,6 +103,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'picbed',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_PICLIST_PICBED') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_PICLIST_PICBED') },
       default: userConfig.picbed || '',
       required: false
@@ -108,6 +111,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'configName',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_PICLIST_CONFIGNAME') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_PICLIST_CONFIGNAME') },
       default: userConfig.configName || '',
       required: false
@@ -115,6 +119,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'serverKey',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_PICLIST_KEY') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_PICLIST_KEY') },
       default: userConfig.serverKey || '',
       required: false

@@ -61,6 +61,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'host',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_HOST') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_HOST') },
       get message () {
         return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_MESSAGE_HOST')
@@ -71,16 +72,18 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'port',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_PORT') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_PORT') },
       get message () {
         return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_MESSAGE_PORT')
       },
-      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_PORT') },
       default: userConfig.port || 22,
       required: false
     },
     {
       name: 'username',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_USERNAME') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_USERNAME') },
       default: userConfig.username || '',
       required: true
@@ -88,6 +91,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'password',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_PASSWORD') },
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_PASSWORD') },
       default: userConfig.password || '',
       required: false
@@ -95,80 +99,88 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'privateKey',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_PRIVATEKEY') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_PRIVATEKEY') },
       get message () {
         return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_MESSAGE_PRIVATEKEY')
       },
-      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_PRIVATEKEY') },
       default: userConfig.privateKey || '',
       required: false
     },
     {
       name: 'passphrase',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_PRIVATEKEY_PASSPHRASE') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_PRIVATEKEY_PASSPHRASE') },
       get message () {
         return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_MESSAGE_PRIVATEKEY_PASSPHRASE')
       },
-      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_PRIVATEKEY_PASSPHRASE') },
       default: userConfig.passphrase || '',
       required: false
     },
     {
       name: 'uploadPath',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_UPLOADPATH') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_UPLOADPATH') },
       get message () {
         return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_MESSAGE_UPLOADPATH')
       },
-      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_UPLOADPATH') },
       default: userConfig.uploadPath || '',
       required: false
     },
     {
       name: 'customUrl',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_CUSTOMURL') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_CUSTOMURL') },
       get message () {
         return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_MESSAGE_CUSTOMURL')
       },
-      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_CUSTOMURL') },
       default: userConfig.customUrl || '',
       required: false
     },
     {
       name: 'webPath',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_WEBSITE_PATH') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_WEBSITE_PATH') },
       get message () {
         return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_MESSAGE_WEBSITE_PATH')
       },
-      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_WEBSITE_PATH') },
       default: userConfig.webPath || '',
       required: false
     },
     {
       name: 'fileUser',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_FILE_USER') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_FILE_USER') },
       get message () {
         return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_MESSAGE_FILE_USER')
       },
-      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_FILE_USER') },
       default: userConfig.fileUser || '',
       required: false
     },
     {
       name: 'fileMode',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_FILE_MODE') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_FILE_MODE') },
       get message () {
         return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_MESSAGE_FILE_MODE')
       },
-      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_FILE_MODE') },
       default: userConfig.fileMode || '',
       required: false
     },
     {
       name: 'dirMode',
       type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_DIR_MODE') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_DIR_MODE') },
       get message () {
         return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_MESSAGE_DIR_MODE')
       },
-      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_SFTPPLIST_DIR_MODE') },
       default: userConfig.dirMode || '',
       required: false
     }
