@@ -784,7 +784,7 @@ export const needCompress = (compressOptions: IBuildInCompressOptions | undefine
 
 export const removeExif = async (img: Buffer, fileExt: string): Promise<Buffer> => {
   fileExt = fileExt.toLowerCase().replace('.', '')
-  if (!imageFormatList.includes(fileExt)) {
+  if (!imageFormatList.includes(fileExt) || fileExt === 'svg') {
     return img
   }
   return await sharp(img, {

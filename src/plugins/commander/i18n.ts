@@ -6,7 +6,7 @@ const i18n: IPlugin = {
     cmd.program
       .command('i18n')
       .arguments('[lang]')
-      .description('change picgo language')
+      .description('change language, zh-CN, zh-TW, en')
       .action(async (lang: string = '') => {
         const list = ctx.i18n.getLanguageList()
         if (!lang) {
@@ -20,15 +20,14 @@ const i18n: IPlugin = {
             }
           ]
           const answer = await ctx.cmd.inquirer.prompt<IStringKeyMap<string>>(prompts)
-          ctx.i18n.setLanguage(answer.i18n)
-          ctx.log.success(`Language set to ${answer.i18n}`)
-          return
+          lang = answer.i18n
         }
         if (!list.includes(lang)) {
-          ctx.log.warn('No such language'); return
+          ctx.log.warn('No such language')
+        } else {
+          ctx.i18n.setLanguage(lang)
+          ctx.log.success(`Language set to ${lang}`)
         }
-        ctx.i18n.setLanguage(lang)
-        ctx.log.success(`Language set to ${lang}`)
       })
   }
 }
