@@ -170,6 +170,21 @@ export const EN: ILocales = {
   PICBED_PICLIST_CONFIGNAME: 'Set Config Name',
   PICBED_PICLIST_KEY: 'Set Key',
 
+  // Lsky Pro
+  PICBED_LSKY_PLIST: 'Lsky',
+  PICBED_LSKY_VERSION: 'Set Version',
+  PICBED_LSKY_MESSAGE_VERSION: 'Ex. v1',
+  PICBED_LSKY_HOST: 'Set Host',
+  PICBED_LSKY_MESSAGE_HOST: 'Ex. https://lsky.co',
+  PICBED_LSKY_TOKEN: 'Set Token',
+  PICBED_LSKY_MESSAGE_TOKEN: 'Ex. xxx',
+  PICBED_LSKY_STRATEGY_ID: 'Set Strategy ID',
+  PICBED_LSKY_MESSAGE_STRATEGY_ID: 'Ex. 1',
+  PICBED_LSKY_ALBUM_ID: 'Set Album ID',
+  PICBED_LSKY_MESSAGE_ALBUM_ID: 'Optional, only for V2',
+  PICBED_LSKY_PERMISSION: 'Set Permisson',
+  PICBED_LSKY_MESSAGE_PERMISSION: 'Ex. public',
+
   BUILDIN_RENAME_FORMAT: 'Set rename format',
   BUILDIN_RENAME_ENABLE: 'Enable rename',
 

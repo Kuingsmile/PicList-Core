@@ -11,6 +11,7 @@ import localUploader from './local'
 import sftpUploader from './sftp'
 import telegraphUploader from './telegraph'
 import piclistUploader from './piclist'
+import lskyUploader from './lsky'
 
 const buildInUploaders: IPicGoPlugin = () => {
   return {
@@ -27,6 +28,7 @@ const buildInUploaders: IPicGoPlugin = () => {
       sftpUploader(ctx)
       telegraphUploader(ctx)
       piclistUploader(ctx)
+      lskyUploader(ctx)
     }
   }
 }

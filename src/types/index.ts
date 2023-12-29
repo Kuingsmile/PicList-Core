@@ -435,6 +435,15 @@ export interface IPicListConfig {
   configName?: string
   serverKey?: string
 }
+/** 内置lsky 图床配置项 */
+export interface ILskyConfig {
+  version: string
+  host: string
+  token: string
+  strategyId: string
+  albumId: string
+  permission: IStringKeyMap<string>
+}
 /** PicGo 配置文件类型定义 */
 export interface IConfig {
   picBed: {
