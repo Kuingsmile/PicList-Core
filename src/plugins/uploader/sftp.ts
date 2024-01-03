@@ -40,6 +40,9 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         } else {
           img.imgUrl = `${baseUrl}/${sftpplistConfig.uploadPath === '/' ? '' : encodeURIComponent(sftpplistConfig.uploadPath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
         }
+        const imgTempFilePath = path.join(imgTempPath, img.fileName)
+        fs.ensureDirSync(path.dirname(imgTempFilePath))
+        fs.removeSync(imgTempFilePath)
         fs.moveSync(tempFilePath, path.join(imgTempPath, img.fileName))
         img.galleryPath = `http://localhost:36699/sftpplist/${encodeURIComponent(img.fileName)}`
         client.close()
