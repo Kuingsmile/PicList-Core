@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
 import { type IBuildInWaterMarkOptions, type IBuildInCompressOptions, type ILifecyclePlugins, type IPathTransformedImgInfo, type IPicGo, type IPlugin, type Undefinable, type IImgInfo } from '../types'
-import { getURLFile, handleUrlEncode, imageProcess, isUrl, needCompress, needAddWatermark, imageAddWaterMark, removeExif, renameFileNameWithCustomString } from '../utils/common'
+import { getURLFile, handleUrlEncode, imageProcess, isUrl, needCompress, needAddWatermark, imageAddWaterMark, removeExif, renameFileNameWithCustomString, getConvertedFormat } from '../utils/common'
 import { IBuildInEvent } from '../utils/enum'
 import { createContext } from '../utils/createContext'
 import path from 'path'
@@ -18,8 +18,8 @@ export class Lifecycle extends EventEmitter {
     super()
     this.ctx = ctx
     const tempFilePath = path.join(ctx.baseDir, 'piclistTemp')
-    const imgFlePath = path.join(ctx.baseDir, 'imgTemp')
-    fs.ensureDirSync(imgFlePath)
+    const imgFilePath = path.join(ctx.baseDir, 'imgTemp')
+    fs.ensureDirSync(imgFilePath)
     fs.emptyDirSync(tempFilePath)
     this.ttfPath = path.join(ctx.baseDir, 'assets', 'simhei.ttf')
   }
@@ -105,7 +105,7 @@ export class Lifecycle extends EventEmitter {
               if (transformedBuffer) {
                 let newExt
                 if (compressOptions?.isConvert) {
-                  newExt = compressOptions?.convertFormat ?? 'jpg'
+                  newExt = getConvertedFormat(compressOptions, info.extname ?? '')
                 } else {
                   newExt = info.extname ?? ''
                 }
@@ -160,7 +160,7 @@ export class Lifecycle extends EventEmitter {
             if (transformedBuffer) {
               let newExt
               if (compressOptions?.isConvert) {
-                newExt = compressOptions?.convertFormat ?? 'jpg'
+                newExt = getConvertedFormat(compressOptions, path.extname(item))
               } else {
                 newExt = path.extname(item)
               }

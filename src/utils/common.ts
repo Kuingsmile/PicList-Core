@@ -623,7 +623,8 @@ function formatOptions (options: IBuildInCompressOptions): IBuildInCompressOptio
     isFlip: options.isFlip || false,
     isFlop: options.isFlop || false,
     rotateDegree: forceNumber(options.rotateDegree),
-    picBed: options.picBed || 'smms'
+    picBed: options.picBed || 'smms',
+    formatConvertObj: options.formatConvertObj || {}
   }
 }
 
@@ -704,10 +705,7 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
       image = image.flop()
     }
     if (options.isConvert) {
-      let newFormat = options.convertFormat || 'jpg'
-      if (options.picBed === 'imgur' && newFormat === 'webp') {
-        newFormat = 'jpg'
-      }
+      const newFormat = getConvertedFormat(options, rawFormat) as any
       if (newFormat !== rawFormat) {
         image = image.toFormat(newFormat, {
           quality
@@ -729,6 +727,26 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
     console.log(error)
     return img
   }
+}
+
+export function getConvertedFormat (options: IBuildInCompressOptions | undefined, rawFormat: string): string {
+  options = formatOptions(options || {})
+  rawFormat = rawFormat.toLowerCase().replace('.', '')
+  let newFormat = options?.convertFormat || 'jpg'
+  if (options?.formatConvertObj && Object.keys(options.formatConvertObj).length > 0) {
+    const formatConvertObj = options.formatConvertObj
+    const formatConvertObjKeys = Object.keys(formatConvertObj)
+    if (formatConvertObjKeys.includes(rawFormat)) {
+      newFormat = formatConvertObj[rawFormat]
+      if (!validOutputFormat(newFormat)) {
+        newFormat = 'jpg'
+      }
+    }
+  }
+  if (options?.picBed === 'imgur' && newFormat === 'webp') {
+    newFormat = 'jpg'
+  }
+  return newFormat
 }
 
 const imageFormatList = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'avif', 'heif', 'heic', 'gif']
