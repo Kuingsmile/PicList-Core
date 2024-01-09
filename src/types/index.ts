@@ -411,6 +411,8 @@ export interface IWebdavPlistConfig {
   customUrl: string
   /** webdav 的 `authType` */
   authType: string
+  /** webdav 的 `options` */
+  options: string
 }
 /** 内置sftp 图床配置项 */
 export interface ISftpPlistConfig {

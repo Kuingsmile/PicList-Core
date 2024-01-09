@@ -16,6 +16,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   webdavplistOptions.path = (webdavplistOptions.path || '').replace(/^\/+|\/+$/g, '') + '/'
   const authType = webdavplistOptions.authType || 'basic'
   const webpath = (webdavplistOptions.webpath || '').replace(/^\/+|\/+$/g, '') + '/'
+  const suffix = webdavplistOptions.options || ''
   try {
     const imgList = ctx.output
     const customUrl = webdavplistOptions.customUrl
@@ -52,9 +53,9 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
           delete img.buffer
           const baseUrl = customUrl || webdavplistOptions.host
           if (webdavplistOptions.webpath) {
-            img.imgUrl = `${baseUrl}/${webpath === '/' ? '' : encodeURIComponent(webpath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
+            img.imgUrl = `${baseUrl}/${webpath === '/' ? '' : encodeURIComponent(webpath)}${encodeURIComponent(img.fileName)}${suffix}`.replace(/%2F/g, '/')
           } else {
-            img.imgUrl = `${baseUrl}/${uploadPath === '/' ? '' : encodeURIComponent(uploadPath)}${encodeURIComponent(img.fileName)}`.replace(/%2F/g, '/')
+            img.imgUrl = `${baseUrl}/${uploadPath === '/' ? '' : encodeURIComponent(uploadPath)}${encodeURIComponent(img.fileName)}${suffix}`.replace(/%2F/g, '/')
           }
           img.galleryPath = `http://localhost:36699/webdavplist/${encodeURIComponent(img.fileName)}`
         } else {
@@ -143,6 +144,15 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_AUTHTYPE') },
       choices: ['basic', 'digest'],
       default: userConfig.authType || 'basic',
+      required: false
+    },
+    {
+      name: 'options',
+      type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_OPTIONS') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_OPTIONS') },
+      get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_OPTIONS') },
+      default: userConfig.options || '',
       required: false
     }
   ]
