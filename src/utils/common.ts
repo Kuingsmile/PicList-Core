@@ -698,7 +698,6 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
       image = image.rotate(options.rotateDegree, { background: { r: 255, g: 255, b: 255, alpha: 0 } })
     }
     if (options.isFlip) {
-      console.log('flip')
       image = image.flip()
     }
     if (options.isFlop) {
@@ -708,17 +707,20 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
       const newFormat = getConvertedFormat(options, rawFormat) as any
       if (newFormat !== rawFormat) {
         image = image.toFormat(newFormat, {
-          quality
+          quality,
+          mozjpeg: true
         })
       }
     } else {
       if (rawFormat && validOutputFormat(rawFormat)) {
         image = image.toFormat(rawFormat as any, {
-          quality
+          quality,
+          mozjpeg: true
         })
       } else {
         image = image.toFormat('jpg', {
-          quality
+          quality,
+          mozjpeg: true
         })
       }
     }
