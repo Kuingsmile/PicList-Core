@@ -56,11 +56,10 @@ export const EN: ILocales = {
   PICBED_TENCENTCLOUD_MESSAGE_CUSTOMURL: 'Ex. http://test.com',
   PICBED_TENCENTCLOUD_MESSAGE_OPTIONS: 'Ex. ?imageMogr2',
   PICBED_TENCENTCLOUD_MESSAGE_ENDPOINT: 'Ex. cos-internal.accelerate.tencentcos.cn',
-  PICBED_TENCENTCLOUD_SLIM: '極智壓縮',
-  PICBED_TENCENTCLOUD_SLIM_CANCEL: '關閉',
-  PICBED_TENCENTCLOUD_SLIM_CONFIRM: '開啓',
-  PICBED_TENCENTCLOUD_SLIM_TIP: '圖片極智壓縮，詳情請參考[文檔說明](https://cloud.tencent.com/document/product/436/49259)',
-
+  PICBED_TENCENTCLOUD_SLIM: 'Set ImageSlim',
+  PICBED_TENCENTCLOUD_SLIM_TIP: 'Image extremely intelligent compression, please refer to the [document description](https://cloud.tencent.com/document/product/436/86438)',
+  PICBED_TENCENTCLOUD_SLIM_CONFIRM: 'OPEN',
+  PICBED_TENCENTCLOUD_SLIM_CANCEL: 'CLOSE',
   // GitHub
   PICBED_GITHUB: 'GitHub',
   PICBED_GITHUB_TOKEN: 'Set Token',

@@ -55,7 +55,7 @@ export const ZH_CN = {
   PICBED_TENCENTCLOUD_MESSAGE_OPTIONS: '例如：?imageMogr2',
   PICBED_TENCENTCLOUD_MESSAGE_ENDPOINT: '例如：cos-internal.accelerate.tencentcos.cn',
   PICBED_TENCENTCLOUD_SLIM: '极智压缩',
-  PICBED_TENCENTCLOUD_SLIM_TIP: '图片极智压缩，详情请参考[文档说明](https://cloud.tencent.com/document/product/436/49259)',
+  PICBED_TENCENTCLOUD_SLIM_TIP: '图片极智压缩，详情请参考[文档说明](https://cloud.tencent.com/document/product/436/86438)',
   PICBED_TENCENTCLOUD_SLIM_CONFIRM: '开启',
   PICBED_TENCENTCLOUD_SLIM_CANCEL: '关闭',
 
