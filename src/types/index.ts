@@ -329,6 +329,8 @@ export interface IUpyunConfig {
   antiLeechToken: string
   /** 防盗链过期时间，单位为秒 */
   expireTime: number
+  /** 自定义API接入点 */
+  endpoint: string
 }
 /** 腾讯云图床配置项 */
 export interface ITcyunConfig {

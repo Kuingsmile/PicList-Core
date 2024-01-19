@@ -105,6 +105,7 @@ export const EN: ILocales = {
   // upyun
   PICBED_UPYUN: 'Upyun',
   PICBED_UPYUN_BUCKET: 'Set Bucket',
+  PICBED_UPYUN_ENDPOINT: 'Set Endpoint',
   PICBED_UPYUN_OPERATOR: 'Set Operator',
   PICBED_UPYUN_PASSWORD: 'Set Operator Password',
   PICBED_UPYUN_PATH: 'Set Path',
@@ -117,6 +118,7 @@ export const EN: ILocales = {
   PICBED_UPYUN_MESSAGE_URL: 'Ex. http://xxx.test.upcdn.net',
   PICBED_UPYUN_MESSAGE_OPTIONS: 'Ex. !imgslim',
   PICBED_UPYUN_MESSAGE_PATH: 'Ex. test/',
+  PICBED_UPYUN_MESSAGE_ENDPOINT: 'Ex. https://v0.api.upyun.com',
 
   // webdav
   PICBED_WEBDAVPLIST: 'WebDAV',

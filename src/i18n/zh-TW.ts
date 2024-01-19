@@ -103,6 +103,7 @@ export const ZH_TW: ILocales = {
   // upyun
   PICBED_UPYUN: '又拍云',
   PICBED_UPYUN_BUCKET: '設定Bucket',
+  PICBED_UPYUN_ENDPOINT: '設定接入點',
   PICBED_UPYUN_OPERATOR: '設定操作員',
   PICBED_UPYUN_PASSWORD: '設定操作員密碼',
   PICBED_UPYUN_PATH: '設定儲存路徑',
@@ -115,6 +116,7 @@ export const ZH_TW: ILocales = {
   PICBED_UPYUN_MESSAGE_URL: '例如：http://xxx.test.upcdn.net',
   PICBED_UPYUN_MESSAGE_OPTIONS: '例如：!imgslim',
   PICBED_UPYUN_MESSAGE_PATH: '例如：test/',
+  PICBED_UPYUN_MESSAGE_ENDPOINT: '例如：https://v0.api.upyun.com',
 
   // webdav
   PICBED_WEBDAVPLIST: 'WebDAV',

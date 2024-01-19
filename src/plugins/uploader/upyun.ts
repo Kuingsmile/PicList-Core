@@ -21,9 +21,16 @@ const generateSignature = (options: IUpyunConfig, fileName: string): string => {
 const postOptions = (options: IUpyunConfig, fileName: string, signature: string, image: Buffer): IOldReqOptionsWithFullResponse => {
   const bucket = options.bucket
   const path = options.path || ''
+  let endpoint = options.endpoint || 'https://v0.api.upyun.com'
+  if (endpoint.endsWith('/')) {
+    endpoint = endpoint.slice(0, -1)
+  }
+  if (!endpoint.startsWith('http')) {
+    endpoint = `https://${endpoint}`
+  }
   return {
     method: 'PUT',
-    url: `https://v0.api.upyun.com/${bucket}/${encodeURIComponent(path)}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/'),
+    url: `${endpoint}/${bucket}/${encodeURIComponent(path)}${encodeURIComponent(fileName)}`.replace(/%2F/g, '/'),
     headers: {
       Authorization: signature,
       Date: new Date().toUTCString(),
@@ -173,6 +180,15 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_EXPIRE_TIME') },
       get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_EXPIRE_TIME') },
       default: userConfig.expireTime || '',
+      required: false
+    },
+    {
+      name: 'endpoint',
+      type: 'input',
+      get prefix () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_ENDPOINT') },
+      get alias () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_ENDPOINT') },
+      get message () { return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_ENDPOINT') },
+      default: userConfig.endpoint || 'https://v0.api.upyun.com',
       required: false
     }
   ]
