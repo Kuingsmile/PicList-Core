@@ -446,6 +446,21 @@ export interface ILskyConfig {
   albumId: string
   permission: IStringKeyMap<string>
 }
+/** 内置aws s3 图床配置项 */
+export interface IAwsS3PListUserConfig {
+  accessKeyID: string
+  secretAccessKey: string
+  bucketName: string
+  uploadPath: string
+  region?: string
+  endpoint?: string
+  proxy?: string
+  urlPrefix?: string
+  pathStyleAccess?: boolean
+  rejectUnauthorized?: boolean
+  acl?: string
+  disableBucketPrefixToURL?: boolean
+}
 /** PicGo 配置文件类型定义 */
 export interface IConfig {
   picBed: {

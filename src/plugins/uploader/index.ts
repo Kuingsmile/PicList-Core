@@ -12,6 +12,7 @@ import sftpUploader from './sftp'
 import telegraphUploader from './telegraph'
 import piclistUploader from './piclist'
 import lskyUploader from './lsky'
+import awss3plistUploader from './awss3plist'
 
 const buildInUploaders: IPicGoPlugin = () => {
   return {
@@ -29,6 +30,7 @@ const buildInUploaders: IPicGoPlugin = () => {
       telegraphUploader(ctx)
       piclistUploader(ctx)
       lskyUploader(ctx)
+      awss3plistUploader(ctx)
     }
   }
 }
