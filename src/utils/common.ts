@@ -609,6 +609,7 @@ export async function imageAddWaterMark (img: Buffer, options: IBuildInWaterMark
 }
 
 function formatOptions (options: IBuildInCompressOptions): IBuildInCompressOptions {
+  const formatConvertObj = typeof options.formatConvertObj === 'string' ? safeParse(options.formatConvertObj) : options.formatConvertObj
   return {
     quality: forceNumber(options.quality),
     isConvert: options.isConvert || false,
@@ -624,7 +625,7 @@ function formatOptions (options: IBuildInCompressOptions): IBuildInCompressOptio
     isFlop: options.isFlop || false,
     rotateDegree: forceNumber(options.rotateDegree),
     picBed: options.picBed || 'smms',
-    formatConvertObj: options.formatConvertObj || {}
+    formatConvertObj: formatConvertObj || {}
   }
 }
 
