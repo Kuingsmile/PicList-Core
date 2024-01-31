@@ -461,7 +461,7 @@ export interface IAwsS3PListUserConfig {
   pathStyleAccess?: boolean
   rejectUnauthorized?: boolean
   acl?: string
-  disableBucketPrefixToURL?: boolean
+  disableBucketPrefixToURL?: boolean | string
 }
 /** PicGo 配置文件类型定义 */
 export interface IConfig {

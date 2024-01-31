@@ -9,6 +9,16 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     if (!userConfig) {
       throw new Error("Can't find amazon s3 uploader config")
     }
+    if (userConfig.disableBucketPrefixToURL === undefined) {
+      userConfig.disableBucketPrefixToURL = false
+    }
+    if (typeof userConfig.disableBucketPrefixToURL === "string") {
+      if (userConfig.disableBucketPrefixToURL.toLowerCase() === "true") {
+        userConfig.disableBucketPrefixToURL = true
+      } else if (userConfig.disableBucketPrefixToURL.toLowerCase() === "false") {
+        userConfig.disableBucketPrefixToURL = false
+      }
+    }
     if (userConfig.urlPrefix) {
       userConfig.urlPrefix = userConfig.urlPrefix.replace(/\/?$/, "")
       if (userConfig.pathStyleAccess && !userConfig.disableBucketPrefixToURL) {
