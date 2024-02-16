@@ -32,7 +32,7 @@ const getOptions = (fileName: string, options: IGithubConfig): IOldReqOptionsWit
     url: buildGithubApiUrl(repo, options.path || '', fileName, `?ref=${branch}`),
     headers: {
       Authorization: `token ${token}`,
-      'User-Agent': 'PicGo'
+      'User-Agent': 'PicList'
     },
     json: true
   }
