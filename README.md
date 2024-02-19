@@ -65,7 +65,7 @@ You can use docker to run PicList-Core.
 
 #### docker run
 
-Change the `./piclist` to your own path, and change the `piclist123456` to your own secret key.
+Change the `./piclist` to your own path, this path is where you put your `config.json` file, and change the `piclist123456` to your own secret key.
 
 ```bash
 docker run -d \
@@ -96,7 +96,7 @@ services:
     command: node /usr/local/bin/picgo-server -k piclist123456
 ```
 
-You can change the `volumes` to your own path and change the `command` to your own secret key.
+You can change the `./piclist` to your own path, this path is where you put your `config.json` file, and change the `command` to your own secret key.
 
 Then run:
 
