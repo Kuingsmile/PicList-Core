@@ -99,7 +99,7 @@ export const EN: ILocales = {
   PICBED_IMGUR_MESSAGE_CLIENTID: 'Fill in when you need to upload as anonymous',
   PICBED_IMGUR_MESSAGE_USERNAME: 'Fill in when you need to upload to the account',
   PICBED_IMGUR_MESSAGE_ACCESS_TOKEN: 'Fill in when you need to upload to the account',
-  PICBED_IMGUR_MESSAGE_ALBUM: '例如：test',
+  PICBED_IMGUR_MESSAGE_ALBUM: 'Ex. test',
   PICBED_IMGUR_MESSAGE_PROXY: 'Ex. http://127.0.0.1:1080',
 
   // upyun

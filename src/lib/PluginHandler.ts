@@ -29,7 +29,7 @@ export class PluginHandler implements IPluginHandler {
         // or will cause error
         if (this.ctx.pluginLoader.hasPlugin(item.pkgName)) {
           installedPlugins.push(item.pkgName)
-          this.ctx.log.success(`PicGo has already installed ${item.pkgName}`)
+          this.ctx.log.success(`PicList has already installed ${item.pkgName}`)
           return false
         }
         // if something wrong, filter it out

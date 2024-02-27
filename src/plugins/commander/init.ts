@@ -60,7 +60,7 @@ const init: IPlugin = {
             const dest = path.resolve(project || '.')
             const clone = program.clone || false
             const offline = program.offline || false
-            const tmp = path.join(homedir(), '.picgo/templates', template.replace(/[/:]/g, '-')) // for caching template
+            const tmp = path.join(homedir(), '.piclist/templates', template.replace(/[/:]/g, '-')) // for caching template
 
             if (program.offline) {
               template = tmp

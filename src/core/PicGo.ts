@@ -193,7 +193,7 @@ export class PicGo extends EventEmitter implements IPicGo {
 
   async upload (input?: any[]): Promise<IImgInfo[] | Error> {
     if (this.configPath === '') {
-      this.log.error('The configuration file only supports JSON format.')
+      this.log.error('No config file found, please check your config file path')
       return []
     }
     // upload from clipboard

@@ -24,7 +24,7 @@ export class PluginLoader implements IPluginLoader {
       const pkg = {
         name: 'picgo-plugins',
         description: 'picgo-plugins',
-        repository: 'https://github.com/PicGo/PicGo-Core',
+        repository: 'https://github.com/Kuingsmile/PicList-Core',
         license: 'MIT'
       }
       fs.writeFileSync(packagePath, JSON.stringify(pkg), 'utf8')
