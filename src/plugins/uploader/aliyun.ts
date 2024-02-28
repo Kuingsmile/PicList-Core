@@ -23,7 +23,7 @@ const postOptions = (options: IAliyunConfig, fileName: string, signature: string
       Host: `${options.bucket}.${options.area}.aliyuncs.com`,
       Authorization: signature,
       Date: getCurrentUTCDate(),
-      'Content-Type': mime.lookup(fileName)
+      'Content-Type': mime.lookup(fileName) || 'application/octet-stream'
     },
     body: image,
     resolveWithFullResponse: true
