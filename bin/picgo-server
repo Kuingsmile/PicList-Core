@@ -10,11 +10,11 @@ const os = require('os')
 const tempDir = path.join(os.homedir(), '.piclist', 'serverTemp')
 fs.ensureDirSync(tempDir)
 
+const argv = minimist(process.argv.slice(2))
+
 let key = ''
 let defaultPort = 36677
 let defaultHost = '0.0.0.0'
-
-const argv = minimist(process.argv.slice(2))
 
 if (argv.h || argv.help) {
   showHelp()
@@ -396,7 +396,7 @@ class Server {
       response.end()
     } else {
       console.log(`[PicList Server] don't support [${request.method}] method`)
-      response.statusCode = 404
+      response.statusCode = 405
       response.end()
     }
   }
@@ -407,14 +407,18 @@ class Server {
       port = parseInt(port, 10)
     }
     this.httpServer.listen(port, defaultHost).on('error', async err => {
-      if (err.errno === 'EADDRINUSE') {
+      if (err.code === 'EADDRINUSE') {
         try {
           await axios.post(ensureHTTPLink(`${defaultHost}:${port}/heartbeat`))
+          console.log(`[PicList Server] server is already running at ${port}, no need to start again`)
           this.shutdown(true)
         } catch (e) {
           console.log(`[PicList Server] ${port} is busy, trying with port ${port + 1}`)
           this.listen(port + 1)
         }
+      } else {
+        console.log(`[PicList Server] failed to start server at ${port}`)
+        console.log(`[PicList Server] ${err}`)
       }
     })
   }
@@ -432,7 +436,6 @@ class Server {
   }
 
   restart() {
-    this.config = picgo.getConfig('settings.server')
     this.shutdown()
     this.startup()
   }
