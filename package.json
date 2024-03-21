@@ -1,6 +1,6 @@
 {
   "name": "piclist",
-  "version": "1.7.12",
+  "version": "1.7.13",
   "description": "Modified PicGo core, A tool for picture uploading",
   "author": {
     "name": "Kuingsmile",
@@ -108,7 +108,7 @@
     "@picgo/i18n": "^1.0.0",
     "@picgo/store": "^2.1.0",
     "@smithy/node-http-handler": "2.1.6",
-    "axios": "^1.6.2",
+    "axios": "^1.6.8",
     "chalk": "^2.4.1",
     "commander": "^8.1.0",
     "cross-spawn": "^7.0.3",
