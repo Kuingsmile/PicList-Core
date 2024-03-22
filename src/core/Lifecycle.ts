@@ -91,12 +91,12 @@ export class Lifecycle extends EventEmitter {
                 }
                 if (!isSkip) {
                   ctx.log.info(watermarkMsg)
-                  transformedBuffer = await imageAddWaterMark(info.buffer, watermarkOptions, this.ttfPath)
+                  transformedBuffer = await imageAddWaterMark(info.buffer, watermarkOptions, this.ttfPath, ctx.log)
                 }
               }
               if (needCompress(compressOptions, info.extname ?? '')) {
                 ctx.log.info(compressMsg)
-                transformedBuffer = await imageProcess(transformedBuffer ?? info.buffer, compressOptions, info.extname ?? '')
+                transformedBuffer = await imageProcess(transformedBuffer ?? info.buffer, compressOptions, info.extname ?? '', ctx.log)
               }
               if (!transformedBuffer && compressOptions?.isRemoveExif) {
                 ctx.log.info('Remove exif info.')
@@ -134,7 +134,7 @@ export class Lifecycle extends EventEmitter {
               }
               if (!isSkip) {
                 ctx.log.info(watermarkMsg)
-                transformedBuffer = await imageAddWaterMark(fs.readFileSync(item), watermarkOptions, this.ttfPath)
+                transformedBuffer = await imageAddWaterMark(fs.readFileSync(item), watermarkOptions, this.ttfPath, ctx.log)
               }
             }
             if (needCompress(compressOptions, path.extname(item))) {
@@ -148,9 +148,9 @@ export class Lifecycle extends EventEmitter {
                 })
                 const tempHeicConvertFile = path.join(tempFilePath, `${path.basename(item, path.extname(item))}.jpg`)
                 fs.writeFileSync(tempHeicConvertFile, Buffer.from(heicResult))
-                transformedBuffer = await imageProcess(fs.readFileSync(tempHeicConvertFile), compressOptions, '.jpg')
+                transformedBuffer = await imageProcess(fs.readFileSync(tempHeicConvertFile), compressOptions, '.jpg', ctx.log)
               } else {
-                transformedBuffer = await imageProcess(transformedBuffer ?? fs.readFileSync(item), compressOptions, path.extname(item))
+                transformedBuffer = await imageProcess(transformedBuffer ?? fs.readFileSync(item), compressOptions, path.extname(item), ctx.log)
               }
             }
             if (!transformedBuffer && compressOptions?.isRemoveExif) {

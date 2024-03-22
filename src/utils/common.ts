@@ -583,7 +583,7 @@ const validOutputFormat = (format: string): boolean => {
 
 const imageExtList = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'avif', 'heif', 'heic']
 
-export async function imageAddWaterMark (img: Buffer, options: IBuildInWaterMarkOptions, defaultWatermarkFontPath: string): Promise<Buffer> {
+export async function imageAddWaterMark (img: Buffer, options: IBuildInWaterMarkOptions, defaultWatermarkFontPath: string, logger: ILogger): Promise<Buffer> {
   try {
     let image: sharp.Sharp = sharp(img, { animated: true })
     if (validParam(options.watermarkText)) {
@@ -602,8 +602,8 @@ export async function imageAddWaterMark (img: Buffer, options: IBuildInWaterMark
       ), { animated: true })
     }
     return await image.toBuffer()
-  } catch (error) {
-    console.log(error)
+  } catch (error: any) {
+    logger.error(`Image add watermark error: ${error}`)
     return img
   }
 }
@@ -629,7 +629,7 @@ function formatOptions (options: IBuildInCompressOptions): IBuildInCompressOptio
   }
 }
 
-export async function imageProcess (img: Buffer, options: IBuildInCompressOptions, rawFormat: string): Promise<Buffer> {
+export async function imageProcess (img: Buffer, options: IBuildInCompressOptions, rawFormat: string, logger: ILogger): Promise<Buffer> {
   options = formatOptions(options)
   try {
     rawFormat = rawFormat.toLowerCase().replace('.', '')
@@ -726,8 +726,8 @@ export async function imageProcess (img: Buffer, options: IBuildInCompressOption
       }
     }
     return await image.toBuffer()
-  } catch (error) {
-    console.log(error)
+  } catch (error: any) {
+    logger.error(`Image process error: ${error}`)
     return img
   }
 }
