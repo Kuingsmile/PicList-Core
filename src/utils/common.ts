@@ -586,21 +586,19 @@ const imageExtList = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'svg',
 export async function imageAddWaterMark (img: Buffer, options: IBuildInWaterMarkOptions, defaultWatermarkFontPath: string, logger: ILogger): Promise<Buffer> {
   try {
     let image: sharp.Sharp = sharp(img, { animated: true })
-    if (validParam(options.watermarkText)) {
-      image = sharp(await AddWatermark(
-        img,
-        options.watermarkType || 'text',
-        defaultWatermarkFontPath,
-        options.isFullScreenWatermark,
-        forceNumber(options.watermarkDegree),
-        options.watermarkText,
-        options.watermarkFontPath,
-        forceNumber(options.watermarkScaleRatio),
-        options.watermarkColor,
-        options.watermarkImagePath,
-        options.watermarkPosition
-      ), { animated: true })
-    }
+    image = sharp(await AddWatermark(
+      img,
+      options.watermarkType || 'text',
+      defaultWatermarkFontPath,
+      options.isFullScreenWatermark,
+      forceNumber(options.watermarkDegree),
+      options.watermarkText,
+      options.watermarkFontPath,
+      forceNumber(options.watermarkScaleRatio),
+      options.watermarkColor,
+      options.watermarkImagePath,
+      options.watermarkPosition
+    ), { animated: true })
     return await image.toBuffer()
   } catch (error: any) {
     logger.error(`Image add watermark error: ${error}`)
