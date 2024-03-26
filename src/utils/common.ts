@@ -29,20 +29,31 @@ export function renameFileNameWithRandomString (oldName: string, length: number 
   return `${randomStringGenerator(length)}${path.extname(oldName)}`
 }
 
-export function renameFileNameWithCustomString (oldName: string, customFormat: string, affixFileName?: string): string {
+function formatHelper (num: number): string {
+  return num.toString().length === 1 ? `0${num}` : num.toString()
+}
+
+function getMd5 (input: crypto.BinaryLike): string {
+  return crypto.createHash('md5').update(input).digest('hex')
+}
+
+export function renameFileNameWithCustomString (oldName: string, customFormat: string, affixFileName?: string, fileBuffer?: crypto.BinaryLike): string {
+  const now = new Date()
+  const year = now.getFullYear().toString()
+  const filebasename = path.basename(oldName, path.extname(oldName))
   const conversionMap: Record<string, () => string> = {
-    '{Y}': () => new Date().getFullYear().toString(),
-    '{y}': () => new Date().getFullYear().toString().slice(2),
-    '{m}': () => (new Date().getMonth() + 1).toString().length === 1 ? `0${new Date().getMonth() + 1}` : (new Date().getMonth() + 1).toString(),
-    '{d}': () => new Date().getDate().toString().length === 1 ? `0${new Date().getDate()}` : new Date().getDate().toString(),
-    '{h}': () => new Date().getHours().toString().length === 1 ? `0${new Date().getHours()}` : new Date().getHours().toString(),
-    '{i}': () => new Date().getMinutes().toString().length === 1 ? `0${new Date().getMinutes()}` : new Date().getMinutes().toString(),
-    '{s}': () => new Date().getSeconds().toString().length === 1 ? `0${new Date().getSeconds()}` : new Date().getSeconds().toString(),
-    '{md5}': () => crypto.createHash('md5').update(path.basename(oldName, path.extname(oldName))).digest('hex'),
-    '{md5-16}': () => crypto.createHash('md5').update(path.basename(oldName, path.extname(oldName))).digest('hex').slice(0, 16),
+    '{Y}': () => year,
+    '{y}': () => year.slice(2),
+    '{m}': () => formatHelper(now.getMonth() + 1),
+    '{d}': () => formatHelper(now.getDate()),
+    '{h}': () => formatHelper(now.getHours()),
+    '{i}': () => formatHelper(now.getMinutes()),
+    '{s}': () => formatHelper(now.getSeconds()),
+    '{md5}': () => getMd5(fileBuffer || filebasename),
+    '{md5-16}': () => getMd5(fileBuffer || filebasename).slice(0, 16),
     '{str-10}': () => randomStringGenerator(10),
     '{str-20}': () => randomStringGenerator(20),
-    '{filename}': () => affixFileName ? path.basename(affixFileName, path.extname(affixFileName)) : path.basename(oldName, path.extname(oldName)),
+    '{filename}': () => affixFileName ? path.basename(affixFileName, path.extname(affixFileName)) : filebasename,
     '{uuid}': () => uuidv4().replace(/-/g, ''),
     '{timestamp}': () => Math.floor(Date.now() / 1000).toString()
   }

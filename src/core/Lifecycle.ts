@@ -186,7 +186,7 @@ export class Lifecycle extends EventEmitter {
         ctx.output = ctx.output.map((item: IImgInfo, index: number) => {
           let fileName = item.fileName
           if (format) {
-            fileName = renameFileNameWithCustomString(ctx.rawInputPath![index], format)
+            fileName = renameFileNameWithCustomString(ctx.rawInputPath![index], format, undefined, item.base64Image ? item.base64Image : item.buffer)
             fileName = fileName.replace(/\/+/g, '/')
             if (fileName.slice(-1) === '/') {
               fileName = fileName + index.toString()
