@@ -161,7 +161,7 @@ export class Lifecycle extends EventEmitter {
           }
           if (isNeedCompress(compressOptions, extention)) {
             ctx.log.info(compressMsg)
-            if (!itemIsUrl && (extention === '.heic' || extention === '.heif')) {
+            if (!itemIsUrl && (extention.toLowerCase() === '.heic' || extention.toLowerCase() === '.heif')) {
               const heicResult = await heicConvert({
                 buffer: fileBuffer,
                 format: 'JPEG',
