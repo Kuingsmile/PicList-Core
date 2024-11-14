@@ -276,7 +276,7 @@ export const EN: ILocales = {
 
   BUILDIN_COMPRESS: 'Processing Settings',
   BUILDIN_COMPRESS_QUALITY: 'Set image quality',
-  BUILDIN_COMPRESS_MESSAGE_QUALITY: 'Please enter an integer between 0-100',
+  BUILDIN_COMPRESS_MESSAGE_QUALITY: 'Please enter an integer between 1-100',
   BUILDIN_COMPRESS_ISCONVERT: 'Whether to perform format conversion',
   BUILDIN_COMPRESS_MESSAGE_ISCONVERT: 'Enable when format conversion is required',
   BUILDIN_COMPRESS_CONVERTFORMAT: 'Set conversion format',

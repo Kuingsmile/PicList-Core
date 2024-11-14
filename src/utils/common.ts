@@ -658,7 +658,7 @@ export async function imageCompress(
     let image: sharp.Sharp = sharp(img, { animated: true })
     let quality = 100
     if (validParam(options.quality) && options.quality! < 100) {
-      quality = options.quality!
+      quality = Math.min(Math.max(Math.round(options.quality!), 1), 100)
     }
     if (options.isReSizeByPercent) {
       if (validParam(options.reSizePercent)) {
