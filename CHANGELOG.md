@@ -1,3 +1,13 @@
+## :tada: 1.9.7 (2024-11-16)
+
+
+### :bug: Bug Fixes
+
+* **custom:** fix file convert bug of HEIC file ([9362aad](https://github.com/Kuingsmile/PicList-Core/commit/9362aad))
+* **custom:** quality must be 1-100 ([abad489](https://github.com/Kuingsmile/PicList-Core/commit/abad489))
+
+
+
 ## :tada: 1.9.6 (2024-09-12)
 
 
