@@ -1,3 +1,12 @@
+## :tada: 1.9.8 (2024-11-25)
+
+
+### :sparkles: Features
+
+* **custom:** add milliseconds ([86671c2](https://github.com/Kuingsmile/PicList-Core/commit/86671c2))
+
+
+
 ## :tada: 1.9.7 (2024-11-16)
 
 
