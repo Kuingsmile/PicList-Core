@@ -1,3 +1,12 @@
+## :tada: 1.9.9 (2024-12-19)
+
+
+### :bug: Bug Fixes
+
+* **custom:** fix webdav rename bug ([7d4b9e8](https://github.com/Kuingsmile/PicList-Core/commit/7d4b9e8))
+
+
+
 ## :tada: 1.9.8 (2024-11-25)
 
 
