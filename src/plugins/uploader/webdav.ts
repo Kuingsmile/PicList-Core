@@ -42,7 +42,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
           clientOptions.authType = AuthType.Digest
         }
         const client: WebDAVClient = createClient(webdavplistOptions.host, clientOptions)
-        const pathToCreate = uploadPath === '/' ? '' : uploadPath
+        const fullUploadDirPath = path.dirname(`${uploadPath}${img.fileName}`)
+        const pathToCreate = fullUploadDirPath === '/' ? '' : fullUploadDirPath
         if (pathToCreate) {
           await client.createDirectory(pathToCreate, { recursive: true })
         }
