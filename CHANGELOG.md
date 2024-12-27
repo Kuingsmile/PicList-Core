@@ -1,3 +1,12 @@
+## :tada: 1.9.10 (2024-12-27)
+
+
+### :bug: Bug Fixes
+
+* **custom:** fix custom prefix bug of advanced picbed ([4a58a89](https://github.com/Kuingsmile/PicList-Core/commit/4a58a89))
+
+
+
 ## :tada: 1.9.9 (2024-12-19)
 
 
