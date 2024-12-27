@@ -74,8 +74,9 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         delete img.buffer
         if (advancedplistConfig.customPrefix) {
           img.imgUrl = advancedplistConfig.customPrefix + imageUrl
+        } else {
+          img.imgUrl = imageUrl
         }
-        img.imgUrl = imageUrl
       } else {
         ctx.emit(IBuildInEvent.NOTIFICATION, {
           title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
