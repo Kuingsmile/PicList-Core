@@ -148,8 +148,8 @@ export class PicGo extends EventEmitter implements IPicGo {
   }
 
   getConfig<T>(name?: string): T {
+    this._config = this.db.read(true) as IConfig
     if (!name) {
-      this._config = this.db.read(true) as IConfig
       return this._config as unknown as T
     }
     return get(this._config, name)
