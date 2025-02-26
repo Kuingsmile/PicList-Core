@@ -150,8 +150,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       handleResError(ctx, getInfoRes)
       const sign = getInfoRes.body.data.sign
       const encodedPath = encodePath(`${webPath || uploadPath}${img.fileName}`)
-      img.imgUrl = `${customUrl || url}/d${encodedPath}`
-      img.imgUrl += sign ? `?sign=${sign}` : ''
+      img.imgUrl = `${customUrl || url}${customUrl && customUrl !== url ? '' : '/d'}${encodedPath}`
+      img.imgUrl += (!customUrl || customUrl === url) && sign ? `?sign=${sign}` : ''
       delete img.base64Image
       delete img.buffer
     }
