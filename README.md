@@ -1,5 +1,7 @@
 # PicList-Core
 
+English | [简体中文](./README_cn.md)
+
 ![standard](https://img.shields.io/badge/code%20style-standard-green.svg?style=flat-square)
 ![GitHub](https://img.shields.io/github/license/mashape/apistatus.svg?style=flat-square)
 ![node](https://img.shields.io/badge/node-%3E%3D16.0.0-blue?style=flat-square)
@@ -8,7 +10,7 @@
 
 A tool for picture uploading. Both CLI & api supports. It also supports plugin system, please check [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) to find powerful plugins.
 
-Based on Picgo-Core and add more features.
+Based on PicGo-Core with additional features.
 
 **Typora support natively**.
 
@@ -18,7 +20,7 @@ Based on Picgo-Core and add more features.
   - Set watermark and compress parameters through `picgo set buildin watermark` and `picgo set buildin compress` under CLI command
   - Image processing is beforeTransform, which does not conflict with any plugin
 - Add support for advanced rename, you can set the rename rule through `picgo set buildin rename` under the CLI command
-- Add new built-in picbed: WebDAV, SFTP, Local path
+- Add new built-in picbed: WebDAV, SFTP, Local path, AWS S3
 - Adds support for imgur account uploads
 - Built-in server just like PicList-Desktop server, you can use `picgo-server` to start the server
 - Fix several bugs of PicGo-Core
@@ -111,6 +113,15 @@ You can use `docker exec` to install plugins in docker.
 ```bash
 docker exec -it piclist sh
 picgo install picgo-plugin-xxx
+```
+
+#### Change config in docker
+
+You can use `docker exec` to change config in docker.
+
+```bash
+docker exec -it piclist sh
+picgo set xxx
 ```
 
 ### Server
