@@ -1,3 +1,22 @@
+## :tada: 1.9.11 (2025-02-27)
+
+
+### :sparkles: Features
+
+* **custom:** optimize getconfig to hot-reload ([da65a05](https://github.com/Kuingsmile/PicList-Core/commit/da65a05))
+
+
+### :bug: Bug Fixes
+
+* **custom:** fix alist output url bug ([3270f67](https://github.com/Kuingsmile/PicList-Core/commit/3270f67))
+
+
+### :pencil: Documentation
+
+* **custom:** add chinease readme.md ([08386c3](https://github.com/Kuingsmile/PicList-Core/commit/08386c3))
+
+
+
 ## :tada: 1.9.10 (2024-12-27)
 
 
