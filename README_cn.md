@@ -8,30 +8,38 @@
 
 ![picgo-core](https://cdn.jsdelivr.net/gh/Molunerfinn/test/picgo/picgo-core-fix.jpg)
 
-一个用于图片上传的工具。同时支持CLI和API调用。它还支持插件系统，请查看[Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo)获取强大的插件。
+PicList-Core 是一个功能强大的图片上传工具，提供 CLI 和 API 两种调用方式。它在 PicGo-Core 的基础上增强了功能，同时保持插件兼容性。查看 [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) 获取丰富的插件资源。
 
-基于PicGo-Core并添加了更多功能。
+**原生支持 Typora 集成**。
 
-**原生支持Typora**。
+## 增强功能
 
-## 新增功能
+- **图像处理能力**：
+  - 添加水印、压缩图片和转换格式
+  - 通过 `picgo set buildin watermark` 和 `picgo set buildin compress` CLI 命令进行配置
+  - 处理过程发生在 beforeTransform 阶段，确保与所有插件兼容
 
-- 增加水印、压缩和转换图片格式功能
-  - 通过CLI命令`picgo set buildin watermark`和`picgo set buildin compress`设置水印和压缩参数
-  - 图像处理在beforeTransform阶段进行，不会与任何插件冲突
-- 增加高级重命名支持，你可以通过CLI命令`picgo set buildin rename`设置重命名规则
-- 新增内置图床：WebDAV、SFTP、本地路径、AWS S3
-- 增加对imgur账户上传的支持
-- 内置服务器功能，与PicList-Desktop服务器相似，你可以使用`picgo-server`启动服务器
-- 修复了PicGo-Core的多个错误
+- **高级重命名**：
+  - 通过 `picgo set buildin rename` 设置自定义重命名规则
+
+- **额外内置图床**：
+  - WebDAV、SFTP、本地路径、AWS S3
+  - 改进的 Imgur 支持，支持账户上传
+
+- **内置服务器**：
+  - 类似于 PicList-Desktop 服务器
+  - 使用 `picgo-server` 命令启动
+
+- **错误修复**：
+  - 解决了原始 PicGo-Core 的多个问题
 
 ## 安装
 
-PicList需要node.js >= 16版本
+PicList 需要 Node.js >= 16
 
-### 安装前准备
+### 前置条件
 
-由于PicList依赖[sharp](https://sharp.pixelplumbing.com/)，你需要在安装PicList前先安装sharp。
+PicList 依赖 [sharp](https://sharp.pixelplumbing.com/)，请先安装它：
 
 ```bash
 npm config set sharp_binary_host "https://npmmirror.com/mirrors/sharp"

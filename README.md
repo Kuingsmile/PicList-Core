@@ -8,30 +8,38 @@ English | [简体中文](./README_cn.md)
 
 ![picgo-core](https://cdn.jsdelivr.net/gh/Molunerfinn/test/picgo/picgo-core-fix.jpg)
 
-A tool for picture uploading. Both CLI & api supports. It also supports plugin system, please check [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) to find powerful plugins.
+A powerful tool for image uploading with both CLI & API support. PicList-Core extends PicGo-Core with additional features while maintaining plugin compatibility. Check out [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) for a collection of powerful plugins.
 
-Based on PicGo-Core with additional features.
+**Natively supports Typora integration**.
 
-**Typora support natively**.
+## Enhanced Features
 
-## New Features
+- **Image processing capabilities**:
+  - Add watermarks, compress images, and convert formats
+  - Configure via `picgo set buildin watermark` and `picgo set buildin compress` CLI commands
+  - Processing happens during beforeTransform phase, ensuring compatibility with all plugins
 
-- Add watermark, compress and convert image format features
-  - Set watermark and compress parameters through `picgo set buildin watermark` and `picgo set buildin compress` under CLI command
-  - Image processing is beforeTransform, which does not conflict with any plugin
-- Add support for advanced rename, you can set the rename rule through `picgo set buildin rename` under the CLI command
-- Add new built-in picbed: WebDAV, SFTP, Local path, AWS S3
-- Adds support for imgur account uploads
-- Built-in server just like PicList-Desktop server, you can use `picgo-server` to start the server
-- Fix several bugs of PicGo-Core
+- **Advanced renaming**:
+  - Set custom rename rules via `picgo set buildin rename`
+
+- **Additional built-in image hosting services**:
+  - WebDAV, SFTP, Local path, AWS S3
+  - Improved Imgur support with account-based uploads
+
+- **Built-in server**:
+  - Similar to PicList-Desktop server
+  - Launch with `picgo-server` command
+
+- **Bug fixes**:
+  - Addresses several issues from the original PicGo-Core
 
 ## Installation
 
-PicList should be installed with node.js >= 16
+PicList requires Node.js >= 16
 
-### before install
+### Prerequisites
 
-As PicList depends on [sharp](https://sharp.pixelplumbing.com/), you need to install sharp before install PicList.
+PicList depends on [sharp](https://sharp.pixelplumbing.com/). Install it first:
 
 ```bash
 npm config set sharp_binary_host "https://npmmirror.com/mirrors/sharp"
