@@ -10,6 +10,8 @@ English | [简体中文](./README_cn.md)
 
 A powerful tool for image uploading with both CLI & API support. PicList-Core extends PicGo-Core with additional features while maintaining plugin compatibility. Check out [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) for a collection of powerful plugins.
 
+You can refer to the [DeepWiki of PiclList-Core](https://deepwiki.com/Kuingsmile/PicList-Core/) for more information.
+
 **Natively supports Typora integration**.
 
 ## Enhanced Features
