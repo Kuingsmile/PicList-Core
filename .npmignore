@@ -1,8 +1,8 @@
 node_modules/
+.vscode/
+src/
 yarn-error.log
 temp.js
 package-lock.json
 tsconfig.json
-.vscode/
-src/
 .travis.yml
