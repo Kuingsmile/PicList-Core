@@ -34,46 +34,47 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
 
   const imgList = ctx.output
   for (const img of imgList) {
-    if (img.fileName && img.buffer) {
-      let image = img.buffer
-      if (!image && img.base64Image) {
-        image = Buffer.from(img.base64Image, 'base64')
-      }
-      const postConfig = postOptions(img.fileName, image, smmsConfig?.token, smmsConfig?.backupDomain)
+    if (!img.fileName) continue
+    let imageBuffer: Buffer | undefined = img.buffer
+    if (!imageBuffer && img.base64Image) {
+      imageBuffer = Buffer.from(img.base64Image, 'base64')
+    }
+    if (!imageBuffer) continue
 
-      const res: string = await ctx.request(postConfig)
-      const body = JSON.parse(res)
-      if (body.code === 'success') {
-        delete img.base64Image
-        delete img.buffer
-        img.imgUrl = body.data.url
-        img.hash = body.data.hash
-      } else if (body.code === 'image_repeated' && typeof body.images === 'string') {
-        // do extra check since this error return is not documented at https://doc.sm.ms/#api-Image-Upload
-        delete img.base64Image
-        delete img.buffer
-        img.imgUrl = body.images
-        const uploadHistory = await axios.get('https://sm.ms/api/v2/upload_history', {
-          headers: {
-            Authorization: smmsConfig.token
-          }
-        })
-        if (uploadHistory.data.code === 'success') {
-          const images = uploadHistory.data.data
-          for (const image of images) {
-            if (image.url === body.images) {
-              img.hash = image.hash
-              break
-            }
+    const postConfig = postOptions(img.fileName, imageBuffer, smmsConfig.token, smmsConfig.backupDomain)
+
+    const res: string = await ctx.request(postConfig)
+    const body = JSON.parse(res)
+    if (body.code === 'success') {
+      delete img.base64Image
+      delete img.buffer
+      img.imgUrl = body.data.url
+      img.hash = body.data.hash
+    } else if (body.code === 'image_repeated' && typeof body.images === 'string') {
+      // do extra check since this error return is not documented at https://doc.sm.ms/#api-Image-Upload
+      delete img.base64Image
+      delete img.buffer
+      img.imgUrl = body.images
+      const uploadHistory = await axios.get('https://sm.ms/api/v2/upload_history', {
+        headers: {
+          Authorization: smmsConfig.token
+        }
+      })
+      if (uploadHistory.data.code === 'success') {
+        const images = uploadHistory.data.data
+        for (const image of images) {
+          if (image.url === body.images) {
+            img.hash = image.hash
+            break
           }
         }
-      } else {
-        ctx.emit(IBuildInEvent.NOTIFICATION, {
-          title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-          body: body.message
-        })
-        throw new Error(body.message)
       }
+    } else {
+      ctx.emit(IBuildInEvent.NOTIFICATION, {
+        title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
+        body: body.message
+      })
+      throw new Error(body.message)
     }
   }
   return ctx
