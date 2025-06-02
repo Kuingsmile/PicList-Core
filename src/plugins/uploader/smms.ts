@@ -30,6 +30,7 @@ const postOptions = (fileName: string, image: Buffer, apiToken: string, backupDo
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const smmsConfig = ctx.getConfig<ISmmsConfig>('picBed.smms')
   if (!smmsConfig) throw new Error('Can not find smms config!')
+  if (!smmsConfig.token || smmsConfig.token.trim() === '') throw new Error('SM.MS token is required!')
 
   const imgList = ctx.output
   for (const img of imgList) {
