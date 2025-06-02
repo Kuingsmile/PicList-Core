@@ -217,7 +217,7 @@ export const EN: ILocales = {
   PICBED_LSKY_MESSAGE_STRATEGY_ID: 'Ex. 1',
   PICBED_LSKY_ALBUM_ID: 'Set Album ID',
   PICBED_LSKY_MESSAGE_ALBUM_ID: 'Optional, only for V2',
-  PICBED_LSKY_PERMISSION: 'Set Permisson',
+  PICBED_LSKY_PERMISSION: 'Set Permission',
   PICBED_LSKY_MESSAGE_PERMISSION: 'Ex. public',
 
   // AwsS3Plist
