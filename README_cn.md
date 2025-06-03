@@ -1,4 +1,4 @@
-# PicList-Core
+# 🖼️ PicList-Core
 
 [English](./README.md) | 简体中文
 
@@ -14,32 +14,63 @@ PicList-Core 是一个功能强大的图片上传工具，提供 CLI 和 API 两
 
 **原生支持 Typora 集成**。
 
-## 增强功能
+## ✨ 增强功能
 
-- **图像处理能力**：
-  - 添加水印、压缩图片和转换格式
-  - 通过 `picgo set buildin watermark` 和 `picgo set buildin compress` CLI 命令进行配置
-  - 处理过程发生在 beforeTransform 阶段，确保与所有插件兼容
+### 🖼️ 图像处理增强
+- 增加水印、压缩和转换图片格式功能：
+  - 使用 CLI 命令设置参数：
+    - `picgo set buildin watermark`：设置水印
+    - `picgo set buildin compress`：设置压缩参数
+  - 所有图像处理在 `beforeTransform` 阶段进行，不会与插件产生冲突。
 
-- **高级重命名**：
-  - 通过 `picgo set buildin rename` 设置自定义重命名规则
+### 📝 高级重命名支持
+你可以通过命令 `picgo set buildin rename` 设置自定义重命名规则，支持以下变量参数：
 
-- **额外内置图床**：
-  - WebDAV、SFTP、本地路径、AWS S3
-  - 改进的 Imgur 支持，支持账户上传
+| 参数名          | 说明                          | 示例值                |
+|----------------|-------------------------------|-----------------------|
+| `{filename}`   | 原始文件名（不含扩展名）      | `image`               |
+| `{extname}`    | 文件扩展名（含点号）          | `.jpg`                |
+| `{timestamp}`  | 当前时间戳（毫秒）            | `1717029203156`       |
+| `{uuid}`       | 随机生成的 UUID               | `550e8400-e29b-41d4-a716-446655440000` |
+| `{date:格式}`  | 自定义格式日期（ISO8601 格式）| `{date:yyyy-MM-dd}`   |
 
-- **内置服务器**：
-  - 类似于 PicList-Desktop 服务器
-  - 使用 `picgo-server` 命令启动
+> ⚠️ **文件名限制提醒**：
+> Windows: 禁止使用 /, \, :, *, ?, ", <, >, |。
+>
+> macOS/Linux: 禁止使用 / 和 null 字符。Linux 下还禁止以 - 开头的文件名。
+>
+> 在使用 {date:格式} 时，请避免直接使用非法字符。
 
-- **错误修复**：
-  - 解决了原始 PicGo-Core 的多个问题
+#### 使用示例
+```bash
+# 使用时间戳 + 原始文件名
+format: {timestamp}-{filename}
 
-## 安装
+# 使用日期目录结构 + UUID
+format: {date:yyyy/MM/dd}/{uuid}
+
+# 复合参数使用
+format: backup_{filename}_{timestamp}{extname}
+```
+
+### 🚀 支持更多图床类型
+新增以下内置图床支持：
+- WebDAV
+- SFTP
+- 本地路径
+- AWS S3
+- 增加对imgur账户上传的支持
+
+### 🔧 其他
+
+- 内置服务器功能，与PicList-Desktop服务器相似，你可以使用`picgo-server`启动服务器
+- 修复了PicGo-Core的多个错误
+
+## 📥 安装
 
 PicList 需要 Node.js >= 16
 
-### 前置条件
+### ⚙️ 前置条件
 
 PicList 依赖 [sharp](https://sharp.pixelplumbing.com/)，请先安装它：
 
@@ -49,7 +80,7 @@ npm config set sharp_libvips_binary_host "https://npmmirror.com/mirrors/sharp-li
 npm install sharp
 ```
 
-### 全局安装
+### 🌐 全局安装
 
 ```bash
 npm install piclist -g
@@ -59,7 +90,7 @@ npm install piclist -g
 yarn global add piclist
 ```
 
-### 本地安装
+### 📦 本地安装
 
 ```bash
 npm install piclist -D
@@ -69,13 +100,13 @@ npm install piclist -D
 yarn add piclist -D
 ```
 
-## 使用方法
+## 🚀 使用方法
 
-### Docker
+### 🐳 Docker
 
 你可以使用Docker运行PicList-Core。
 
-#### docker run
+#### 🐋 docker run
 
 将`./piclist`更改为你自己的路径，该路径是放置`config.json`文件的位置，并将`piclist123456`更改为你自己的密钥。
 
@@ -89,7 +120,7 @@ docker run -d \
   node /usr/local/bin/picgo-server -k piclist123456
 ```
 
-#### docker-compose
+#### 📄 docker-compose
 
 从本仓库下载`docker-compose.yml`，或将以下内容复制到`docker-compose.yml`:
 
@@ -116,7 +147,7 @@ services:
 docker-compose up -d
 ```
 
-#### 在Docker中安装插件
+#### 🔌 在Docker中安装插件
 
 你可以使用`docker exec`在Docker中安装插件。
 
@@ -125,7 +156,7 @@ docker exec -it piclist sh
 picgo install picgo-plugin-xxx
 ```
 
-#### 在Docker中更新配置
+#### ⚙️ 在Docker中更新配置
 
 你可以使用`docker exec`在Docker中更新配置。
 
@@ -134,7 +165,7 @@ docker exec -it piclist sh
 picgo set xxx
 ```
 
-### 服务器
+### 🖥️ 服务器
 
 你可以使用`picgo-server`启动服务器，默认端口为`36677`。
 
@@ -169,12 +200,12 @@ $ picgo-server -h
     picgo-server -c /path/to/config.json -k 123456
 ```
 
-#### 接口
+#### 🔗 接口
 
 - `/upload?picbed=xxx&key=xxx` 上传图片，`picbed`用于设置图床，`key`用于设置密钥
 - `/heartbeat` 心跳检测
 
-### CLI使用
+### 💻 CLI使用
 
 > PicList-Core使用`SM.MS`作为默认上传图床。
 
@@ -204,13 +235,13 @@ $ picgo -h
     init [options] <template> [project]  创建picgo插件的开发模板
 ```
 
-#### 从路径上传图片
+#### 📤 从路径上传图片
 
 ```bash
 picgo upload /xxx/xx/xx.jpg
 ```
 
-#### 从剪贴板上传图片
+#### 📋 从剪贴板上传图片
 
 > 从剪贴板获取的图片将被转换为`png`格式
 
@@ -218,21 +249,21 @@ picgo upload /xxx/xx/xx.jpg
 picgo upload
 ```
 
-### 在Node项目中使用
+### 📚 在Node项目中使用
 
-#### CommonJS
+#### 🔄 CommonJS
 
 ```js
 const { PicGo } = require('piclist')
 ```
 
-#### ES模块
+#### 📦 ES模块
 
 ```js
 import { PicGo } from 'piclist'
 ```
 
-#### API使用示例
+#### 📝 API使用示例
 
 ```js
 const picgo = new PicGo()
@@ -244,6 +275,6 @@ picgo.upload(['/xxx/xxx.jpg'])
 picgo.upload()
 ```
 
-## 文档
+## 📖 文档
 
 获取更多详细信息，请查看[PicGo-Core文档](https://picgo.github.io/PicGo-Core-Doc/)。

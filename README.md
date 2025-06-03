@@ -1,4 +1,4 @@
-# PicList-Core
+# 🖼️ PicList-Core
 
 English | [简体中文](./README_cn.md)
 
@@ -8,38 +8,68 @@ English | [简体中文](./README_cn.md)
 
 ![picgo-core](https://cdn.jsdelivr.net/gh/Molunerfinn/test/picgo/picgo-core-fix.jpg)
 
-A powerful tool for image uploading with both CLI & API support. PicList-Core extends PicGo-Core with additional features while maintaining plugin compatibility. Check out [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) for a collection of powerful plugins.
+PicList-Core is a powerful image uploading toolkit that offers both CLI and API interfaces. Built upon PicGo-Core, it brings enhanced functionality while maintaining full plugin compatibility. Check out [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) for an extensive collection of plugins.
 
-You can refer to the [DeepWiki of PiclList-Core](https://deepwiki.com/Kuingsmile/PicList-Core/) for more information.
+For detailed documentation, visit [PicList-Core DeepWiki](https://deepwiki.com/Kuingsmile/PicList-Core/).
 
-**Natively supports Typora integration**.
+**Seamless Typora integration supported**.
 
-## Enhanced Features
+## ✨ Enhanced Features
 
-- **Image processing capabilities**:
-  - Add watermarks, compress images, and convert formats
-  - Configure via `picgo set buildin watermark` and `picgo set buildin compress` CLI commands
-  - Processing happens during beforeTransform phase, ensuring compatibility with all plugins
+### 🖼️ Advanced Image Processing
+- Powerful image manipulation capabilities:
+  - Configure via intuitive CLI commands:
+    - `picgo set buildin watermark`: Customize watermark settings
+    - `picgo set buildin compress`: Fine-tune compression parameters
+  - All processing occurs in the `beforeTransform` phase, ensuring seamless plugin compatibility.
 
-- **Advanced renaming**:
-  - Set custom rename rules via `picgo set buildin rename`
+### 📝 Smart Renaming System
+Customize your file naming patterns using `picgo set buildin rename`. Available variables:
 
-- **Additional built-in image hosting services**:
-  - WebDAV, SFTP, Local path, AWS S3
-  - Improved Imgur support with account-based uploads
+| Variable       | Description                   | Example Value         |
+|----------------|-------------------------------|-----------------------|
+| `{filename}`   | Original filename (no ext)    | `image`               |
+| `{extname}`    | File extension (with dot)     | `.jpg`                |
+| `{timestamp}`  | Current timestamp (ms)        | `1717029203156`       |
+| `{uuid}`       | Random generated UUID         | `550e8400-e29b-41d4-a716-446655440000` |
+| `{date:format}`| Custom date (ISO8601 format)  | `{date:yyyy-MM-dd}`   |
 
-- **Built-in server**:
-  - Similar to PicList-Desktop server
-  - Launch with `picgo-server` command
+> ⚠️ **Filename Restrictions**:
+> Windows: Characters /, \, :, *, ?, ", <, >, | are not allowed
+>
+> macOS/Linux: Forward slash (/) and null characters are forbidden. On Linux, filenames cannot begin with a hyphen (-)
+>
+> When using {date:format}, ensure to avoid illegal characters
 
-- **Bug fixes**:
-  - Addresses several issues from the original PicGo-Core
+#### 🎯 Pattern Examples
+```bash
+# Timestamp + original filename
+format: {timestamp}-{filename}
 
-## Installation
+# Date-based directory structure + UUID
+format: {date:yyyy/MM/dd}/{uuid}
+
+# Combined pattern
+format: backup_{filename}_{timestamp}{extname}
+```
+### 🚀 Extended Image Hosting
+Built-in support for additional hosting services:
+- WebDAV integration
+- SFTP protocol
+- Local storage
+- AWS S3 compatibility
+- Enhanced Imgur support with account authentication
+
+### 🔧 Additional Improvements
+
+- Built-in server functionality matching PicList-Desktop capabilities, accessible via `picgo-server`
+- Multiple stability improvements and bug fixes from PicGo-Core
+
+## 📥 Installation
 
 PicList requires Node.js >= 16
 
-### Prerequisites
+### ⚙️ Prerequisites
 
 PicList depends on [sharp](https://sharp.pixelplumbing.com/). Install it first:
 
@@ -49,7 +79,7 @@ npm config set sharp_libvips_binary_host "https://npmmirror.com/mirrors/sharp-li
 npm install sharp
 ```
 
-### Global install
+### 🌐 Global Installation
 
 ```bash
 npm install piclist -g
@@ -59,7 +89,7 @@ npm install piclist -g
 yarn global add piclist
 ```
 
-### Local install
+### 📦 Local Installation
 
 ```bash
 npm install piclist -D
@@ -69,15 +99,15 @@ npm install piclist -D
 yarn add piclist -D
 ```
 
-## Usage
+## 🚀 Usage Guide
 
-### Docker
+### 🐳 Docker Integration
 
-You can use docker to run PicList-Core.
+Run PicList-Core in a Docker container for consistent deployment.
 
-#### docker run
+#### 🐋 Docker Run
 
-Change the `./piclist` to your own path, this path is where you put your `config.json` file, and change the `piclist123456` to your own secret key.
+Customize `./piclist` path for your `config.json` location and replace `piclist123456` with your secure key:
 
 ```bash
 docker run -d \
@@ -89,9 +119,9 @@ docker run -d \
   node /usr/local/bin/picgo-server -k piclist123456
 ```
 
-#### docker-compose
+#### 📄 Docker Compose
 
-download `docker-compose.yml` from this repo, or copy the following content to `docker-compose.yml`:
+Get `docker-compose.yml` from the repository or use this configuration:
 
 ```yaml
 version: '3.3'
@@ -108,46 +138,46 @@ services:
     command: node /usr/local/bin/picgo-server -k piclist123456
 ```
 
-You can change the `./piclist` to your own path, this path is where you put your `config.json` file, and change the `command` to your own secret key.
+Customize the `./piclist` path and security key in the `command` section.
 
-Then run:
+Deploy with:
 
 ```bash
 docker-compose up -d
 ```
 
-#### Install plugins in docker
+#### 🔌 Plugin Management in Docker
 
-You can use `docker exec` to install plugins in docker.
+Install plugins using Docker exec:
 
 ```bash
 docker exec -it piclist sh
 picgo install picgo-plugin-xxx
 ```
 
-#### Change config in docker
+#### ⚙️ Configuration in Docker
 
-You can use `docker exec` to change config in docker.
+Modify settings through Docker exec:
 
 ```bash
 docker exec -it piclist sh
 picgo set xxx
 ```
 
-### Server
+### 🖥️ Server Deployment
 
-You can use `picgo-server` to start a server, default port is `36677`.
+Launch the server with `picgo-server` (default port: 36677).
 
-Start server:
+Start the service:
 
 ```bash
 picgo-server
 node ./bin/picgo-server
 ```
 
-> It's highly recommended to add `--key` to avoid unauthorized access. Example: `picgo-server --key 123456`，
+> 🔒 Security Note: Always use the `--key` parameter to prevent unauthorized access, e.g., `picgo-server --key 123456`
 
-Show help:
+Command Reference:
 
 ```bash
 $ picgo-server -h
@@ -156,12 +186,12 @@ $ picgo-server -h
 
   Options:
 
-    -h, --help          Print this help message
-    -c, --config        Set config path
-    -p, --port          Set port, default port is 36677
-    --host              Set host, default host is 0.0.0.0
-    -k, --key           Set secret key to avoid unauthorized access
-    -v, --version       Print version number
+    -h, --help          display help information
+    -c, --config        specify config path
+    -p, --port          set custom port (default: 36677)
+    --host              set host address (default: 0.0.0.0)
+    -k, --key           set security key for access control
+    -v, --version       show version information
 
   Examples:
     picgo-server -c /path/to/config.json
@@ -169,16 +199,16 @@ $ picgo-server -h
     picgo-server -c /path/to/config.json -k 123456
 ```
 
-#### endpoints
+#### 🔗 API Endpoints
 
-- `/upload?picbed=xxx&key=xxx` upload picture, `picbed` to set pic-bed, `key` to set secret key
-- `/heartbeat` heartbeat
+- `/upload?picbed=xxx&key=xxx` Handle image uploads (`picbed`: hosting service, `key`: authentication)
+- `/heartbeat` Service health check
 
-### Use in CLI
+### 💻 CLI Operations
 
-> PicList-Core uses `SM.MS` as the default upload pic-bed.
+> PicList-Core defaults to `SM.MS` as the image hosting service.
 
-Show help:
+Command Reference:
 
 ```bash
 $ picgo -h
@@ -187,63 +217,63 @@ $ picgo -h
 
   Options:
 
-    -v, --version                 output the version number
-    -d, --debug                   debug mode
-    -s, --silent                  silent mode
-    -c, --config <path>           set config path
-    -h, --help                    output usage information
+    -v, --version                 display version
+    -d, --debug                   enable debug mode
+    -s, --silent                  enable silent mode
+    -c, --config <path>           specify config path
+    -h, --help                    show help
 
   Commands:
 
-    install|add <plugins...>             install picgo plugin
-    uninstall|rm <plugins...>            uninstall picgo plugin
-    update <plugins...>                  update picgo plugin
-    set|config <module> [name]           configure config of picgo modules
-    upload|u [input...]                  upload, go go go
-    use [module]                         use modules of picgo
+    install|add <plugins...>             install plugin(s)
+    uninstall|rm <plugins...>            remove plugin(s)
+    update <plugins...>                  update plugin(s)
+    set|config <module> [name]           configure module
+    upload|u [input...]                  start upload
+    use [module]                         select module
     init [options] <template> [project]  create picgo plugin\'s development templates
 ```
 
-#### Upload a picture from path
+#### 📤 Path-based Upload
 
 ```bash
 picgo upload /xxx/xx/xx.jpg
 ```
 
-#### Upload a picture from clipboard
+#### 📋 Clipboard Upload
 
-> picture from clipboard will be converted to `png`
+> Note: Clipboard images are automatically converted to PNG format
 
 ```bash
 picgo upload
 ```
 
-### Use in node project
+### 📚 Node.js Integration
 
-#### Common JS
+#### 🔄 CommonJS
 
 ```js
 const { PicGo } = require('piclist')
 ```
 
-#### ES Module
+#### 📦 ES Modules
 
 ```js
 import { PicGo } from 'piclist'
 ```
 
-#### API usage example
+#### 📝 API Examples
 
 ```js
 const picgo = new PicGo()
 
-// upload a picture from path
+// Upload from file path
 picgo.upload(['/xxx/xxx.jpg'])
 
-// upload a picture from clipboard
+// Upload from clipboard
 picgo.upload()
 ```
 
-## Documentation
+## 📖 Documentation
 
-For more details, you can checkout [documentation of PicGo-Core](https://picgo.github.io/PicGo-Core-Doc/).
+For comprehensive documentation, visit the [PicGo-Core Documentation](https://picgo.github.io/PicGo-Core-Doc/).
