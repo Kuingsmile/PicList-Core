@@ -14,6 +14,36 @@ For detailed documentation, visit [PicList-Core DeepWiki](https://deepwiki.com/K
 
 **Seamless Typora integration supported**.
 
+## 📑 Table of Contents
+- [🖼️ PicList-Core](#️-piclist-core)
+  - [📑 Table of Contents](#-table-of-contents)
+  - [✨ Enhanced Features](#-enhanced-features)
+    - [🖼️ Advanced Image Processing](#️-advanced-image-processing)
+    - [📝 Smart Renaming System](#-smart-renaming-system)
+      - [🎯 Pattern Examples](#-pattern-examples)
+    - [🚀 Extended Image Hosting](#-extended-image-hosting)
+    - [🔧 Additional Improvements](#-additional-improvements)
+  - [📥 Installation](#-installation)
+    - [⚙️ Prerequisites](#️-prerequisites)
+    - [🌐 Global Installation](#-global-installation)
+    - [📦 Local Installation](#-local-installation)
+  - [🚀 Usage Guide](#-usage-guide)
+    - [🐳 Docker Integration](#-docker-integration)
+      - [🐋 Docker Run](#-docker-run)
+      - [📄 Docker Compose](#-docker-compose)
+      - [🔌 Plugin Management in Docker](#-plugin-management-in-docker)
+      - [⚙️ Configuration in Docker](#️-configuration-in-docker)
+    - [🖥️ Server Deployment](#️-server-deployment)
+      - [🔗 API Endpoints](#-api-endpoints)
+    - [💻 CLI Operations](#-cli-operations)
+      - [📤 Path-based Upload](#-path-based-upload)
+      - [📋 Clipboard Upload](#-clipboard-upload)
+    - [📚 Node.js Integration](#-nodejs-integration)
+      - [🔄 CommonJS](#-commonjs)
+      - [📦 ES Modules](#-es-modules)
+      - [📝 API Examples](#-api-examples)
+  - [📖 Documentation](#-documentation)
+
 ## ✨ Enhanced Features
 
 ### 🖼️ Advanced Image Processing
