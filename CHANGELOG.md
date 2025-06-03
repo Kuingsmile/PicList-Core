@@ -1,3 +1,29 @@
+## :tada: 1.9.12 (2025-06-03)
+
+
+### :sparkles: Features
+
+* **custom:** add error handling for missing SM.MS token in uploader plugin ([b229807](https://github.com/Kuingsmile/PicList-Core/commit/b229807))
+* **custom:** improve image upload handling and error notifications in uploader plugin ([50e8dc8](https://github.com/Kuingsmile/PicList-Core/commit/50e8dc8))
+
+
+### :bug: Bug Fixes
+
+* **custom:** fix typo ([a3dc79b](https://github.com/Kuingsmile/PicList-Core/commit/a3dc79b))
+
+
+### :package: Chore
+
+* **custom:** remove unused files ([0a6827f](https://github.com/Kuingsmile/PicList-Core/commit/0a6827f))
+
+
+### :pencil: Documentation
+
+* **custom:** add DeepWiki reference to English and Chinese README files ([50c4b09](https://github.com/Kuingsmile/PicList-Core/commit/50c4b09))
+* **custom:** update readme ([abc7986](https://github.com/Kuingsmile/PicList-Core/commit/abc7986))
+
+
+
 ## :tada: 1.9.11 (2025-02-27)
 
 
