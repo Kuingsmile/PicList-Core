@@ -327,6 +327,7 @@ export interface IAdvancedPlistConfig {
   body?: string
   resDataPath?: string
   customPrefix?: string
+  webPath?: string
 }
 /** 内置alist 图床配置项 */
 export interface IAlistConfig {

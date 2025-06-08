@@ -2,7 +2,7 @@ import axios from 'axios'
 import { IPicGo, IPluginConfig, IAlistConfig, IOldReqOptions, IFullResponse } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { ILocalesKey } from '../../i18n/zh-CN'
-import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
+import { buildInUploaderNames, encodePath, formatPathHelper, createField } from './utils'
 import path from 'path'
 
 interface IAlistTokenStore {
@@ -65,6 +65,17 @@ const handleResError = (ctx: IPicGo, res: IFullResponse): void => {
   }
 }
 
+const createApiRequest = (url: string, token: string, body: any): IOldReqOptions => ({
+  method: 'POST',
+  url,
+  headers: {
+    Authorization: token,
+    'Content-Type': 'application/json'
+  },
+  body,
+  resolveWithFullResponse: true
+})
+
 const extractConfig = (config: IAlistConfig) => {
   const { url, token, username, password, uploadPath, webPath, customUrl } = config
   return {
@@ -112,42 +123,29 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       const postConfig = postOptions(url, token, img.fileName, fullUploadPath, image)
       const uploadRes = (await ctx.request(postConfig)) as unknown as IFullResponse
       handleResError(ctx, uploadRes)
-      const refreshUrl = `${url}/api/fs/list`
-      const getInfoUrl = `${url}/api/fs/get`
-      const refreshRes = (await ctx.request({
-        method: 'POST',
-        url: refreshUrl,
-        headers: {
-          Authorization: token,
-          'Content-Type': 'application/json'
-        },
-        body: {
+
+      const refreshRes = (await ctx.request(
+        createApiRequest(`${url}/api/fs/list`, token, {
           password: '',
           page: 1,
           per_page: 1,
           refresh: true,
           path: path.dirname(fullUploadPath)
-        },
-        resolveWithFullResponse: true
-      })) as unknown as IFullResponse
+        })
+      )) as unknown as IFullResponse
       handleResError(ctx, refreshRes)
-      const getInfoRes = (await ctx.request({
-        method: 'POST',
-        url: getInfoUrl,
-        headers: {
-          Authorization: token,
-          'Content-Type': 'application/json'
-        },
-        body: {
+
+      const getInfoRes = (await ctx.request(
+        createApiRequest(`${url}/api/fs/get`, token, {
           password: '',
           path: fullUploadPath,
           page: 1,
           per_page: 1,
           refresh: true
-        },
-        resolveWithFullResponse: true
-      })) as unknown as IFullResponse
+        })
+      )) as unknown as IFullResponse
       handleResError(ctx, getInfoRes)
+
       const sign = getInfoRes.body.data.sign
       const encodedPath = encodePath(`${webPath || uploadPath}${img.fileName}`)
       img.imgUrl = `${customUrl || url}${customUrl && customUrl !== url ? '' : '/d'}${encodedPath}`
@@ -161,114 +159,43 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
 
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IAlistConfig>('picBed.alistplist') || {}
-  const config: IPluginConfig[] = [
-    {
-      name: 'url',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_URL')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_URL')
-      },
+  return [
+    createField(ctx, 'alist', 'url', 'input', userConfig.url || '', true, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_URL')
-      },
-      default: userConfig.url || '',
-      required: true
-    },
-    {
-      name: 'token',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_TOKEN')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_TOKEN')
-      },
+      }
+    }),
+    createField(ctx, 'alist', 'token', 'input', userConfig.token || '', false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_TOKEN')
-      },
-      default: userConfig.token || '',
-      required: false
-    },
-    {
-      name: 'username',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_USERNAME')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_USERNAME')
-      },
+      }
+    }),
+    createField(ctx, 'alist', 'username', 'input', userConfig.username || '', false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_USERNAME')
-      },
-      default: userConfig.username || '',
-      required: false
-    },
-    {
-      name: 'password',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_PASSWORD')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_PASSWORD')
-      },
+      }
+    }),
+    createField(ctx, 'alist', 'password', 'input', userConfig.password || '', false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_PASSWORD')
-      },
-      default: userConfig.password || '',
-      required: false
-    },
-    {
-      name: 'uploadPath',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_UPLOAD_PATH')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_UPLOAD_PATH')
-      },
+      }
+    }),
+    createField(ctx, 'alist', 'uploadPath', 'input', userConfig.uploadPath || '', false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_UPLOAD_PATH')
-      },
-      default: userConfig.uploadPath || '',
-      required: false
-    },
-    {
-      name: 'webPath',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_WEB_PATH')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_WEB_PATH')
-      },
+      }
+    }),
+    createField(ctx, 'alist', 'webPath', 'input', userConfig.webPath || '', false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_WEB_PATH')
-      },
-      default: userConfig.webPath || '',
-      required: false
-    },
-    {
-      name: 'customUrl',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_CUSTOMURL')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_CUSTOMURL')
-      },
+      }
+    }),
+    createField(ctx, 'alist', 'customUrl', 'input', userConfig.customUrl || '', false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_CUSTOMURL')
-      },
-      default: userConfig.customUrl || '',
-      required: false
-    }
+      }
+    })
   ]
-  return config
 }
 
 export default function register(ctx: IPicGo): void {

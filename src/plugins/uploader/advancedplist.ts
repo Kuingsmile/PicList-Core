@@ -7,34 +7,27 @@ const postOptions = (
   image: Buffer,
   fileName: string,
   endpoint: string,
-  method: any,
+  method: string,
   headers: Record<string, string>,
   body: Record<string, string>,
   formDataKey: string
-): IOldReqOptions => {
-  const defaultHeaders = {
+): IOldReqOptions => ({
+  method: method.toUpperCase() as any,
+  url: endpoint,
+  headers: {
     contentType: 'multipart/form-data',
-    'User-Agent': 'PicList'
-  }
-  return {
-    method: method.toUpperCase(),
-    url: endpoint,
-    headers: {
-      ...defaultHeaders,
-      ...headers
+    'User-Agent': 'PicList',
+    ...headers
+  },
+  formData: {
+    [formDataKey]: {
+      value: image,
+      options: { filename: fileName }
     },
-    formData: {
-      [formDataKey]: {
-        value: image,
-        options: {
-          filename: fileName
-        }
-      },
-      ...body
-    },
-    json: true
-  }
-}
+    ...body
+  },
+  json: true
+})
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const advancedplistConfig = ctx.getConfig<IAdvancedPlistConfig>('picBed.advancedplist')
@@ -43,15 +36,14 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const imgList = ctx.output
   for (const img of imgList) {
     if (img.fileName && img.buffer) {
-      let image = img.buffer
-      if (!image && img.base64Image) {
-        image = Buffer.from(img.base64Image, 'base64')
-      }
+      const image = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : null)
+      if (!image) continue
+
       const postConfig = postOptions(
         image,
         img.fileName,
         advancedplistConfig.endpoint,
-        advancedplistConfig.method,
+        advancedplistConfig.method || 'POST',
         JSON.parse(advancedplistConfig.headers || '{}'),
         JSON.parse(advancedplistConfig.body || '{}'),
         advancedplistConfig.formDataKey || 'file'
@@ -59,6 +51,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
 
       let body = (await ctx.request(postConfig)) as any
       body = typeof body === 'string' ? JSON.parse(body) : body
+
+      // Extract image URL from response using resDataPath
       let imageUrl = body
       const resDataPath = advancedplistConfig.resDataPath || 'data.url'
       for (const key of resDataPath.split('.')) {
@@ -69,19 +63,24 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           break
         }
       }
+
       if (imageUrl && typeof imageUrl === 'string') {
         delete img.base64Image
         delete img.buffer
-        if (advancedplistConfig.customPrefix) {
-          img.imgUrl = advancedplistConfig.customPrefix + imageUrl
-        } else {
-          img.imgUrl = imageUrl
+        if (advancedplistConfig.webPath) {
+          const fileName = imageUrl.split('/').pop() || imageUrl
+          const webPath = advancedplistConfig.webPath.endsWith('/')
+            ? advancedplistConfig.webPath
+            : advancedplistConfig.webPath + '/'
+          imageUrl = webPath + fileName
         }
+        img.imgUrl = advancedplistConfig.customPrefix ? advancedplistConfig.customPrefix + imageUrl : imageUrl
       } else {
         ctx.emit(IBuildInEvent.NOTIFICATION, {
           title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
           body: body.message
         })
+        console.error('AdvancedPlist upload failed:', body)
         throw new Error(body.message)
       }
     }
@@ -91,115 +90,40 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
 
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IAdvancedPlistConfig>('picBed.advancedplist') || {}
-  const config: IPluginConfig[] = [
-    {
-      name: 'endpoint',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_ENDPOINT')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_ENDPOINT')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_MESSAGE_ENDPOINT')
-      },
-      default: userConfig.endpoint || '',
-      required: true
+
+  const createConfigField = (
+    name: string,
+    type: string,
+    defaultValue: any,
+    required: boolean = false,
+    extras?: any
+  ) => ({
+    name,
+    type,
+    get prefix() {
+      return ctx.i18n.translate<ILocalesKey>(`PICBED_ADVANCEDPLIST_${name.toUpperCase()}` as ILocalesKey)
     },
-    {
-      name: 'method',
-      type: 'list',
-      choices: ['POST', 'PUT', 'GET'],
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_METHOD')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_METHOD')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_MESSAGE_METHOD')
-      },
-      default: userConfig.method || 'POST',
-      required: false
+    get alias() {
+      return ctx.i18n.translate<ILocalesKey>(`PICBED_ADVANCEDPLIST_${name.toUpperCase()}` as ILocalesKey)
     },
-    {
-      name: 'formDataKey',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_FORM_DATA_KEY')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_FORM_DATA_KEY')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_MESSAGE_FORM_DATA_KEY')
-      },
-      default: userConfig.formDataKey || 'file',
-      required: false
+    get message() {
+      return ctx.i18n.translate<ILocalesKey>(`PICBED_ADVANCEDPLIST_MESSAGE_${name.toUpperCase()}` as ILocalesKey)
     },
-    {
-      name: 'headers',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_HEADERS')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_HEADERS')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_MESSAGE_HEADERS')
-      },
-      default: userConfig.headers || '{}',
-      required: false
-    },
-    {
-      name: 'body',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_BODY')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_BODY')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_MESSAGE_BODY')
-      },
-      default: userConfig.body || '{}',
-      required: false
-    },
-    {
-      name: 'customPrefix',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_CUSTOM_PREFIX')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_CUSTOM_PREFIX')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_MESSAGE_CUSTOM_PREFIX')
-      },
-      default: userConfig.customPrefix || '',
-      required: false
-    },
-    {
-      name: 'resDataPath',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_RES_DATA_PATH')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_RES_DATA_PATH')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST_MESSAGE_RES_DATA_PATH')
-      },
-      default: userConfig.resDataPath || 'data.url',
-      required: false
-    }
+    default: userConfig[name as keyof IAdvancedPlistConfig] || defaultValue,
+    required,
+    ...extras
+  })
+
+  return [
+    createConfigField('endpoint', 'input', '', true),
+    createConfigField('method', 'list', 'POST', false, { choices: ['POST', 'PUT', 'GET'] }),
+    createConfigField('formDataKey', 'input', 'file'),
+    createConfigField('headers', 'input', '{}'),
+    createConfigField('body', 'input', '{}'),
+    createConfigField('customPrefix', 'input', ''),
+    createConfigField('webPath', 'input', ''),
+    createConfigField('resDataPath', 'input', 'data.url')
   ]
-  return config
 }
 
 export default function register(ctx: IPicGo): void {
