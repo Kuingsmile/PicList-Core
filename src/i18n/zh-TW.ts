@@ -68,10 +68,12 @@ export const ZH_TW: ILocales = {
   PICBED_ALICLOUD_BUCKET: '設定Bucket',
   PICBED_ALICLOUD_AREA: '設定儲存區域',
   PICBED_ALICLOUD_PATH: '設定儲存路徑',
+  PICBED_ALICLOUD_WEBPATH: '設定網址路徑',
   PICBED_ALICLOUD_CUSTOMURL: '設定自訂網址',
   PICBED_ALICLOUD_OPTIONS: '設定網址後綴',
   PICBED_ALICLOUD_MESSAGE_AREA: '例如：oss-cn-beijing',
   PICBED_ALICLOUD_MESSAGE_PATH: '例如：test/',
+  PICBED_ALICLOUD_MESSAGE_WEBPATH: '用于網頁顯示的路徑',
   PICBED_ALICLOUD_MESSAGE_OPTIONS: '例如：?x-oss-process=xxx',
   PICBED_ALICLOUD_MESSAGE_CUSTOMURL: '例如：https://test.com',
 

@@ -66,10 +66,12 @@ export const ZH_CN = {
   PICBED_ALICLOUD_BUCKET: '设定Bucket',
   PICBED_ALICLOUD_AREA: '设定存储区域',
   PICBED_ALICLOUD_PATH: '设定存储路径',
+  PICBED_ALICLOUD_WEBPATH: '设定网站路径',
   PICBED_ALICLOUD_CUSTOMURL: '设定自定义域名',
   PICBED_ALICLOUD_OPTIONS: '设定网址后缀',
   PICBED_ALICLOUD_MESSAGE_AREA: '例如：oss-cn-beijing',
   PICBED_ALICLOUD_MESSAGE_PATH: '例如：test/',
+  PICBED_ALICLOUD_MESSAGE_WEBPATH: '用于拼接网址路径',
   PICBED_ALICLOUD_MESSAGE_OPTIONS: '例如：?x-oss-process=xxx',
   PICBED_ALICLOUD_MESSAGE_CUSTOMURL: '例如：https://test.com',
 

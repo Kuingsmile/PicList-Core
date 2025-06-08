@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import { lookup } from 'mime-types'
 import { IBuildInEvent } from '../../utils/enum'
 import { ILocalesKey } from '../../i18n/zh-CN'
-import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
+import { buildInUploaderNames, encodePath, formatPathHelper, createField } from './utils'
 import { IPicGo, IPluginConfig, IAliyunConfig, IOldReqOptionsWithFullResponse } from '../../types'
 
 const getCurrentUTCDate = (): string => new Date().toUTCString()
@@ -21,47 +21,45 @@ const postOptions = (
   fileName: string,
   signature: string,
   image: Buffer
-): IOldReqOptionsWithFullResponse => {
-  return {
-    method: 'PUT',
-    url: `https://${options.bucket}.${options.area}.aliyuncs.com/${encodePath(`${options.path}${fileName}`)}`,
-    headers: {
-      Host: `${options.bucket}.${options.area}.aliyuncs.com`,
-      Authorization: signature,
-      Date: getCurrentUTCDate(),
-      'Content-Type': lookup(fileName) || 'application/octet-stream'
-    },
-    body: image,
-    resolveWithFullResponse: true
-  }
-}
+): IOldReqOptionsWithFullResponse => ({
+  method: 'PUT',
+  url: `https://${options.bucket}.${options.area}.aliyuncs.com/${encodePath(`${options.path}${fileName}`)}`,
+  headers: {
+    Host: `${options.bucket}.${options.area}.aliyuncs.com`,
+    Authorization: signature,
+    Date: getCurrentUTCDate(),
+    'Content-Type': lookup(fileName) || 'application/octet-stream'
+  },
+  body: image,
+  resolveWithFullResponse: true
+})
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const aliYunOptions = ctx.getConfig<IAliyunConfig>('picBed.aliyun')
   if (!aliYunOptions) throw new Error("Can't find aliYun OSS config")
+
   aliYunOptions.path = formatPathHelper({ path: aliYunOptions.path })
+  const webPath = formatPathHelper({ path: aliYunOptions.webPath })
+
   try {
-    const imgList = ctx.output
+    const { output: imgList } = ctx
     const customUrl = (aliYunOptions.customUrl || '').replace(/\/$/, '')
-    const path = aliYunOptions.path
+    const { path, bucket, area, options: urlOptions = '' } = aliYunOptions
+
     for (const img of imgList) {
       if (img.fileName && img.buffer) {
         const signature = generateSignature(aliYunOptions, img.fileName)
-        let image = img.buffer
-        if (!image && img.base64Image) {
-          image = Buffer.from(img.base64Image, 'base64')
-        }
+        const image = img.buffer || Buffer.from(img.base64Image!, 'base64')
         const options = postOptions(aliYunOptions, img.fileName, signature, image)
         const body = await ctx.request(options)
+
         if (body.statusCode === 200) {
           delete img.base64Image
           delete img.buffer
-          const optionUrl = aliYunOptions.options || ''
-          if (customUrl) {
-            img.imgUrl = `${customUrl}/${encodePath(`${path}${img.fileName}`)}${optionUrl}`
-          } else {
-            img.imgUrl = `https://${aliYunOptions.bucket}.${aliYunOptions.area}.aliyuncs.com/${encodePath(`${path}${img.fileName}`)}${optionUrl}`
-          }
+          const encodedPath = encodePath(`${webPath || path}${img.fileName}`)
+          img.imgUrl = customUrl
+            ? `${customUrl}/${encodedPath}${urlOptions}`
+            : `https://${bucket}.${area}.aliyuncs.com/${encodedPath}${urlOptions}`
         } else {
           throw new Error('Upload failed')
         }
@@ -79,105 +77,36 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
 
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IAliyunConfig>('picBed.aliyun') || {}
-  const config: IPluginConfig[] = [
-    {
-      name: 'accessKeyId',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_ACCESSKEYID')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_ACCESSKEYID')
-      },
-      default: userConfig.accessKeyId || '',
-      required: true
-    },
-    {
-      name: 'accessKeySecret',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_ACCESSKEYSECRET')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_ACCESSKEYSECRET')
-      },
-      default: userConfig.accessKeySecret || '',
-      required: true
-    },
-    {
-      name: 'bucket',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_BUCKET')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_BUCKET')
-      },
-      default: userConfig.bucket || '',
-      required: true
-    },
-    {
-      name: 'area',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_AREA')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_AREA')
-      },
-      default: userConfig.area || '',
+  return [
+    createField(ctx, 'alicloud', 'accessKeyId', 'input', userConfig.accessKeyId || '', true),
+    createField(ctx, 'alicloud', 'accessKeySecret', 'input', userConfig.accessKeySecret || '', true),
+    createField(ctx, 'alicloud', 'bucket', 'input', userConfig.bucket || '', true),
+    createField(ctx, 'alicloud', 'area', 'input', userConfig.area || '', true, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_AREA')
-      },
-      required: true
-    },
-    {
-      name: 'path',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_PATH')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_PATH')
-      },
+      }
+    }),
+    createField(ctx, 'alicloud', 'path', 'input', userConfig.path || '', false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_PATH')
-      },
-      default: userConfig.path || '',
-      required: false
-    },
-    {
-      name: 'customUrl',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_CUSTOMURL')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_CUSTOMURL')
-      },
+      }
+    }),
+    createField(ctx, 'alicloud', 'webPath', 'input', userConfig.webPath || '', false, {
+      get message() {
+        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_WEBPATH')
+      }
+    }),
+    createField(ctx, 'alicloud', 'customUrl', 'input', userConfig.customUrl || '', false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_CUSTOMURL')
-      },
-      default: userConfig.customUrl || '',
-      required: false
-    },
-    {
-      name: 'options',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_OPTIONS')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_OPTIONS')
-      },
+      }
+    }),
+    createField(ctx, 'alicloud', 'options', 'input', userConfig.options || '', false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_OPTIONS')
-      },
-      default: userConfig.options || '',
-      required: false
-    }
+      }
+    })
   ]
-  return config
 }
 
 export default function register(ctx: IPicGo): void {

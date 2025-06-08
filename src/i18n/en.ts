@@ -67,10 +67,12 @@ export const EN: ILocales = {
   PICBED_ALICLOUD_BUCKET: 'Set Bucket',
   PICBED_ALICLOUD_AREA: 'Set Area',
   PICBED_ALICLOUD_PATH: 'Set Path',
+  PICBED_ALICLOUD_WEBPATH: 'Set Web Path',
   PICBED_ALICLOUD_CUSTOMURL: 'Set Custom URL',
   PICBED_ALICLOUD_OPTIONS: 'Set URL Suffix',
   PICBED_ALICLOUD_MESSAGE_AREA: 'Ex. oss-cn-beijing',
   PICBED_ALICLOUD_MESSAGE_PATH: 'Ex. test/',
+  PICBED_ALICLOUD_MESSAGE_WEBPATH: 'Used to generate url path',
   PICBED_ALICLOUD_MESSAGE_OPTIONS: 'Ex. ?x-oss-process=xxx',
   PICBED_ALICLOUD_MESSAGE_CUSTOMURL: 'Ex. https://test.com',
 
