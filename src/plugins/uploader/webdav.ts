@@ -160,7 +160,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       get alias() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_WEBSITE_PATH')
       },
-      default: userConfig.path || '',
+      default: userConfig.webpath || '',
       required: false,
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_WEBSITE_PATH')
