@@ -254,6 +254,9 @@ export const EN: ILocales = {
   PICBED_AWSS3PLIST_MESSAGE_ACL: 'Ex. public-read',
   PICBED_AWSS3PLIST_MESSAGE_DISABLEBUCKETPREFIXTOURL: 'Enable when `pathStyleAccess` is enabled',
 
+  BUILDIN_SKIPPROCESS: 'Skip Process Settings',
+  BUILDIN_COMPRESS_SKIPPROCESS_EXTLIST: 'Set Skip Process Ext List',
+
   BUILDIN_RENAME: 'Rename Settings',
   BUILDIN_RENAME_FORMAT: 'Set rename format',
   BUILDIN_RENAME_ENABLE: 'Enable rename',

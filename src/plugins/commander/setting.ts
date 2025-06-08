@@ -1,24 +1,28 @@
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IPicGo, IPluginConfig, IStringKeyMap } from '../../types'
 import compress from '../beforetransformer/compress'
+import skipProcess from '../beforetransformer/skipProcess'
 import watermark from '../beforetransformer/watermark'
 import rename from '../beforeupload/buildInRename'
 import { uploaderTranslators } from './utils'
 
-// handle modules config -> save to picgo config file
+// Built-in modules configuration mapping
+const BUILDIN_MODULES = {
+  compress: { config: compress.config, key: 'BUILDIN_COMPRESS' as ILocalesKey },
+  watermark: { config: watermark.config, key: 'BUILDIN_WATERMARK' as ILocalesKey },
+  rename: { config: rename.config, key: 'BUILDIN_RENAME' as ILocalesKey },
+  skipProcess: { config: skipProcess.config, key: 'BUILDIN_SKIPPROCESS' as ILocalesKey }
+} as const
+
+type BuildinModuleName = keyof typeof BUILDIN_MODULES
+
 const handleConfig = async (ctx: IPicGo, prompts: IPluginConfig[], module: string, name: string): Promise<void> => {
   const answer = await ctx.cmd.inquirer.prompt(prompts)
-  const configName =
-    module === 'uploader'
-      ? `picBed.${name}`
-      : module === 'transformer'
-        ? `transformer.${name}`
-        : module === 'buildin'
-          ? `buildIn.${name}`
-          : name
-  ctx.saveConfig({
-    [configName]: answer
-  })
+  const configName = getConfigName(module, name)
+
+  ctx.saveConfig({ [configName]: answer })
+
+  // Handle additional config for specific modules
   if (module === 'uploader') {
     ctx.saveConfig({
       'picBed.current': name,
@@ -28,6 +32,114 @@ const handleConfig = async (ctx: IPicGo, prompts: IPluginConfig[], module: strin
     ctx.saveConfig({
       'picBed.transformer': name
     })
+  }
+}
+
+const getConfigName = (module: string, name: string): string => {
+  const configMap: Record<string, string> = {
+    uploader: `picBed.${name}`,
+    transformer: `transformer.${name}`,
+    buildin: `buildIn.${name}`
+  }
+  return configMap[module] || name
+}
+
+const handleBuildinModule = async (ctx: IPicGo, name?: string): Promise<void> => {
+  if (name && name in BUILDIN_MODULES) {
+    const module = BUILDIN_MODULES[name as BuildinModuleName]
+    await handleConfig(ctx, module.config(ctx), 'buildin', name)
+    return
+  }
+
+  // Show selection prompt
+  const choices = Object.entries(BUILDIN_MODULES).map(([value, { key }]) => ({
+    name: ctx.i18n.translate<ILocalesKey>(key),
+    value
+  }))
+
+  const prompts = [
+    {
+      type: 'list',
+      name: 'buildin',
+      choices,
+      message: 'Choose a buildin module'
+    }
+  ]
+
+  const answer = await ctx.cmd.inquirer.prompt<IStringKeyMap<string>>(prompts)
+  const selectedModule = BUILDIN_MODULES[answer.buildin as BuildinModuleName]
+  await handleConfig(ctx, selectedModule.config(ctx), 'buildin', answer.buildin)
+}
+
+const handleUploaderOrTransformer = async (
+  ctx: IPicGo,
+  module: 'uploader' | 'transformer',
+  name?: string
+): Promise<void> => {
+  if (name) {
+    const item = ctx.helper[module].get(name)
+    if (!item) {
+      ctx.log.error(`No ${module} named ${name}`)
+      return
+    }
+    if (item.config) {
+      await handleConfig(ctx, item.config(ctx), module, name)
+    }
+    return
+  }
+
+  // Show selection prompt
+  const choices = ctx.helper[module].getIdList().map((item: string) => ({
+    name: uploaderTranslators(ctx)[item] || item,
+    value: item
+  }))
+
+  const prompts = [
+    {
+      type: 'list',
+      name: module,
+      choices,
+      message: `Choose a(n) ${module}`
+    }
+  ]
+
+  const answer = await ctx.cmd.inquirer.prompt<IStringKeyMap<string>>(prompts)
+  const item = ctx.helper[module].get(answer[module])
+  if (item?.config) {
+    await handleConfig(ctx, item.config(ctx), module, answer[module])
+  }
+}
+
+const handlePlugin = async (ctx: IPicGo, name?: string): Promise<void> => {
+  if (name) {
+    const pluginName = name.includes('picgo-plugin-') ? name : `picgo-plugin-${name}`
+
+    if (!Object.keys(ctx.getConfig('picgoPlugins')).includes(pluginName)) {
+      ctx.log.error(`No plugin named ${pluginName}`)
+      return
+    }
+
+    const plugin = ctx.pluginLoader.getPlugin(pluginName)
+    if (plugin?.config) {
+      await handleConfig(ctx, plugin.config(ctx), 'plugin', pluginName)
+    }
+    return
+  }
+
+  // Show selection prompt
+  const prompts = [
+    {
+      type: 'list',
+      name: 'plugin',
+      choices: ctx.pluginLoader.getFullList(),
+      message: 'Choose a plugin'
+    }
+  ]
+
+  const answer = await ctx.cmd.inquirer.prompt<IStringKeyMap<string>>(prompts)
+  const plugin = ctx.pluginLoader.getPlugin(answer.plugin)
+  if (plugin?.config) {
+    await handleConfig(ctx, plugin.config(ctx), 'plugin', answer.plugin)
   }
 }
 
@@ -42,111 +154,24 @@ const setting = {
       .action((module: string, name: string) => {
         ;(async () => {
           try {
-            // // load third-party plugins
-            // await ctx.pluginLoader.load()
-            // if a module is specific, then just set this option in config
+            // Handle different module types
             switch (module) {
               case 'buildin':
-                if (name === 'compress') {
-                  await handleConfig(ctx, compress.config(ctx), module, name)
-                } else if (name === 'watermark') {
-                  await handleConfig(ctx, watermark.config(ctx), module, name)
-                } else if (name === 'rename') {
-                  await handleConfig(ctx, rename.config(ctx), module, name)
-                } else {
-                  const prompts = [
-                    {
-                      type: 'list',
-                      name: 'buildin',
-                      choices: [
-                        { name: ctx.i18n.translate<ILocalesKey>('BUILDIN_COMPRESS'), value: 'compress' },
-                        { name: ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK'), value: 'watermark' },
-                        { name: ctx.i18n.translate<ILocalesKey>('BUILDIN_RENAME'), value: 'rename' }
-                      ],
-                      message: 'Choose a buildin module'
-                    }
-                  ]
-                  const answer = await ctx.cmd.inquirer.prompt<IStringKeyMap<any>>(prompts)
-                  if (answer.buildin === 'compress') {
-                    await handleConfig(ctx, compress.config(ctx), module, answer.buildin)
-                  } else if (answer.buildin === 'watermark') {
-                    await handleConfig(ctx, watermark.config(ctx), module, answer.buildin)
-                  } else if (answer.buildin === 'rename') {
-                    await handleConfig(ctx, rename.config(ctx), module, answer.buildin)
-                  }
-                }
+                await handleBuildinModule(ctx, name)
                 break
               case 'uploader':
               case 'transformer':
-                if (name) {
-                  const item = ctx.helper[module].get(name)
-                  if (!item) {
-                    ctx.log.error(`No ${module} named ${name}`)
-                    return
-                  }
-                  if (item.config) {
-                    await handleConfig(ctx, item.config(ctx), module, name)
-                  }
-                } else {
-                  const prompts = [
-                    {
-                      type: 'list',
-                      name: `${module}`,
-                      choices: ctx.helper[module].getIdList().map((item: string) => {
-                        return {
-                          name: uploaderTranslators(ctx)[item] || item,
-                          value: item
-                        }
-                      }),
-                      message: `Choose a(n) ${module}`
-                      // default: ctx.getConfig('picBed.uploader') || ctx.getConfig('picBed.current')
-                    }
-                  ]
-                  const answer = await ctx.cmd.inquirer.prompt<IStringKeyMap<any>>(prompts)
-                  const item = ctx.helper[module].get(answer[module])
-                  if (item?.config) {
-                    await handleConfig(ctx, item.config(ctx), module, answer[module])
-                  }
-                }
+                await handleUploaderOrTransformer(ctx, module, name)
                 break
               case 'plugin':
-                if (name) {
-                  if (!name.includes('picgo-plugin-')) {
-                    name = `picgo-plugin-${name}`
-                  }
-                  if (Object.keys(ctx.getConfig('picgoPlugins')).includes(name)) {
-                    if (ctx.pluginLoader.getPlugin(name)?.config) {
-                      await handleConfig(ctx, ctx.pluginLoader.getPlugin(name)!.config!(ctx), 'plugin', name)
-                    }
-                  } else {
-                    ctx.log.error(`No plugin named ${name}`)
-                    return
-                  }
-                } else {
-                  const prompts = [
-                    {
-                      type: 'list',
-                      name: 'plugin',
-                      choices: ctx.pluginLoader.getFullList(),
-                      message: 'Choose a plugin'
-                    }
-                  ]
-                  const answer = await ctx.cmd.inquirer.prompt<any>(prompts)
-                  if (ctx.pluginLoader.getPlugin(answer.plugin)?.config) {
-                    await handleConfig(
-                      ctx,
-                      ctx.pluginLoader.getPlugin(answer.plugin)!.config!(ctx),
-                      'plugin',
-                      answer.plugin
-                    )
-                  }
-                }
+                await handlePlugin(ctx, name)
                 break
               default:
                 ctx.log.warn(`No module named ${module}`)
                 ctx.log.warn('Available modules are uploader|transformer|plugin|buildin')
                 return
             }
+
             ctx.log.success('Configure config successfully!')
             if (module === 'plugin') {
               ctx.log.info("If you want to use this config, please run 'picgo use plugins'")

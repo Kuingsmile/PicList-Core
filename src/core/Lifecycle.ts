@@ -13,7 +13,8 @@ import {
   IPicGo,
   IPlugin,
   Undefinable,
-  IImgInfo
+  IImgInfo,
+  IBuildInSkipProcessOptions
 } from '../types'
 import {
   getURLFile,
@@ -129,6 +130,18 @@ export class Lifecycle extends EventEmitter {
 
   private async preprocess(ctx: IPicGo): Promise<IPicGo> {
     const { compressOptions, watermarkOptions } = this.helpGetOption(ctx)
+    const skipProcess = ctx.getConfig<Undefinable<IBuildInSkipProcessOptions>>('buildIn.skipProcess') || {}
+    const skipProcessExtList = skipProcess.skipProcessExtList
+      ? skipProcess.skipProcessExtList.split(',').map((item: string) => item.trim())
+      : ['zip', 'rar', '7z', 'tar', 'gz', 'tar.gz', 'tar.bz2', 'tar.xz']
+
+    const normalizedSkipSet = new Set(
+      skipProcessExtList.map((item: string) => {
+        const formattedItem = item.trim().toLowerCase()
+        return formattedItem.startsWith('.') ? formattedItem : `.${formattedItem}`
+      })
+    )
+
     ctx.emit(IBuildInEvent.UPLOAD_PROGRESS, 0)
     ctx.emit(IBuildInEvent.BEFORE_TRANSFORM, ctx)
     ctx.log.info('Before transform')
@@ -144,9 +157,15 @@ export class Lifecycle extends EventEmitter {
           let transformedBuffer: Undefinable<Buffer>
           let isSkip = false
           ctx.rawInputPath![index] = item
-          const extention = itemIsUrl ? info.extname || '' : path.extname(item)
+          const extension = itemIsUrl ? info.extname || '' : path.extname(item)
+          const normalizedExtension = extension.toLowerCase()
+
+          // Early check: if extension is in skip list, skip all processing
+          const shouldSkipExtension = normalizedSkipSet.has(normalizedExtension)
+
           const fileBuffer: Buffer = itemIsUrl ? info.buffer! : fs.readFileSync(item)
-          if (isNeedAddWatermark(watermarkOptions, extention)) {
+
+          if (isNeedAddWatermark(watermarkOptions, extension) && !shouldSkipExtension) {
             if (!(watermarkOptions?.watermarkFontPath || watermarkOptions?.watermarkType === 'image')) {
               const downloadTTFRet = await this.downloadTTF()
               if (!downloadTTFRet) {
@@ -159,15 +178,16 @@ export class Lifecycle extends EventEmitter {
               transformedBuffer = await imageAddWaterMark(fileBuffer, watermarkOptions!, this.ttfPath, ctx.log)
             }
           }
-          if (isNeedCompress(compressOptions, extention)) {
+
+          if (isNeedCompress(compressOptions, extension) && !shouldSkipExtension) {
             ctx.log.info(compressMsg)
-            if (!itemIsUrl && (extention.toLowerCase() === '.heic' || extention.toLowerCase() === '.heif')) {
+            if (!itemIsUrl && (normalizedExtension === '.heic' || normalizedExtension === '.heif')) {
               const heicResult = await heicConvert({
                 buffer: fileBuffer,
                 format: 'JPEG',
                 quality: 1
               })
-              const tempHeicConvertFile = path.join(tempFilePath, `${path.basename(item, extention)}.jpg`)
+              const tempHeicConvertFile = path.join(tempFilePath, `${path.basename(item, extension)}.jpg`)
               fs.writeFileSync(tempHeicConvertFile, Buffer.from(heicResult))
               transformedBuffer = await imageCompress(
                 fs.readFileSync(tempHeicConvertFile),
@@ -179,17 +199,19 @@ export class Lifecycle extends EventEmitter {
               transformedBuffer = await imageCompress(
                 transformedBuffer ?? fileBuffer,
                 compressOptions!,
-                extention,
+                extension,
                 ctx.log
               )
             }
           }
-          if (!transformedBuffer && compressOptions?.isRemoveExif) {
+
+          if (!transformedBuffer && compressOptions?.isRemoveExif && !shouldSkipExtension) {
             ctx.log.info('Remove exif info.')
-            transformedBuffer = await removeExif(fileBuffer, extention)
+            transformedBuffer = await removeExif(fileBuffer, extension)
           }
+
           if (transformedBuffer) {
-            let newExt = compressOptions?.isConvert ? getConvertedFormat(compressOptions, extention) : extention
+            let newExt = compressOptions?.isConvert ? getConvertedFormat(compressOptions, extension) : extension
             newExt = newExt.startsWith('.') ? newExt : `.${newExt}`
             const tempFile = itemIsUrl
               ? path.join(
@@ -200,10 +222,10 @@ export class Lifecycle extends EventEmitter {
                       : new Date().getTime()
                   }${newExt}`
                 )
-              : path.join(tempFilePath, `${path.basename(item, extention)}${newExt}`)
+              : path.join(tempFilePath, `${path.basename(item, extension)}${newExt}`)
             ctx.rawInputPath![index] = path.join(
               path.dirname(item),
-              itemIsUrl ? path.basename(tempFile) : `${path.basename(item, extention)}${newExt}`
+              itemIsUrl ? path.basename(tempFile) : `${path.basename(item, extension)}${newExt}`
             )
             fs.writeFileSync(tempFile, transformedBuffer)
             ctx.input[index] = tempFile

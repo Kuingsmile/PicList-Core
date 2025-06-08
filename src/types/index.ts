@@ -783,3 +783,7 @@ export interface IBuildInCompressOptions {
   isFlop?: boolean
   [propName: string]: any
 }
+
+export interface IBuildInSkipProcessOptions {
+  skipProcessExtList?: string
+}
