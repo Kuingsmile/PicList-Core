@@ -1,3 +1,6 @@
+import { ILocalesKey } from '../../i18n/zh-CN'
+import { IPicGo } from '../../types'
+
 export function formatPathHelper({
   path,
   startSlash = false,
@@ -41,3 +44,25 @@ export const buildInUploaderNames = {
   upyun: 'upyun',
   webdavplist: 'webdavplist'
 }
+
+export const createField = (
+  ctx: IPicGo,
+  picBedName: string,
+  name: string,
+  type: any,
+  defaultValue: any,
+  required: boolean,
+  extras?: any
+) => ({
+  name,
+  type,
+  get prefix() {
+    return ctx.i18n.translate<ILocalesKey>(`PICBED_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey)
+  },
+  get alias() {
+    return ctx.i18n.translate<ILocalesKey>(`PICBED_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey)
+  },
+  default: defaultValue,
+  required,
+  ...extras
+})

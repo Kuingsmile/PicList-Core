@@ -394,6 +394,7 @@ export interface ITcyunConfig {
   endpoint: string
   path: string
   /** 自定义域名，注意要加 `http://` 或者 `https://` */
+  webPath: string
   customUrl: string
   /** COS 版本，v4 或者 v5 */
   version: 'v5' | 'v4'

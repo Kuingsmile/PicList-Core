@@ -3,9 +3,7 @@ import { lookup } from 'mime-types'
 import { IPicGo, IPluginConfig, ITcyunConfig, IOldReqOptionsWithFullResponse } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { ILocalesKey } from '../../i18n/zh-CN'
-import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
-
-// generate COS signature string
+import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
 export interface ISignature {
   signature: string
@@ -15,40 +13,33 @@ export interface ISignature {
 }
 
 const generateSignature = (options: ITcyunConfig, fileName: string): ISignature => {
-  const secretId = options.secretId
-  const secretKey = options.secretKey
-  const appId = options.appId
-  const bucket = options.bucket
-  let signature
-  let signTime: string = ''
-  if (!options.version || options.version === 'v4') {
-    const random = Math.floor(Math.random() * 10000000000)
-    const current = Math.floor(new Date().getTime() / 1000) - 1
-    const expired = current + 3600
+  const { secretId, secretKey, appId, bucket, version, area, endpoint, path } = options
+  const isV4 = !version || version === 'v4'
 
+  let signature: string
+  let signTime = ''
+
+  if (isV4) {
+    const random = Math.floor(Math.random() * 10000000000)
+    const current = Math.floor(Date.now() / 1000) - 1
+    const expired = current + 3600
     const multiSignature = `a=${appId}&b=${bucket}&k=${secretId}&e=${expired}&t=${current}&r=${random}&f=`
 
     const signHexKey = crypto.createHmac('sha1', secretKey).update(multiSignature).digest()
     const tempString = Buffer.concat([signHexKey, Buffer.from(multiSignature)])
     signature = Buffer.from(tempString).toString('base64')
   } else {
-    // https://cloud.tencent.com/document/product/436/7778#signature
-    const today = Math.floor(new Date().getTime() / 1000)
-    const tomorrow = today + 86400
-    signTime = `${today};${tomorrow}`
+    const today = Math.floor(Date.now() / 1000)
+    signTime = `${today};${today + 86400}`
     const signKey = crypto.createHmac('sha1', secretKey).update(signTime).digest('hex')
-    const endpoint = options.endpoint ? options.endpoint : `cos.${options.area}.myqcloud.com`
-    const httpString = `put\n/${options.path}${fileName}\n\nhost=${options.bucket}.${endpoint}\n`
+    const defaultEndpoint = `cos.${area}.myqcloud.com`
+    const httpString = `put\n/${path}${fileName}\n\nhost=${bucket}.${endpoint || defaultEndpoint}\n`
     const sha1edHttpString = crypto.createHash('sha1').update(httpString).digest('hex')
     const stringToSign = `sha1\n${signTime}\n${sha1edHttpString}\n`
     signature = crypto.createHmac('sha1', signKey).update(stringToSign).digest('hex')
   }
-  return {
-    signature,
-    appId,
-    bucket,
-    signTime
-  }
+
+  return { signature, appId, bucket, signTime }
 }
 
 const postOptions = (
@@ -58,9 +49,11 @@ const postOptions = (
   image: Buffer,
   version: string
 ): IOldReqOptionsWithFullResponse => {
-  const area = options.area
-  const path = options.path
-  if (!options.version || options.version === 'v4') {
+  const { area, path, bucket, endpoint, secretId } = options
+  const isV4 = !options.version || options.version === 'v4'
+  const userAgent = `PicGo;${version};null;null`
+
+  if (isV4) {
     return {
       method: 'POST',
       url: `http://${area}.file.myqcloud.com/files/v2/${signature.appId}/${signature.bucket}/${encodeURI(path)}${fileName}`,
@@ -68,119 +61,92 @@ const postOptions = (
         Host: `${area}.file.myqcloud.com`,
         Authorization: signature.signature,
         contentType: 'multipart/form-data',
-        'User-Agent': `PicGo;${version};null;null`
+        'User-Agent': userAgent
       },
-      formData: {
-        op: 'upload',
-        filecontent: image
-      },
+      formData: { op: 'upload', filecontent: image },
       resolveWithFullResponse: true
     }
-  } else {
-    const endpoint = options.endpoint ? options.endpoint : `cos.${options.area}.myqcloud.com`
-    return {
-      method: 'PUT',
-      url: `http://${options.bucket}.${endpoint}/${encodePath(`${path}${fileName}`)}`,
-      headers: {
-        Host: `${options.bucket}.${endpoint}`,
-        Authorization: `q-sign-algorithm=sha1&q-ak=${options.secretId}&q-sign-time=${signature.signTime}&q-key-time=${signature.signTime}&q-header-list=host&q-url-param-list=&q-signature=${signature.signature}`,
-        contentType: lookup(fileName) || 'application/octet-stream',
-        'User-Agent': `PicGo;${version};null;null`
-      },
-      body: image,
-      resolveWithFullResponse: true
-    }
+  }
+
+  const defaultEndpoint = `cos.${area}.myqcloud.com`
+  const host = `${bucket}.${endpoint || defaultEndpoint}`
+  return {
+    method: 'PUT',
+    url: `http://${host}/${encodePath(`${path}${fileName}`)}`,
+    headers: {
+      Host: host,
+      Authorization: `q-sign-algorithm=sha1&q-ak=${secretId}&q-sign-time=${signature.signTime}&q-key-time=${signature.signTime}&q-header-list=host&q-url-param-list=&q-signature=${signature.signature}`,
+      contentType: lookup(fileName) || 'application/octet-stream',
+      'User-Agent': userAgent
+    },
+    body: image,
+    resolveWithFullResponse: true
   }
 }
 
 const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   const tcYunOptions = ctx.getConfig<ITcyunConfig>('picBed.tcyun')
   if (!tcYunOptions) throw new Error("Can't find tencent COS config")
+
   try {
     const imgList = ctx.output
     const customUrl = (tcYunOptions.customUrl || '').replace(/\/$/, '')
-    const path = formatPathHelper({
-      path: tcYunOptions.path
-    })
+    const path = formatPathHelper({ path: tcYunOptions.path })
+    const webPath = formatPathHelper({ path: tcYunOptions.webPath })
     tcYunOptions.path = path
     const useV4 = !tcYunOptions.version || tcYunOptions.version === 'v4'
+
     for (const img of imgList) {
-      if (img.fileName && img.buffer) {
-        const signature = generateSignature(tcYunOptions, img.fileName)
-        if (!signature) {
-          return false
-        }
-        let image = img.buffer
-        if (!image && img.base64Image) {
-          image = Buffer.from(img.base64Image, 'base64')
-        }
-        const options = postOptions(tcYunOptions, img.fileName, signature, image, ctx.GUI_VERSION || ctx.VERSION)
-        const res = await ctx
-          .request(options)
-          .then((res: any) => res)
-          .catch((err: Error) => {
-            return {
-              statusCode: 400,
-              body: {
-                msg: ctx.i18n.translate<ILocalesKey>('AUTH_FAILED'),
-                err
-              }
-            }
-          })
-        let body
-        if (useV4 && typeof res === 'string') {
-          body = JSON.parse(res)
+      if (!img.fileName || !img.buffer) continue
+
+      const signature = generateSignature(tcYunOptions, img.fileName)
+      const image = img.buffer || Buffer.from(img.base64Image!, 'base64')
+      const options = postOptions(tcYunOptions, img.fileName, signature, image, ctx.GUI_VERSION || ctx.VERSION)
+
+      const res = await ctx.request(options).catch((err: Error) => ({
+        statusCode: 400,
+        body: { msg: ctx.i18n.translate<ILocalesKey>('AUTH_FAILED'), err }
+      }))
+
+      const body = useV4 && typeof res === 'string' ? JSON.parse(res) : res
+
+      if (body.statusCode === 400) {
+        throw body?.body?.err || new Error(body?.body?.msg || body?.body?.message)
+      }
+
+      const optionUrl = tcYunOptions.options || ''
+      const slim = !!tcYunOptions.slim
+
+      delete img.base64Image
+      delete img.buffer
+
+      if (useV4 && body.message === 'SUCCESS') {
+        img.imgUrl = customUrl
+          ? `${customUrl}/${encodePath(`${webPath || path}${img.fileName}`)}${optionUrl}`
+          : `${body.data.source_url}${optionUrl}`
+      } else if (!useV4 && body?.statusCode === 200) {
+        if (customUrl) {
+          img.imgUrl = `${customUrl}/${encodePath(`${webPath || path}${img.fileName}`)}${optionUrl}`
         } else {
-          body = res
+          const endpoint = tcYunOptions.endpoint || `cos.${tcYunOptions.area}.myqcloud.com`
+          img.imgUrl = `https://${tcYunOptions.bucket}.${endpoint}/${encodePath(`${path}${img.fileName}`)}${optionUrl}`
         }
-        if (body.statusCode === 400) {
-          if (body?.body?.err) {
-            throw body.body.err
-          } else {
-            throw new Error(body?.body?.msg || body?.body?.message)
-          }
-        }
-        const optionUrl = tcYunOptions.options || ''
-        const slim = tcYunOptions.slim === undefined ? false : !!tcYunOptions.slim
-        if (useV4 && body.message === 'SUCCESS') {
-          delete img.base64Image
-          delete img.buffer
-          if (customUrl) {
-            img.imgUrl = `${customUrl}/${encodePath(`${path}${img.fileName}`)}${optionUrl}`
-          } else {
-            img.imgUrl = `${body.data.source_url as string}${optionUrl}`
-          }
-        } else if (!useV4 && body && body.statusCode === 200) {
-          delete img.base64Image
-          delete img.buffer
-          if (customUrl) {
-            img.imgUrl = `${customUrl}/${encodePath(`${path}${img.fileName}`)}${optionUrl}`
-          } else {
-            const endpoint = tcYunOptions.endpoint ? tcYunOptions.endpoint : `cos.${tcYunOptions.area}.myqcloud.com`
-            img.imgUrl = `https://${tcYunOptions.bucket}.${endpoint}/${encodePath(`${path}${img.fileName}`)}${optionUrl}`
-          }
-        } else {
-          throw new Error(res.body.msg)
-        }
-        if (slim) {
-          if (optionUrl) {
-            img.imgUrl += '&imageSlim'
-          } else {
-            img.imgUrl += '?imageSlim'
-          }
-        }
+      } else {
+        throw new Error((res as any).body?.msg || 'Upload failed')
+      }
+
+      if (slim) {
+        img.imgUrl += optionUrl ? '&imageSlim' : '?imageSlim'
       }
     }
     return ctx
   } catch (err: any) {
-    if (!tcYunOptions.version || tcYunOptions.version === 'v4') {
+    if ((!tcYunOptions.version || tcYunOptions.version === 'v4') && err.error) {
       try {
         const body = JSON.parse(err.error)
         ctx.emit(IBuildInEvent.NOTIFICATION, {
           title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-          body: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED_REASON', {
-            code: body.code as string
-          }),
+          body: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED_REASON', { code: body.code }),
           text: 'https://cloud.tencent.com/document/product/436/8432'
         })
       } catch (e) {
@@ -193,155 +159,48 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
 
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<ITcyunConfig>('picBed.tcyun') || {}
-  const config: IPluginConfig[] = [
-    {
-      name: 'version',
-      type: 'list',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_VERSION')
-      },
-      alias: ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_VERSION'),
-      choices: ['v4', 'v5'],
-      default: 'v5',
-      required: false
-    },
-    {
-      name: 'secretId',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SECRETID')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SECRETID')
-      },
-      default: userConfig.secretId || '',
-      required: true
-    },
-    {
-      name: 'secretKey',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SECRETKEY')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SECRETKEY')
-      },
-      default: userConfig.secretKey || '',
-      required: true
-    },
-    {
-      name: 'bucket',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_BUCKET')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_BUCKET')
-      },
-      default: userConfig.bucket || '',
-      required: true
-    },
-    {
-      name: 'appId',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_APPID')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_APPID')
-      },
-      default: userConfig.appId || '',
+
+  return [
+    createField(ctx, 'TENCENTCLOUD', 'version', 'list', 'v5', false, { choices: ['v4', 'v5'] }),
+    createField(ctx, 'TENCENTCLOUD', 'secretId', 'input', userConfig.secretId || '', true),
+    createField(ctx, 'TENCENTCLOUD', 'secretKey', 'input', userConfig.secretKey || '', true),
+    createField(ctx, 'TENCENTCLOUD', 'bucket', 'input', userConfig.bucket || '', true),
+    createField(ctx, 'TENCENTCLOUD', 'appId', 'input', userConfig.appId || '', true, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_APPID')
-      },
-      required: true
-    },
-    {
-      name: 'area',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_AREA')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_AREA')
-      },
-      default: userConfig.area || '',
+      }
+    }),
+    createField(ctx, 'TENCENTCLOUD', 'area', 'input', userConfig.area || '', true, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_AREA')
-      },
-      required: true
-    },
-    {
-      name: 'endpoint',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_ENDPOINT')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_ENDPOINT')
-      },
-      default: userConfig.endpoint || '',
+      }
+    }),
+    createField(ctx, 'TENCENTCLOUD', 'endpoint', 'input', userConfig.endpoint || '', false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_ENDPOINT')
-      },
-      required: false
-    },
-    {
-      name: 'path',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_PATH')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_PATH')
-      },
-      default: userConfig.path || '',
+      }
+    }),
+    createField(ctx, 'TENCENTCLOUD', 'path', 'input', userConfig.path || '', false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_PATH')
-      },
-      required: false
-    },
-    {
-      name: 'customUrl',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_CUSTOMURL')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_CUSTOMURL')
-      },
-      default: userConfig.customUrl || '',
+      }
+    }),
+    createField(ctx, 'TENCENTCLOUD', 'webPath', 'input', userConfig.webPath || '', false, {
+      get message() {
+        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_WEBPATH')
+      }
+    }),
+    createField(ctx, 'TENCENTCLOUD', 'customUrl', 'input', userConfig.customUrl || '', false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_CUSTOMURL')
-      },
-      required: false
-    },
-    {
-      name: 'options',
-      type: 'input',
-      default: userConfig.options || '',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_OPTIONS')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_OPTIONS')
-      },
+      }
+    }),
+    createField(ctx, 'TENCENTCLOUD', 'options', 'input', userConfig.options || '', false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_OPTIONS')
-      },
-      required: false
-    },
-    {
-      name: 'slim',
-      type: 'confirm',
-      default: userConfig.slim === undefined ? false : !!userConfig.slim,
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SLIM')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SLIM')
-      },
-      required: false,
+      }
+    }),
+    createField(ctx, 'TENCENTCLOUD', 'slim', 'confirm', userConfig.slim ?? false, false, {
       get confirmText() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SLIM_CONFIRM')
       },
@@ -351,9 +210,8 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       get tips() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SLIM_TIP')
       }
-    }
+    })
   ]
-  return config
 }
 
 export default function register(ctx: IPicGo): void {
