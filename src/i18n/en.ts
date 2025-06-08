@@ -13,7 +13,7 @@ export const EN: ILocales = {
   PICBED_SMMS: 'SM.MS',
   PICBED_SMMS_TOKEN: 'Set Token',
   PICBED_SMMS_MESSAGE_TOKEN: 'Please enter the token',
-  PICBED_SMMS_BACKUP_DOMAIN: 'Set Backup Upload Domain',
+  PICBED_SMMS_BACKUPDOMAIN: 'Set Backup Upload Domain',
   PICBED_SMMS_MESSAGE_BACKUP_DOMAIN: 'Ex. smms.app',
 
   //advancedplist

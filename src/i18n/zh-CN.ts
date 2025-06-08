@@ -11,7 +11,7 @@ export const ZH_CN = {
   PICBED_SMMS: 'SM.MS',
   PICBED_SMMS_TOKEN: '设定Token',
   PICBED_SMMS_MESSAGE_TOKEN: '请填写Token',
-  PICBED_SMMS_BACKUP_DOMAIN: '备用上传域名',
+  PICBED_SMMS_BACKUPDOMAIN: '备用上传域名',
   PICBED_SMMS_MESSAGE_BACKUP_DOMAIN: '例如 smms.app',
 
   // advancedplist
