@@ -4,9 +4,7 @@ import { IBuildInEvent } from '../../utils/enum'
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { buildInUploaderNames, createField } from './utils'
 
-const postOptions = (fileName: string, image: Buffer, apiToken: string, backupDomain = ''): IOldReqOptions => {
-  const domain = (backupDomain || 'sm.ms').replace(/^https?:\/\//, '').replace(/\/$/, '')
-
+const postOptions = (fileName: string, image: Buffer, apiToken: string, domain = ''): IOldReqOptions => {
   return {
     method: 'POST',
     url: `https://${domain}/api/v2/upload`,
@@ -30,6 +28,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   if (!smmsConfig?.token?.trim()) {
     throw new Error('SM.MS token is required!')
   }
+  const domain = (smmsConfig.backupDomain || 'sm.ms').replace(/^https?:\/\//, '').replace(/\/$/, '')
 
   const imgList = ctx.output
   for (const img of imgList) {
@@ -38,7 +37,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     const imageBuffer = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : undefined)
     if (!imageBuffer) continue
 
-    const postConfig = postOptions(img.fileName, imageBuffer, smmsConfig.token, smmsConfig.backupDomain)
+    const postConfig = postOptions(img.fileName, imageBuffer, smmsConfig.token, domain)
     const res: string = await ctx.request(postConfig)
     const body = JSON.parse(res)
 
@@ -48,7 +47,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     } else if (body.code === 'image_repeated' && typeof body.images === 'string') {
       img.imgUrl = body.images
       try {
-        const uploadHistory = await axios.get('https://sm.ms/api/v2/upload_history', {
+        const uploadHistory = await axios.get(`https://${domain}/api/v2/upload_history`, {
           headers: { Authorization: smmsConfig.token }
         })
         const matchedImage = uploadHistory.data?.data?.find((image: any) => image.url === body.images)
