@@ -73,12 +73,12 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<ISmmsConfig>('picBed.smms') || {}
   return [
-    createField(ctx, 'SMMS', 'token', 'input', userConfig.token || '', true, {
+    createField(ctx, 'SMMS', 'token', 'input', userConfig.token || '', true, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_SMMS_MESSAGE_TOKEN')
       }
     }),
-    createField(ctx, 'SMMS', 'backupDomain', 'input', userConfig.backupDomain || '', false, {
+    createField(ctx, 'SMMS', 'backupDomain', 'input', userConfig.backupDomain || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_SMMS_MESSAGE_BACKUP_DOMAIN')
       }

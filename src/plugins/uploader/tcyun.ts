@@ -161,46 +161,46 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<ITcyunConfig>('picBed.tcyun') || {}
 
   return [
-    createField(ctx, 'TENCENTCLOUD', 'version', 'list', 'v5', false, { choices: ['v4', 'v5'] }),
+    createField(ctx, 'TENCENTCLOUD', 'version', 'list', 'v5', false, undefined, { choices: ['v4', 'v5'] }),
     createField(ctx, 'TENCENTCLOUD', 'secretId', 'input', userConfig.secretId || '', true),
     createField(ctx, 'TENCENTCLOUD', 'secretKey', 'input', userConfig.secretKey || '', true),
     createField(ctx, 'TENCENTCLOUD', 'bucket', 'input', userConfig.bucket || '', true),
-    createField(ctx, 'TENCENTCLOUD', 'appId', 'input', userConfig.appId || '', true, {
+    createField(ctx, 'TENCENTCLOUD', 'appId', 'input', userConfig.appId || '', true, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_APPID')
       }
     }),
-    createField(ctx, 'TENCENTCLOUD', 'area', 'input', userConfig.area || '', true, {
+    createField(ctx, 'TENCENTCLOUD', 'area', 'input', userConfig.area || '', true, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_AREA')
       }
     }),
-    createField(ctx, 'TENCENTCLOUD', 'endpoint', 'input', userConfig.endpoint || '', false, {
+    createField(ctx, 'TENCENTCLOUD', 'endpoint', 'input', userConfig.endpoint || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_ENDPOINT')
       }
     }),
-    createField(ctx, 'TENCENTCLOUD', 'path', 'input', userConfig.path || '', false, {
+    createField(ctx, 'TENCENTCLOUD', 'path', 'input', userConfig.path || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_PATH')
       }
     }),
-    createField(ctx, 'TENCENTCLOUD', 'webPath', 'input', userConfig.webPath || '', false, {
+    createField(ctx, 'TENCENTCLOUD', 'webPath', 'input', userConfig.webPath || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_WEBPATH')
       }
     }),
-    createField(ctx, 'TENCENTCLOUD', 'customUrl', 'input', userConfig.customUrl || '', false, {
+    createField(ctx, 'TENCENTCLOUD', 'customUrl', 'input', userConfig.customUrl || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_CUSTOMURL')
       }
     }),
-    createField(ctx, 'TENCENTCLOUD', 'options', 'input', userConfig.options || '', false, {
+    createField(ctx, 'TENCENTCLOUD', 'options', 'input', userConfig.options || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_OPTIONS')
       }
     }),
-    createField(ctx, 'TENCENTCLOUD', 'slim', 'confirm', userConfig.slim ?? false, false, {
+    createField(ctx, 'TENCENTCLOUD', 'slim', 'confirm', userConfig.slim ?? false, false, undefined, {
       get confirmText() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SLIM_CONFIRM')
       },

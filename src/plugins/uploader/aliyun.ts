@@ -81,27 +81,27 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     createField(ctx, 'alicloud', 'accessKeyId', 'input', userConfig.accessKeyId || '', true),
     createField(ctx, 'alicloud', 'accessKeySecret', 'input', userConfig.accessKeySecret || '', true),
     createField(ctx, 'alicloud', 'bucket', 'input', userConfig.bucket || '', true),
-    createField(ctx, 'alicloud', 'area', 'input', userConfig.area || '', true, {
+    createField(ctx, 'alicloud', 'area', 'input', userConfig.area || '', true, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_AREA')
       }
     }),
-    createField(ctx, 'alicloud', 'path', 'input', userConfig.path || '', false, {
+    createField(ctx, 'alicloud', 'path', 'input', userConfig.path || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_PATH')
       }
     }),
-    createField(ctx, 'alicloud', 'webPath', 'input', userConfig.webPath || '', false, {
+    createField(ctx, 'alicloud', 'webPath', 'input', userConfig.webPath || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_WEBPATH')
       }
     }),
-    createField(ctx, 'alicloud', 'customUrl', 'input', userConfig.customUrl || '', false, {
+    createField(ctx, 'alicloud', 'customUrl', 'input', userConfig.customUrl || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_CUSTOMURL')
       }
     }),
-    createField(ctx, 'alicloud', 'options', 'input', userConfig.options || '', false, {
+    createField(ctx, 'alicloud', 'options', 'input', userConfig.options || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_OPTIONS')
       }

@@ -121,40 +121,40 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
 
   return [
     createField(ctx, 'webdavplist', 'host', 'input', userConfig.host || '', true),
-    createField(ctx, 'webdavplist', 'sslEnabled', 'confirm', userConfig.sslEnabled ?? false, false, {
+    createField(ctx, 'webdavplist', 'sslEnabled', 'confirm', userConfig.sslEnabled ?? false, false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_SSLENABLED')
       }
     }),
-    createField(ctx, 'webdavplist', 'username', 'input', userConfig.username || '', true, {
+    createField(ctx, 'webdavplist', 'username', 'input', userConfig.username || '', true, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_USERNAME')
       }
     }),
-    createField(ctx, 'webdavplist', 'password', 'input', userConfig.password || '', true, {
+    createField(ctx, 'webdavplist', 'password', 'input', userConfig.password || '', true, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_PASSWORD')
       }
     }),
-    createField(ctx, 'webdavplist', 'path', 'input', userConfig.path || '', false, {
+    createField(ctx, 'webdavplist', 'path', 'input', userConfig.path || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_PATH')
       }
     }),
-    createField(ctx, 'webdavplist', 'webpath', 'input', userConfig.webpath || '', false, {
+    createField(ctx, 'webdavplist', 'webpath', 'input', userConfig.webpath || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_WEBSITE_PATH')
       }
     }),
-    createField(ctx, 'webdavplist', 'customUrl', 'input', userConfig.customUrl || '', false, {
+    createField(ctx, 'webdavplist', 'customUrl', 'input', userConfig.customUrl || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_CUSTOMURL')
       }
     }),
-    createField(ctx, 'webdavplist', 'authType', 'list', userConfig.authType || 'basic', false, {
+    createField(ctx, 'webdavplist', 'authType', 'list', userConfig.authType || 'basic', false, undefined, {
       choices: ['basic', 'digest']
     }),
-    createField(ctx, 'webdavplist', 'options', 'input', userConfig.options || '', false, {
+    createField(ctx, 'webdavplist', 'options', 'input', userConfig.options || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_OPTIONS')
       }

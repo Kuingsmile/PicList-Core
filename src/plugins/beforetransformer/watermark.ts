@@ -1,142 +1,67 @@
 import { IPicGo, IPluginConfig, IBuildInWaterMarkOptions } from '../../types'
-import { ILocalesKey } from '../../i18n/zh-CN'
+import { createField } from '../uploader/utils'
 
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IBuildInWaterMarkOptions>('buildIn.watermark') || {}
   const config: IPluginConfig[] = [
-    {
-      name: 'isAddWatermark',
-      type: 'confirm',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_ISADDWATERMARK')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_ISADDWATERMARK')
-      },
-      required: false,
-      default: userConfig.isAddWatermark || false
-    },
-    {
-      name: 'watermarkType',
-      type: 'list',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKTYPE')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKTYPE')
-      },
-      required: false,
-      choices: ['text', 'image'],
-      default: userConfig.watermarkType || 'text'
-    },
-    {
-      name: 'isFullScreenWatermark',
-      type: 'confirm',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_ISFULLSCREENWATERMARK')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_ISFULLSCREENWATERMARK')
-      },
-      required: false,
-      default: userConfig.isFullScreenWatermark || false
-    },
-    {
-      name: 'watermarkDegree',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKDEGREE')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKDEGREE')
-      },
-      required: false,
-      default: userConfig.watermarkDegree || 0
-    },
-    {
-      name: 'watermarkText',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKTEXT')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKTEXT')
-      },
-      required: false,
-      default: userConfig.watermarkText || ''
-    },
-    {
-      name: 'watermarkFontPath',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKTEXTFONTPATH')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKTEXTFONTPATH')
-      },
-      required: false,
-      default: userConfig.watermarkFontPath || ''
-    },
-    {
-      name: 'watermarkScaleRatio',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKFONTRATIO')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKFONTRATIO')
-      },
-      required: false,
-      default: userConfig.watermarkScaleRatio || 0.15
-    },
-    {
-      name: 'watermarkColor',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKFONTCOLOR')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKFONTCOLOR')
-      },
-      required: false,
-      default: userConfig.watermarkColor || 'rgba(204, 204, 204, 0.45)'
-    },
-    {
-      name: 'watermarkImagePath',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKIMAGEPATH')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKIMAGEPATH')
-      },
-      required: false,
-      default: userConfig.watermarkImagePath || ''
-    },
-    {
-      name: 'watermarkPosition',
-      type: 'list',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKPOSITION')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('BUILDIN_WATERMARK_WATERMARKPOSITION')
-      },
-      required: false,
-      choices: [
-        'north',
-        'northeast',
-        'southeast',
-        'south',
-        'southwest',
-        'northwest',
-        'west',
-        'east',
-        'center',
-        'centre'
-      ],
-      default: userConfig.watermarkPosition || 'southeast'
-    }
+    createField(ctx, 'watermark', 'isAddWatermark', 'confirm', userConfig.isAddWatermark || false, false, 'BUILDIN'),
+    createField(ctx, 'watermark', 'watermarkType', 'list', userConfig.watermarkType || 'text', false, 'BUILDIN', {
+      choices: ['text', 'image']
+    }),
+    createField(
+      ctx,
+      'watermark',
+      'isFullScreenWatermark',
+      'confirm',
+      userConfig.isFullScreenWatermark || false,
+      false,
+      'BUILDIN'
+    ),
+    createField(ctx, 'watermark', 'watermarkDegree', 'input', userConfig.watermarkDegree || 0, false, 'BUILDIN'),
+    createField(ctx, 'watermark', 'watermarkText', 'input', userConfig.watermarkText || '', false, 'BUILDIN'),
+    createField(ctx, 'watermark', 'watermarkFontPath', 'input', userConfig.watermarkFontPath || '', false, 'BUILDIN'),
+    createField(
+      ctx,
+      'watermark',
+      'watermarkScaleRatio',
+      'input',
+      userConfig.watermarkScaleRatio || 0.15,
+      false,
+      'BUILDIN'
+    ),
+    createField(
+      ctx,
+      'watermark',
+      'watermarkColor',
+      'input',
+      userConfig.watermarkColor || 'rgba(204, 204, 204, 0.45)',
+      false,
+      'BUILDIN'
+    ),
+    createField(ctx, 'watermark', 'watermarkImagePath', 'input', userConfig.watermarkImagePath || '', false, 'BUILDIN'),
+    createField(
+      ctx,
+      'watermark',
+      'watermarkPosition',
+      'list',
+      userConfig.watermarkPosition || 'southeast',
+      false,
+      'BUILDIN',
+      {
+        choices: [
+          'north',
+          'northeast',
+          'southeast',
+          'south',
+          'southwest',
+          'northwest',
+          'west',
+          'east',
+          'center',
+          'centre'
+        ]
+      }
+    )
   ]
   return config
 }

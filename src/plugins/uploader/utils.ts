@@ -52,15 +52,20 @@ export const createField = (
   type: any,
   defaultValue: any,
   required: boolean,
+  i18nPrefix: string = 'PICBED',
   extras?: any
 ) => ({
   name,
   type,
   get prefix() {
-    return ctx.i18n.translate<ILocalesKey>(`PICBED_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey)
+    return ctx.i18n.translate<ILocalesKey>(
+      `${i18nPrefix}_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey
+    )
   },
   get alias() {
-    return ctx.i18n.translate<ILocalesKey>(`PICBED_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey)
+    return ctx.i18n.translate<ILocalesKey>(
+      `${i18nPrefix}_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey
+    )
   },
   default: defaultValue,
   required,

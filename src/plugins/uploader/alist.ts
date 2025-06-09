@@ -160,37 +160,37 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IAlistConfig>('picBed.alistplist') || {}
   return [
-    createField(ctx, 'alist', 'url', 'input', userConfig.url || '', true, {
+    createField(ctx, 'alist', 'url', 'input', userConfig.url || '', true, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_URL')
       }
     }),
-    createField(ctx, 'alist', 'token', 'input', userConfig.token || '', false, {
+    createField(ctx, 'alist', 'token', 'input', userConfig.token || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_TOKEN')
       }
     }),
-    createField(ctx, 'alist', 'username', 'input', userConfig.username || '', false, {
+    createField(ctx, 'alist', 'username', 'input', userConfig.username || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_USERNAME')
       }
     }),
-    createField(ctx, 'alist', 'password', 'input', userConfig.password || '', false, {
+    createField(ctx, 'alist', 'password', 'input', userConfig.password || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_PASSWORD')
       }
     }),
-    createField(ctx, 'alist', 'uploadPath', 'input', userConfig.uploadPath || '', false, {
+    createField(ctx, 'alist', 'uploadPath', 'input', userConfig.uploadPath || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_UPLOAD_PATH')
       }
     }),
-    createField(ctx, 'alist', 'webPath', 'input', userConfig.webPath || '', false, {
+    createField(ctx, 'alist', 'webPath', 'input', userConfig.webPath || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_WEB_PATH')
       }
     }),
-    createField(ctx, 'alist', 'customUrl', 'input', userConfig.customUrl || '', false, {
+    createField(ctx, 'alist', 'customUrl', 'input', userConfig.customUrl || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_CUSTOMURL')
       }

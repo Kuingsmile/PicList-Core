@@ -255,7 +255,7 @@ export const EN: ILocales = {
   PICBED_AWSS3PLIST_MESSAGE_DISABLEBUCKETPREFIXTOURL: 'Enable when `pathStyleAccess` is enabled',
 
   BUILDIN_SKIPPROCESS: 'Skip Process Settings',
-  BUILDIN_COMPRESS_SKIPPROCESS_EXTLIST: 'Set Skip Process Ext List',
+  BUILDIN_SKIPPROCESS_SKIPPROCESSEXTLIST: 'Set Skip Process Ext List',
 
   BUILDIN_RENAME: 'Rename Settings',
   BUILDIN_RENAME_FORMAT: 'Set rename format',
@@ -272,11 +272,11 @@ export const EN: ILocales = {
   BUILDIN_WATERMARK_MESSAGE_WATERMARKDEGREE: 'Please enter a number',
   BUILDIN_WATERMARK_WATERMARKTEXT: 'Set watermark text',
   BUILDIN_WATERMARK_MESSAGE_WATERMARKTEXT: 'Please enter watermark text',
-  BUILDIN_WATERMARK_WATERMARKTEXTFONTPATH: 'Set watermark font',
+  BUILDIN_WATERMARK_WATERMARKFONTPATH: 'Set watermark font',
   BUILDIN_WATERMARK_MESSAGE_WATERMARKFONTPATH: 'Please enter the watermark font file path',
-  BUILDIN_WATERMARK_WATERMARKFONTRATIO: 'Set the ratio of the watermark to the image',
+  BUILDIN_WATERMARK_WATERMARKSCALERATIO: 'Set the ratio of the watermark to the image',
   BUILDIN_WATERMARK_MESSAGE_WATERMARKFONTRATIO: 'Please enter a number between 0-1',
-  BUILDIN_WATERMARK_WATERMARKFONTCOLOR: 'Set watermark font color',
+  BUILDIN_WATERMARK_WATERMARKCOLOR: 'Set watermark font color',
   BUILDIN_WATERMARK_MESSAGE_WATERMARKFONTCOLOR: 'Please enter the RGB color value',
   BUILDIN_WATERMARK_WATERMARKIMAGEPATH: 'Set watermark image path',
   BUILDIN_WATERMARK_MESSAGE_WATERMARKIMAGEPATH: 'Please enter the watermark image path',
