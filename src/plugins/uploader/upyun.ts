@@ -143,40 +143,28 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_OPERATOR')
       }
     }),
-
     createField(ctx, 'upyun', 'password', 'input', userConfig.password || '', true, {
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_PASSWORD')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_PASSWORD')
-      },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_PASSWORD')
       }
     }),
-
     createField(ctx, 'upyun', 'url', 'input', userConfig.url || '', true, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_URL')
       }
     }),
-
     createField(ctx, 'upyun', 'options', 'input', userConfig.options || '', false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_OPTIONS')
       }
     }),
-
     createField(ctx, 'upyun', 'path', 'input', userConfig.path || '', false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_PATH')
       }
     }),
-
     createField(ctx, 'upyun', 'antiLeechToken', 'input', userConfig.antiLeechToken || '', false),
     createField(ctx, 'upyun', 'expireTime', 'input', userConfig.expireTime || '', false),
-
     createField(ctx, 'upyun', 'endpoint', 'input', userConfig.endpoint || DEFAULT_ENDPOINT, false, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_ENDPOINT')
