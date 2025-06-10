@@ -1,3 +1,26 @@
+## :tada: 1.9.13 (2025-06-10)
+
+
+### :sparkles: Features
+
+* **custom:** add skip process setting ([81da5b1](https://github.com/Kuingsmile/PicList-Core/commit/81da5b1))
+* **custom:** add webPath support for aliyun ([a81fea6](https://github.com/Kuingsmile/PicList-Core/commit/a81fea6))
+* **custom:** add webPath support for tcyun ([1000c8b](https://github.com/Kuingsmile/PicList-Core/commit/1000c8b))
+* **custom:** add webPath support to custom api ([7e83d0e](https://github.com/Kuingsmile/PicList-Core/commit/7e83d0e))
+
+
+### :bug: Bug Fixes
+
+* **custom:** fix an issue where upload will filed caused by backup domain setting ([0a6fdf8](https://github.com/Kuingsmile/PicList-Core/commit/0a6fdf8))
+* **custom:** fix webdav webpath default value bug ([0184100](https://github.com/Kuingsmile/PicList-Core/commit/0184100))
+
+
+### :package: Chore
+
+* **custom:** add mcp server configuration ([03cdfe9](https://github.com/Kuingsmile/PicList-Core/commit/03cdfe9))
+
+
+
 ## :tada: 1.9.12 (2025-06-03)
 
 
