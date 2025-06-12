@@ -1,3 +1,12 @@
+## :tada: 1.9.14 (2025-06-12)
+
+
+### :back: Revert
+
+* **custom:** revert sharp upgrade ([bb558cd](https://github.com/Kuingsmile/PicList-Core/commit/bb558cd))
+
+
+
 ## :tada: 1.9.13 (2025-06-10)
 
 
