@@ -1,12 +1,12 @@
-import crypto from 'crypto'
+import crypto from 'node:crypto'
+
 import { lookup } from 'mime-types'
 
-import { IBuildInEvent } from '../../utils/enum'
 import { ILocalesKey } from '../../i18n/zh-CN'
+import { IOldReqOptionsWithFullResponse,IPicGo, IPluginConfig, IUpyunConfig } from '../../types'
 import { safeParse } from '../../utils/common'
-
-import { buildInUploaderNames, encodePath, formatPathHelper, createField } from './utils'
-import { IPicGo, IPluginConfig, IUpyunConfig, IOldReqOptionsWithFullResponse } from '../../types'
+import { IBuildInEvent } from '../../utils/enum'
+import { buildInUploaderNames, createField,encodePath, formatPathHelper } from './utils'
 
 const DEFAULT_ENDPOINT = 'https://v0.api.upyun.com'
 const DEFAULT_EXPIRE_TIME = 1800 // 30 minutes

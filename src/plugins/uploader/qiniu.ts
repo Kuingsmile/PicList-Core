@@ -1,8 +1,9 @@
 import { lookup } from 'mime-types'
 import qiniu from 'qiniu'
-import { IPluginConfig, IQiniuConfig, IPicGo, IOldReqOptions } from '../../types'
-import { IBuildInEvent } from '../../utils/enum'
+
 import { ILocalesKey } from '../../i18n/zh-CN'
+import { IOldReqOptions, IPicGo, IPluginConfig, IQiniuConfig } from '../../types'
+import { IBuildInEvent } from '../../utils/enum'
 import { buildInUploaderNames } from './utils'
 
 function postOptions(options: IQiniuConfig, fileName: string, token: string, imgBase64: string): IOldReqOptions {

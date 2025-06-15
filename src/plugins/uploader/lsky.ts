@@ -1,9 +1,10 @@
 // https://github.com/hellodk34/picgo-plugin-lankong
 // LICENSE: MIT
 
-import https from 'https'
-import { ILskyConfig, IPicGo, IPluginConfig } from '../../types'
+import https from 'node:https'
+
 import { ILocalesKey } from '../../i18n/zh-CN'
+import { ILskyConfig, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { buildInUploaderNames } from './utils'
 

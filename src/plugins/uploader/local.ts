@@ -1,10 +1,10 @@
+import path from 'node:path'
+
 import fs from 'fs-extra'
-import path from 'path'
 
-import { IPicGo, IPluginConfig, ILocalConfig } from '../../types'
-import { IBuildInEvent } from '../../utils/enum'
 import { ILocalesKey } from '../../i18n/zh-CN'
-
+import { ILocalConfig,IPicGo, IPluginConfig } from '../../types'
+import { IBuildInEvent } from '../../utils/enum'
 import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {

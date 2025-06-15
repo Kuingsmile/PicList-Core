@@ -1,42 +1,36 @@
-import { EventEmitter } from 'events'
+import { EventEmitter } from 'node:events'
+import { homedir } from 'node:os'
+import path from 'node:path'
+
 import fs from 'fs-extra'
 import lodash from 'lodash'
-import { homedir } from 'os'
-import path from 'path'
 
+import { I18nManager } from '../i18n'
 import { Commander } from '../lib/Commander'
 import { LifecyclePlugins, setCurrentPluginName } from '../lib/LifecyclePlugins'
 import { Logger } from '../lib/Logger'
 import { PluginHandler } from '../lib/PluginHandler'
 import { PluginLoader } from '../lib/PluginLoader'
 import { Request } from '../lib/Request'
-
-import { Lifecycle } from './Lifecycle'
-
-import buildInUploaders from '../plugins/uploader'
 import buildInTransformers from '../plugins/transformer'
-
-import getClipboardImage from '../utils/getClipboardImage'
-
+import buildInUploaders from '../plugins/uploader'
+import {
+  IConfig,
+  IHelper,
+  II18nManager,
+  IImgInfo,
+  IPicGo,
+  IPicGoPlugin,
+  IPicGoPluginInterface,
+  IPluginLoader,
+  IRequest,
+  IStringKeyMap} from '../types'
 import { isConfigKeyInBlackList, isInputConfigValid } from '../utils/common'
 import DB from '../utils/db'
 import { IBuildInEvent, IBusEvent } from '../utils/enum'
 import { eventBus } from '../utils/eventBus'
-
-import { I18nManager } from '../i18n'
-
-import {
-  IHelper,
-  IImgInfo,
-  IConfig,
-  IPicGo,
-  IStringKeyMap,
-  IPluginLoader,
-  II18nManager,
-  IPicGoPlugin,
-  IPicGoPluginInterface,
-  IRequest
-} from '../types'
+import getClipboardImage from '../utils/getClipboardImage'
+import { Lifecycle } from './Lifecycle'
 
 const { get, set, unset } = lodash
 export class PicGo extends EventEmitter implements IPicGo {
@@ -183,7 +177,7 @@ export class PicGo extends EventEmitter implements IPicGo {
     Object.keys(config).forEach((name: string) => {
       if (isConfigKeyInBlackList(name)) {
         this.log.warn(`the config.${name} can't be modified`)
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+         
         delete config[name]
       }
       set(this._config, name, config[name])

@@ -1,35 +1,34 @@
+import { EventEmitter } from 'node:events'
+import path from 'node:path'
+
 import axios from 'axios'
-import { EventEmitter } from 'events'
 import fs from 'fs-extra'
 import heicConvert from 'heic-convert'
 import lodash from 'lodash'
-import path from 'path'
 
 import {
-  IBuildInWaterMarkOptions,
   IBuildInCompressOptions,
+  IBuildInSkipProcessOptions,
+  IBuildInWaterMarkOptions,
+  IImgInfo,
   ILifecyclePlugins,
   IPathTransformedImgInfo,
   IPicGo,
   IPlugin,
-  Undefinable,
-  IImgInfo,
-  IBuildInSkipProcessOptions
-} from '../types'
+  Undefinable} from '../types'
 import {
+  getConvertedFormat,
   getURLFile,
   handleUrlEncode,
-  imageCompress,
-  isUrl,
-  isNeedCompress,
-  isNeedAddWatermark,
   imageAddWaterMark,
+  imageCompress,
+  isNeedAddWatermark,
+  isNeedCompress,
+  isUrl,
   removeExif,
-  renameFileNameWithCustomString,
-  getConvertedFormat
-} from '../utils/common'
-import { IBuildInEvent } from '../utils/enum'
+  renameFileNameWithCustomString} from '../utils/common'
 import { createContext } from '../utils/createContext'
+import { IBuildInEvent } from '../utils/enum'
 
 // Constants
 const MESSAGES = {

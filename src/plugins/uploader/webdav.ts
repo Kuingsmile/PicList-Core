@@ -1,11 +1,12 @@
-import fs from 'fs-extra'
-import path from 'path'
-import { WebDAVClient, WebDAVClientOptions, AuthType, createClient } from 'webdav'
+import path from 'node:path'
 
+import fs from 'fs-extra'
+import { AuthType, createClient,WebDAVClient, WebDAVClientOptions } from 'webdav'
+
+import { ILocalesKey } from '../../i18n/zh-CN'
 import { IPicGo, IPluginConfig, IWebdavPlistConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
-import { ILocalesKey } from '../../i18n/zh-CN'
-import { buildInUploaderNames, encodePath, formatPathHelper, createField } from './utils'
+import { buildInUploaderNames, createField,encodePath, formatPathHelper } from './utils'
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024 * 1024 // 4GB
 const GALLERY_PORT = 36699

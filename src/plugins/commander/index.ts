@@ -1,13 +1,12 @@
-import pluginHandler from './pluginHandler'
-import config from './config'
-import upload from './upload'
-import setting from './setting'
-import use from './use'
-import proxy from './proxy'
-import init from './init'
-import i18n from './i18n'
-
 import { IPicGo } from '../../types'
+import config from './config'
+import i18n from './i18n'
+import init from './init'
+import pluginHandler from './pluginHandler'
+import proxy from './proxy'
+import setting from './setting'
+import upload from './upload'
+import use from './use'
 
 export default (ctx: IPicGo): void => {
   ctx.cmd.register('pluginHandler', pluginHandler)

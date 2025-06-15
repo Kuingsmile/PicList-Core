@@ -1,12 +1,13 @@
+import { homedir } from 'node:os'
+import path from 'node:path'
+
 import chalk from 'chalk'
 import download from 'download-git-repo'
 import fs from 'fs-extra'
-import { homedir } from 'os'
-import path from 'path'
 import { sync } from 'rimraf'
 
+import { IOptions, IPicGo,IPlugin } from '../../types'
 import { generate } from '../../utils/initUtils'
-import { IOptions, IPlugin, IPicGo } from '../../types'
 
 const run = (ctx: IPicGo, options: IOptions): void => {
   if (options.offline) {

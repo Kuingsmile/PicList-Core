@@ -1,9 +1,11 @@
+import path from 'node:path'
+
 import axios from 'axios'
-import { IPicGo, IPluginConfig, IAlistConfig, IOldReqOptions, IFullResponse } from '../../types'
-import { IBuildInEvent } from '../../utils/enum'
+
 import { ILocalesKey } from '../../i18n/zh-CN'
-import { buildInUploaderNames, encodePath, formatPathHelper, createField } from './utils'
-import path from 'path'
+import { IAlistConfig, IFullResponse,IOldReqOptions, IPicGo, IPluginConfig } from '../../types'
+import { IBuildInEvent } from '../../utils/enum'
+import { buildInUploaderNames, createField,encodePath, formatPathHelper } from './utils'
 
 interface IAlistTokenStore {
   token: string

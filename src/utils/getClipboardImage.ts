@@ -1,15 +1,16 @@
-import { spawn } from 'child_process'
+import { spawn } from 'node:child_process'
+import os from 'node:os'
+import path from 'node:path'
+import { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import dayjs from 'dayjs'
 import fs from 'fs-extra'
 import isWsl from 'is-wsl'
-import path from 'path'
-import os from 'os'
 
+import { IClipboardImage,IPicGo } from '../types'
 import { IBuildInEvent } from './enum'
-import { IPicGo, IClipboardImage } from '../types'
 import { CLIPBOARD_IMAGE_FOLDER } from './static'
-import { fileURLToPath } from 'url'
-import { dirname } from 'path'
 
 export type Platform = 'darwin' | 'win32' | 'win10' | 'linux' | 'wsl'
 

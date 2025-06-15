@@ -1,4 +1,4 @@
-import { IPlugin, ILifecyclePlugins } from '../types'
+import { ILifecyclePlugins,IPlugin } from '../types'
 
 export class LifecyclePlugins implements ILifecyclePlugins {
   static currentPlugin: string | null

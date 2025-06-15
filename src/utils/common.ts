@@ -1,23 +1,23 @@
+import crypto from 'node:crypto'
+import path from 'node:path'
+import { dirname } from 'node:path'
+import { URL } from 'node:url'
+import { fileURLToPath } from 'node:url'
+
 import fs from 'fs-extra'
-import path from 'path'
 import { imageSize } from 'image-size'
-import { URL } from 'url'
-import TextToSVG from 'text-to-svg'
 import sharp from 'sharp'
-import crypto from 'crypto'
-import { fileURLToPath } from 'url'
-import { dirname } from 'path'
+import TextToSVG from 'text-to-svg'
 import { v4 as uuidv4 } from 'uuid'
 
 import {
-  IImgSize,
-  IPathTransformedImgInfo,
-  IPluginNameType,
-  ILogger,
-  IPicGo,
   IBuildInCompressOptions,
-  IBuildInWaterMarkOptions
-} from '../types'
+  IBuildInWaterMarkOptions,
+  IImgSize,
+  ILogger,
+  IPathTransformedImgInfo,
+  IPicGo,
+  IPluginNameType} from '../types'
 
 export function randomStringGenerator(length: number): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -186,7 +186,7 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
         clearTimeout(timeoutId)
         resolve({
           success: false,
-          // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+           
           reason: `request ${url} error, ${error?.message ?? ''}`
         })
       }

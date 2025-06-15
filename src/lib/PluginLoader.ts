@@ -1,8 +1,10 @@
+import path from 'node:path'
+
 import fs from 'fs-extra'
-import path from 'path'
 import resolve from 'resolve'
+
+import { IPicGo, IPicGoPlugin, IPicGoPluginInterface,IPluginLoader } from '../types/index'
 import { IBuildInEvent } from '../utils/enum'
-import { IPicGo, IPicGoPlugin, IPluginLoader, IPicGoPluginInterface } from '../types/index'
 import { setCurrentPluginName } from './LifecyclePlugins'
 
 /**
@@ -77,7 +79,7 @@ export class PluginLoader implements IPluginLoader {
         ) {
           this.list.push(name)
           setCurrentPluginName(name)
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+           
           this.getPlugin(name)!.register(this.ctx)
           const plugin = `picgoPlugins[${name}]`
           this.ctx.saveConfig({
@@ -125,7 +127,7 @@ export class PluginLoader implements IPluginLoader {
       return this.pluginMap.get(name)
     }
     const pluginDir = path.join(this.ctx.baseDir, 'node_modules/')
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const plugin = require(pluginDir + name)(this.ctx)
     this.pluginMap.set(name, plugin)
     return plugin

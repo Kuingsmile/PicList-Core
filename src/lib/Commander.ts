@@ -2,9 +2,8 @@ import { Command } from 'commander'
 import inquirer from 'inquirer'
 
 import commanders from '../plugins/commander'
+import { ICommander, IPicGo,IPlugin } from '../types'
 import { getCurrentPluginName } from './LifecyclePlugins'
-
-import { IPlugin, ICommander, IPicGo } from '../types'
 
 export class Commander implements ICommander {
   private readonly name = 'commander'

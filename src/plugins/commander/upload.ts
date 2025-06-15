@@ -1,7 +1,9 @@
-import path from 'path'
+import path from 'node:path'
+
 import fs from 'fs-extra'
-import { isUrl } from '../../utils/common'
+
 import { IPicGo, IPlugin } from '../../types'
+import { isUrl } from '../../utils/common'
 
 const upload: IPlugin = {
   handle: (ctx: IPicGo) => {

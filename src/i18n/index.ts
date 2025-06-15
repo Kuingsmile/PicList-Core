@@ -1,13 +1,13 @@
-import { ZH_CN, ILocalesKey, ILocales } from './zh-CN'
-import lodash from 'lodash'
-import { IPicGo, IStringKeyMap, II18nManager } from '../types'
-import path from 'path'
+import path from 'node:path'
+
+import { I18n,ObjectAdapter } from '@piclist/i18n'
 import fs from 'fs-extra'
 import yaml from 'js-yaml'
+import lodash from 'lodash'
 
-import { ObjectAdapter, I18n } from '@piclist/i18n'
-
+import { II18nManager,IPicGo, IStringKeyMap } from '../types'
 import { EN } from './en'
+import { ILocales,ILocalesKey, ZH_CN } from './zh-CN'
 import { ZH_TW } from './zh-TW'
 
 const languageList: IStringKeyMap<IStringKeyMap<string>> = {

@@ -1,5 +1,6 @@
-import { NodeSSH, Config } from 'node-ssh-no-cpu-features'
-import path from 'path'
+import path from 'node:path'
+
+import { Config,NodeSSH } from 'node-ssh-no-cpu-features'
 
 import { ISftpPlistConfig } from '../types'
 
@@ -32,7 +33,7 @@ class SSHClient {
       : { username, password }
     try {
       await this.client.connect({
-        host: host,
+        host,
         port: Number(port) || 22,
         ...loginInfo
       })

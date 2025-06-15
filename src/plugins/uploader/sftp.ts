@@ -1,9 +1,10 @@
-import fs from 'fs-extra'
-import path from 'path'
+import path from 'node:path'
 
+import fs from 'fs-extra'
+
+import { ILocalesKey } from '../../i18n/zh-CN'
 import { IPicGo, IPluginConfig, ISftpPlistConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
-import { ILocalesKey } from '../../i18n/zh-CN'
 import SSHClient from '../../utils/sshClient'
 import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
 

@@ -1,4 +1,4 @@
-/* eslint-disable no-template-curly-in-string */
+ 
 export const ZH_CN = {
   UPLOAD_FAILED: '上传失败',
   CHECK_SETTINGS: '请检查你的配置项是否正确',

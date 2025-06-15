@@ -1,17 +1,17 @@
 import { spawn } from 'cross-spawn'
+
+import { ILocalesKey } from '../i18n/zh-CN'
 import {
-  IResult,
-  IProcessEnv,
-  IPluginProcessResult,
+  IPicGo,
   IPluginHandler,
   IPluginHandlerOptions,
-  Undefinable,
-  IPicGo,
-  IPluginHandlerResult
-} from '../types'
+  IPluginHandlerResult,
+  IPluginProcessResult,
+  IProcessEnv,
+  IResult,
+  Undefinable} from '../types'
+import { getNormalPluginName,getProcessPluginName } from '../utils/common'
 import { IBuildInEvent } from '../utils/enum'
-import { getProcessPluginName, getNormalPluginName } from '../utils/common'
-import { ILocalesKey } from '../i18n/zh-CN'
 
 export class PluginHandler implements IPluginHandler {
   // Thanks to feflow -> https://github.com/feflow/feflow/blob/master/lib/internal/install/plugin.js
@@ -235,7 +235,7 @@ export class PluginHandler implements IPluginHandler {
       try {
         const npm = spawn('npm', args, {
           cwd: where,
-          env: Object.assign({}, process.env, env)
+          env: { ...process.env, ...env}
         })
 
         let output = ''

@@ -1,6 +1,6 @@
 import { ILocales } from './zh-CN'
 
-/* eslint-disable no-template-curly-in-string */
+ 
 export const ZH_TW: ILocales = {
   UPLOAD_FAILED: '上傳失敗',
   CHECK_SETTINGS: '請檢查你的設定是否正確',

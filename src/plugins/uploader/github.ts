@@ -1,8 +1,8 @@
 import { lookup } from 'mime-types'
 
-import { IPicGo, IPluginConfig, IGithubConfig, IOldReqOptionsWithJSON } from '../../types'
-import { IBuildInEvent } from '../../utils/enum'
 import { ILocalesKey } from '../../i18n/zh-CN'
+import { IGithubConfig, IOldReqOptionsWithJSON,IPicGo, IPluginConfig } from '../../types'
+import { IBuildInEvent } from '../../utils/enum'
 import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
 
 function buildGithubApiUrl(repo: string, path: string, fileName: string, extra: string = ''): string {

@@ -1,6 +1,7 @@
 import { Command } from 'commander'
 import inquirer from 'inquirer'
 import { FormatEnum, GravityEnum } from 'sharp'
+
 import { IRequestPromiseOptions } from './oldRequest'
 
 export interface IPicGo extends NodeJS.EventEmitter {

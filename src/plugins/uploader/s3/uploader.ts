@@ -1,15 +1,15 @@
+import url from 'node:url'
+
 import {
-  S3ClientConfig,
-  S3Client,
-  PutObjectCommand,
   GetObjectCommand,
-  PutObjectCommandOutput
-} from '@aws-sdk/client-s3'
+  PutObjectCommand,
+  PutObjectCommandOutput,
+  S3Client,
+  S3ClientConfig} from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { NodeHttpHandler, NodeHttpHandlerOptions } from '@smithy/node-http-handler'
-
-import url from 'url'
 import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent'
+
 import { IAwsS3PListUserConfig, IImgInfo } from '../../../types'
 import { extractInfo, getProxyAgent } from './utils'
 
@@ -27,7 +27,7 @@ function createS3Client(opts: IAwsS3PListUserConfig): S3Client {
     const u = new url.URL(opts.endpoint!)
     sslEnabled = u.protocol === 'https:'
   } catch {
-    // eslint-disable-next-line no-empty
+     
   }
 
   const httpHandlerOpts: NodeHttpHandlerOptions = {}

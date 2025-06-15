@@ -1,6 +1,6 @@
 import { IPicGo } from '../../types'
-import ImgFromPath from './path'
 import ImgFromBase64 from './base64'
+import ImgFromPath from './path'
 
 const buildInTransformers = () => {
   return {
