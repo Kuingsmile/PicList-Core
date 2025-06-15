@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
-import { remove, ensureFileSync, pathExistsSync } from 'fs-extra'
-import { get, set, unset } from 'lodash'
+import fs from 'fs-extra'
+import lodash from 'lodash'
 import { homedir } from 'os'
 import path from 'path'
 
@@ -38,6 +38,7 @@ import {
   IRequest
 } from '../types'
 
+const { get, set, unset } = lodash
 export class PicGo extends EventEmitter implements IPicGo {
   private _config!: IConfig
   private lifecycle!: Lifecycle
@@ -96,8 +97,8 @@ export class PicGo extends EventEmitter implements IPicGo {
       throw Error('The configuration file only supports JSON format.')
     }
     this.baseDir = path.dirname(this.configPath)
-    if (!pathExistsSync(this.configPath)) {
-      ensureFileSync(`${this.configPath}`)
+    if (!fs.pathExistsSync(this.configPath)) {
+      fs.ensureFileSync(`${this.configPath}`)
     }
   }
 
@@ -217,7 +218,7 @@ export class PicGo extends EventEmitter implements IPicGo {
         const { imgPath, shouldKeepAfterUploading } = await getClipboardImage(this)
         const cleanup = (): void => {
           if (!shouldKeepAfterUploading) {
-            remove(imgPath).catch(e => {
+            fs.remove(imgPath).catch(e => {
               this.log.error(e)
             })
           }
@@ -251,7 +252,7 @@ export class PicGo extends EventEmitter implements IPicGo {
         const { imgPath, shouldKeepAfterUploading } = await getClipboardImage(this)
         const cleanup = (): void => {
           if (!shouldKeepAfterUploading) {
-            remove(imgPath).catch(e => {
+            fs.remove(imgPath).catch(e => {
               this.log.error(e)
             })
           }

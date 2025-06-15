@@ -1,5 +1,5 @@
 import { Command } from 'commander'
-import { Inquirer } from 'inquirer'
+import inquirer from 'inquirer'
 import { FormatEnum, GravityEnum } from 'sharp'
 import { IRequestPromiseOptions } from './oldRequest'
 
@@ -145,7 +145,7 @@ export interface IHelper {
 
 export interface ICommander extends ILifecyclePlugins {
   program: Command
-  inquirer: Inquirer
+  inquirer: typeof inquirer
 }
 
 export interface IPluginLoader {
@@ -240,18 +240,18 @@ interface IRequestOptionsWithResponseTypeArrayBuffer {
 export type IResponse<T, U> = U extends IRequestOptionsWithFullResponse
   ? IFullResponse<T, U>
   : U extends IRequestOptionsWithJSON
-    ? T
-    : U extends IRequestOptionsWithResponseTypeArrayBuffer
-      ? Buffer
-      : U extends IOldReqOptionsWithFullResponse
-        ? IFullResponse<T, U>
-        : U extends IOldReqOptionsWithJSON
-          ? T
-          : U extends IOldReqOptions
-            ? string
-            : U extends IReqOptionsWithBodyResOnly
-              ? T
-              : string
+  ? T
+  : U extends IRequestOptionsWithResponseTypeArrayBuffer
+  ? Buffer
+  : U extends IOldReqOptionsWithFullResponse
+  ? IFullResponse<T, U>
+  : U extends IOldReqOptionsWithJSON
+  ? T
+  : U extends IOldReqOptions
+  ? string
+  : U extends IReqOptionsWithBodyResOnly
+  ? T
+  : string
 
 /**
  * the old request lib will be removed in v1.5.0+
@@ -274,8 +274,8 @@ export interface IRequest {
     U extends IRequestConfig<U> extends IOldReqOptions
       ? IOldReqOptions
       : IRequestConfig<U> extends AxiosRequestConfig
-        ? AxiosRequestConfig
-        : never
+      ? AxiosRequestConfig
+      : never
   >(
     config: U
   ) => Promise<IResponse<T, U>>

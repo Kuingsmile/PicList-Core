@@ -1,5 +1,5 @@
 import { ILocalesKey } from '../../i18n/zh-CN'
-import { IPicGo, IPluginConfig, IStringKeyMap } from '../../types'
+import { IPicGo, IStringKeyMap } from '../../types'
 import compress from '../beforetransformer/compress'
 import skipProcess from '../beforetransformer/skipProcess'
 import watermark from '../beforetransformer/watermark'
@@ -16,7 +16,7 @@ const BUILDIN_MODULES = {
 
 type BuildinModuleName = keyof typeof BUILDIN_MODULES
 
-const handleConfig = async (ctx: IPicGo, prompts: IPluginConfig[], module: string, name: string): Promise<void> => {
+const handleConfig = async (ctx: IPicGo, prompts: any[], module: string, name: string): Promise<void> => {
   const answer = await ctx.cmd.inquirer.prompt(prompts)
   const configName = getConfigName(module, name)
 
@@ -57,7 +57,7 @@ const handleBuildinModule = async (ctx: IPicGo, name?: string): Promise<void> =>
     value
   }))
 
-  const prompts = [
+  const prompts: any[] = [
     {
       type: 'list',
       name: 'buildin',
@@ -94,7 +94,7 @@ const handleUploaderOrTransformer = async (
     value: item
   }))
 
-  const prompts = [
+  const prompts: any[] = [
     {
       type: 'list',
       name: module,
@@ -127,7 +127,7 @@ const handlePlugin = async (ctx: IPicGo, name?: string): Promise<void> => {
   }
 
   // Show selection prompt
-  const prompts = [
+  const prompts: any[] = [
     {
       type: 'list',
       name: 'plugin',

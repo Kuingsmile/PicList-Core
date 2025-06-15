@@ -1,8 +1,8 @@
 import axios from 'axios'
 import { EventEmitter } from 'events'
-import fs, { emptyDirSync, ensureDirSync } from 'fs-extra'
+import fs from 'fs-extra'
 import heicConvert from 'heic-convert'
-import { cloneDeep } from 'lodash'
+import lodash from 'lodash'
 import path from 'path'
 
 import {
@@ -66,16 +66,16 @@ export class Lifecycle extends EventEmitter {
   }
 
   private initializeDirs(): void {
-    ensureDirSync(path.join(this.ctx.baseDir, 'imgTemp'))
+    fs.ensureDirSync(path.join(this.ctx.baseDir, 'imgTemp'))
     const enableSecondUploader = this.ctx.getConfig<Undefinable<boolean>>('settings.enableSecondUploader') || false
     if (!enableSecondUploader) {
-      emptyDirSync(path.join(this.ctx.baseDir, 'piclistTemp'))
+      fs.emptyDirSync(path.join(this.ctx.baseDir, 'piclistTemp'))
     }
   }
 
   private async downloadTTF(): Promise<boolean> {
     try {
-      ensureDirSync(path.dirname(this.ttfPath))
+      fs.ensureDirSync(path.dirname(this.ttfPath))
       if (fs.existsSync(this.ttfPath) && fs.statSync(this.ttfPath).size > 0) return true
 
       this.ctx.log.info(MESSAGES.DOWNLOAD_TTF)
@@ -149,7 +149,7 @@ export class Lifecycle extends EventEmitter {
     ctx.input = input
     ctx.output = [] as IImgInfo[]
     ctx.rawInputPath = [] as string[]
-    ctx.rawInput = cloneDeep(input)
+    ctx.rawInput = lodash.cloneDeep(input)
   }
 
   private async handleSkipProcess(ctx: IPicGo): Promise<IPicGo> {
@@ -167,7 +167,7 @@ export class Lifecycle extends EventEmitter {
     await this.doTransform(ctx)
     await this.buildInRename(ctx)
     await this.beforeUpload(ctx)
-    ctx.processedInput = cloneDeep(ctx.output)
+    ctx.processedInput = lodash.cloneDeep(ctx.output)
     await this.doUpload(ctx)
     ctx.input = ctx.rawInput
     await this.afterUpload(ctx)
@@ -345,7 +345,7 @@ export class Lifecycle extends EventEmitter {
   }
 
   private async convertHeicAndCompress(
-    fileBuffer: Buffer,
+    fileBuffer: any,
     item: string,
     extension: string,
     tempFilePath: string,

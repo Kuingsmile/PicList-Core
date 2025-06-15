@@ -1,4 +1,4 @@
-import fs, { ensureDirSync, moveSync, removeSync } from 'fs-extra'
+import fs from 'fs-extra'
 import path from 'path'
 
 import { IPicGo, IPluginConfig, ISftpPlistConfig } from '../../types'
@@ -34,9 +34,9 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         }
         const uploadTempPath = path.join(ctx.baseDir, 'uploadTemp')
         const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'sftpplist')
-        ensureDirSync(imgTempPath)
+        fs.ensureDirSync(imgTempPath)
         const tempFilePath = path.join(uploadTempPath, img.fileName)
-        ensureDirSync(path.dirname(tempFilePath))
+        fs.ensureDirSync(path.dirname(tempFilePath))
         fs.writeFileSync(tempFilePath, image)
         const client = SSHClient.getInstance()
         await client.connect(sftpplistConfig)
@@ -49,18 +49,22 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         if (sftpplistConfig.webPath) {
           img.imgUrl = `${baseUrl}/${encodePath(`${webPath === '/' ? '' : webPath}${img.fileName}`)}`
         } else {
-          img.imgUrl = `${baseUrl}/${encodePath(`${sftpplistConfig.uploadPath === '/' ? '' : sftpplistConfig.uploadPath}${img.fileName}`)}`
+          img.imgUrl = `${baseUrl}/${encodePath(
+            `${sftpplistConfig.uploadPath === '/' ? '' : sftpplistConfig.uploadPath}${img.fileName}`
+          )}`
         }
         const imgTempFilePath = path.join(imgTempPath, img.fileName)
-        ensureDirSync(path.dirname(imgTempFilePath))
-        removeSync(imgTempFilePath)
-        moveSync(tempFilePath, path.join(imgTempPath, img.fileName))
+        fs.ensureDirSync(path.dirname(imgTempFilePath))
+        fs.removeSync(imgTempFilePath)
+        fs.moveSync(tempFilePath, path.join(imgTempPath, img.fileName))
         img.galleryPath = `http://localhost:36699/sftpplist/${encodeURIComponent(img.fileName)}`
         client.close()
       }
     }
     return ctx
   } catch (err: any) {
+    ctx.log.error(err)
+
     ctx.emit(IBuildInEvent.NOTIFICATION, {
       title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
       body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS')

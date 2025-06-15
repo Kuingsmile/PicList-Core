@@ -1,7 +1,7 @@
 {
   "name": "piclist",
   "version": "1.9.14",
-  "description": "Modified PicGo core, A tool for picture uploading",
+  "description": "A tool for picture uploading",
   "author": {
     "name": "Kuingsmile",
     "email": "pkukuing@gmail.com"
@@ -11,9 +11,10 @@
     "url": "https://github.com/Kuingsmile/PicList-core/issues",
     "email": "pkukuing@gmail.com"
   },
-  "main": "dist/index.cjs.js",
-  "module": "dist/index.esm.js",
-  "typings": "dist/index.d.ts",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
     "picgo": "./bin/picgo",
     "picgo-server": "./bin/picgo-server"
@@ -29,120 +30,107 @@
     "lint:dpdm": "dpdm -T --tsconfig ./tsconfig.json --no-tree --no-warning --exit-code circular:1 src/index.ts",
     "dev": "cross-env NODE_ENV=development rollup -c rollup.config.js -w",
     "build": "cross-env NODE_ENV=production rimraf ./dist && rollup -c rollup.config.js",
+    "debug": "npm run build",
+    "copy": "rollup-plugin-copy",
     "cz": "git-cz",
     "release": "bump-version",
-    "publish:npm": "cross-env NODE_ENV=production rimraf ./dist && rollup -c rollup.config.js && npm publish"
+    "publish:npm": "cross-env NODE_ENV=production rimraf ./dist && rollup -c rollup.config.js && npm publish",
+    "prepare": "husky install"
   },
   "keywords": [
     "picture",
     "upload",
     "util"
   ],
-  "husky": {
-    "hooks": {
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
-    }
-  },
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-customizable"
     },
     "cz-customizable": {
-      "config": "./node_modules/node-bump-version/.cz-config.js"
+      "config": "./node_modules/node-bump-version/.cz-config.cjs"
     }
   },
   "commitlint": {
     "extends": [
-      "./node_modules/node-bump-version/commitlint-node"
+      "./node_modules/node-bump-version/dist/commitlint-node/index.js"
     ]
   },
   "license": "MIT",
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-commonjs": "^28.0.5",
     "@rollup/plugin-json": "^6.0.1",
-    "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-replace": "^5.0.5",
-    "@types/cross-spawn": "^6.0.5",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-replace": "^6.0.2",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "@types/cross-spawn": "^6.0.6",
     "@types/ejs": "^3.1.5",
     "@types/fs-extra": "^11.0.4",
-    "@types/heic-convert": "^1.2.3",
+    "@types/heic-convert": "^2.1.0",
     "@types/image-size": "^0.8.0",
-    "@types/inquirer": "^0.0.42",
+    "@types/inquirer": "^9.0.8",
     "@types/js-yaml": "^4.0.9",
-    "@types/lodash": "^4.14.201",
-    "@types/mime": "^3.0.4",
-    "@types/mime-types": "^2.1.3",
-    "@types/minimatch": "^3.0.3",
-    "@types/node": "16.11.7",
-    "@types/resolve": "^0.0.8",
+    "@types/lodash": "^4.17.17",
+    "@types/mime-types": "^3.0.1",
+    "@types/minimatch": "^5.1.2",
+    "@types/node": "^20.3.1",
+    "@types/resolve": "^1.20.6",
     "@types/text-to-svg": "^3.1.4",
-    "@types/tunnel": "^0.0.6",
-    "@types/uuid": "^9.0.7",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
+    "@types/tunnel": "^0.0.7",
+    "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.34.0",
+    "@typescript-eslint/parser": "^8.34.0",
     "babel-eslint": "^10.1.0",
-    "builtins": "^4.0.0",
-    "conventional-changelog": "^3.0.6",
     "cross-env": "^7.0.3",
-    "cz-customizable": "^5.10.0",
     "dpdm": "^3.14.0",
-    "eslint": "^8.57.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-import-resolver-typescript": "^3.6.1",
-    "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-n": "^16.3.1",
-    "eslint-plugin-prettier": "^5.1.3",
-    "eslint-plugin-promise": "^6.2.0",
-    "husky": "^1.3.1",
-    "node-bump-version": "^1.0.2",
-    "pre-commit": "^1.2.2",
-    "prettier": "^3.3.2",
-    "rollup": "^2.79.1",
+    "eslint": "^9.29.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-plugin-unicorn": "^59.0.1",
+    "husky": "^9.1.7",
+    "node-bump-version": "^2.0.0",
+    "rollup": "^4.43.0",
     "rollup-plugin-copy": "^3.5.0",
-    "rollup-plugin-string": "^3.0.0",
-    "rollup-plugin-terser": "^7.0.2",
-    "rollup-plugin-typescript2": "^0.35.0",
-    "typescript": "^4.9.5"
+    "rollup-plugin-dts": "^6.2.1",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.34.0"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.421.0",
     "@aws-sdk/lib-storage": "3.421.0",
     "@aws-sdk/s3-request-presigner": "3.421.0",
-    "@picgo/i18n": "^1.0.0",
-    "@picgo/store": "^2.1.0",
+    "@piclist/i18n": "^2.0.0",
+    "@piclist/store": "^3.0.0",
     "@smithy/node-http-handler": "2.1.6",
-    "axios": "^1.9.0",
-    "chalk": "^2.4.1",
-    "commander": "^8.1.0",
-    "cross-spawn": "^7.0.3",
+    "axios": "^1.10.0",
+    "chalk": "^5.4.1",
+    "commander": "^14.0.0",
+    "cross-spawn": "^7.0.6",
     "dayjs": "^1.11.13",
     "download-git-repo": "^3.0.2",
-    "ejs": "^2.6.1",
-    "file-type": "16.2.0",
-    "form-data": "^4.0.0",
+    "ejs": "^3.1.10",
+    "file-type": "21.0.0",
+    "form-data": "^4.0.3",
     "fs-extra": "^11.3.0",
-    "globby": "^11.1.0",
-    "heic-convert": "^1.2.4",
+    "globby": "^14.1.0",
+    "heic-convert": "^2.1.0",
     "hpagent": "1.2.0",
-    "image-size": "^1.0.2",
-    "inquirer": "^6.0.0",
-    "is-wsl": "^2.2.0",
+    "image-size": "^2.0.2",
+    "inquirer": "^12.6.3",
+    "is-wsl": "^3.1.0",
     "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
-    "mime": "2.5.2",
-    "mime-types": "2.1.35",
-    "minimatch": "^3.0.4",
+    "mime-types": "3.0.1",
+    "minimatch": "^10.0.3",
     "minimist": "^1.2.8",
-    "multer": "^1.4.5-lts.1",
+    "multer": "^2.0.1",
     "node-ssh-no-cpu-features": "^2.0.0",
     "qiniu": "7.9.0",
-    "resolve": "^1.8.1",
+    "resolve": "^1.22.10",
     "rimraf": "^5.0.1",
-    "sharp": "^0.32.1",
+    "sharp": "^0.34.2",
     "text-to-svg": "^3.1.5",
     "tunnel": "^0.0.6",
-    "uuid": "^9.0.1",
-    "webdav": "^4.11.2"
+    "uuid": "^11.1.0",
+    "webdav": "^5.8.0"
   },
   "repository": {
     "type": "git",
@@ -153,6 +141,6 @@
   },
   "plugins": {},
   "engines": {
-    "node": ">= 16.0.0"
+    "node": ">= 18.0.0"
   }
 }

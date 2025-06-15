@@ -114,7 +114,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
 
 const handleUploadError = (ctx: IPicGo, err: any): void => {
   const isUploadFailure = err.message === 'Upload failed'
-
+  ctx.log.error(err)
   if (isUploadFailure) {
     ctx.emit(IBuildInEvent.NOTIFICATION, {
       title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),

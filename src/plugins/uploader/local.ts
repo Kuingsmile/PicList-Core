@@ -1,4 +1,4 @@
-import fs, { ensureDirSync } from 'fs-extra'
+import fs from 'fs-extra'
 import path from 'path'
 
 import { IPicGo, IPluginConfig, ILocalConfig } from '../../types'
@@ -27,8 +27,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'local')
         const fileImgTempPath = path.join(imgTempPath, img.fileName)
         const fileUploadPath = path.join(uploadPath, img.fileName)
-        ensureDirSync(path.dirname(fileUploadPath))
-        ensureDirSync(path.dirname(fileImgTempPath))
+        fs.ensureDirSync(path.dirname(fileUploadPath))
+        fs.ensureDirSync(path.dirname(fileImgTempPath))
         fs.writeFileSync(fileUploadPath, image)
         fs.copyFileSync(fileUploadPath, fileImgTempPath)
         delete img.base64Image
@@ -41,6 +41,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         img.hash = path.join(uploadPath, img.fileName)
         img.galleryPath = `http://localhost:36699/local/${encodePath(img.fileName).replace(/^\//, '')}`
       } catch (e: any) {
+        ctx.log.error(e)
         ctx.emit(IBuildInEvent.NOTIFICATION, {
           title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
           body: 'failed to upload image'

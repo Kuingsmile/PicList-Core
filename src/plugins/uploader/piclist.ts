@@ -13,7 +13,9 @@ const postOptions = (options: IPicListConfig, fileName: string, image: Buffer): 
   const endpoint = isIp
     ? `${protocol}${formatHost}:${defaultPort}`
     : `${protocol}${formatHost}${port ? `:${port}` : ''}`
-  const url = `${endpoint}/upload?configName=${configName}${picbed ? `&picbed=${picbed}` : ''}${serverKey ? `&key=${serverKey}` : ''}`
+  const url = `${endpoint}/upload?configName=${configName}${picbed ? `&picbed=${picbed}` : ''}${
+    serverKey ? `&key=${serverKey}` : ''
+  }`
   return {
     method: 'POST',
     url,
@@ -72,6 +74,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
     }
     return ctx
   } catch (err: any) {
+    ctx.log.error(err)
     ctx.emit(IBuildInEvent.NOTIFICATION, {
       title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
       body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS')

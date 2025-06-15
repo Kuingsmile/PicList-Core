@@ -1,10 +1,12 @@
-import fs, { readFile, readJSONSync } from 'fs-extra'
+import fs from 'fs-extra'
 import path from 'path'
 import { imageSize } from 'image-size'
 import { URL } from 'url'
 import TextToSVG from 'text-to-svg'
 import sharp from 'sharp'
 import crypto from 'crypto'
+import { fileURLToPath } from 'url'
+import { dirname } from 'path'
 import { v4 as uuidv4 } from 'uuid'
 
 import {
@@ -135,7 +137,7 @@ export const getFSFile = async (filePath: string): Promise<IPathTransformedImgIn
     return {
       extname: path.extname(filePath),
       fileName: path.basename(filePath),
-      buffer: await readFile(filePath),
+      buffer: await fs.readFile(filePath),
       success: true
     }
   } catch {
@@ -339,10 +341,12 @@ export const getNormalPluginName = (nameOrPath: string, logger: ILogger | Consol
         logger.warn(`Can't find plugin: ${nameOrPath}`)
         return ''
       } else {
-        const pkg = readJSONSync(packageJSONPath) || {}
+        const pkg = fs.readJSONSync(packageJSONPath) || {}
         if (!pkg.name?.includes('picgo-plugin-')) {
           logger.warn(
-            `The plugin package.json's name filed is ${(pkg.name as string) || 'empty'}, need to include the prefix: picgo-plugin-`
+            `The plugin package.json's name filed is ${
+              (pkg.name as string) || 'empty'
+            }, need to include the prefix: picgo-plugin-`
           )
           return ''
         }
@@ -451,7 +455,8 @@ async function text2SVG(
   const textSVG = text2SVG.getSVG(text, options)
   return Buffer.from(textSVG)
 }
-
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 const defaultWatermarkImagePath = path.join(__dirname, 'assets', 'piclist.png')
 
 export async function AddWatermark(

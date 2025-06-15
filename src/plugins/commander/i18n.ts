@@ -10,7 +10,7 @@ const i18n: IPlugin = {
       .action(async (lang: string = '') => {
         const list = ctx.i18n.getLanguageList()
         if (!lang) {
-          const prompts = [
+          const prompts: any[] = [
             {
               type: 'list',
               name: 'i18n',

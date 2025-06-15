@@ -1,17 +1,18 @@
 #!/usr/bin/env node
-const path = require('path')
-const minimist = require('minimist')
-const os = require('os')
+import { resolve } from 'path'
+import minimist from 'minimist'
+import { homedir } from 'os'
+import { PicGo } from '../dist/index.js'
 
 const argv = minimist(process.argv.slice(2))
 let configPath = argv.c || argv.config || ''
 if (configPath !== true && configPath !== '') {
-  configPath = configPath.replace(/^~/, os.homedir())
-  configPath = path.resolve(configPath)
+  configPath = configPath.replace(/^~/, homedir())
+  configPath = resolve(configPath)
 } else {
   configPath = ''
 }
-const { PicGo } = require('..')
+
 const picgo = new PicGo(configPath)
 picgo.registerCommands()
 

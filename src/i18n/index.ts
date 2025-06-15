@@ -1,13 +1,12 @@
 import { ZH_CN, ILocalesKey, ILocales } from './zh-CN'
-import { merge } from 'lodash'
+import lodash from 'lodash'
 import { IPicGo, IStringKeyMap, II18nManager } from '../types'
 import path from 'path'
-import fs, { pathExistsSync, ensureDirSync } from 'fs-extra'
+import fs from 'fs-extra'
 import yaml from 'js-yaml'
 
-import { ObjectAdapter, I18n } from '@picgo/i18n'
+import { ObjectAdapter, I18n } from '@piclist/i18n'
 
-import { ILocale } from '@picgo/i18n/dist/types'
 import { EN } from './en'
 import { ZH_TW } from './zh-TW'
 
@@ -15,6 +14,10 @@ const languageList: IStringKeyMap<IStringKeyMap<string>> = {
   'zh-CN': ZH_CN,
   'zh-TW': ZH_TW,
   en: EN
+}
+
+interface ILocale {
+  [key: string]: any
 }
 
 class I18nManager implements II18nManager {
@@ -56,8 +59,8 @@ class I18nManager implements II18nManager {
 
   private getOutterI18nFolder(): string {
     const i18nFolder = path.join(this.ctx.baseDir, 'i18n-cli')
-    if (!pathExistsSync(i18nFolder)) {
-      ensureDirSync(i18nFolder)
+    if (!fs.pathExistsSync(i18nFolder)) {
+      fs.ensureDirSync(i18nFolder)
     }
     return i18nFolder
   }
@@ -78,7 +81,7 @@ class I18nManager implements II18nManager {
     if (!originLocales) {
       return false
     }
-    const newLocales = merge(originLocales, locales)
+    const newLocales = lodash.merge(originLocales, locales)
     this.objectAdapter.setLocale(language, newLocales)
     return true
   }

@@ -1,8 +1,6 @@
 
 param($imagePath)
 
-# Adapted from https://github.com/octan3/img-clipboard-dump/blob/master/dump-clipboard-png.ps1
-
 Add-Type -Assembly PresentationCore
 $img = [Windows.Clipboard]::GetImage()
 

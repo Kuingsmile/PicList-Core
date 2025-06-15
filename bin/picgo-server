@@ -1,11 +1,14 @@
 #!/usr/bin/env node
-const http = require('http')
-const multer = require('multer')
-const axios = require('axios')
-const minimist = require('minimist')
-const fs = require('fs-extra')
-const path = require('path')
-const os = require('os')
+
+import http from 'http'
+import multer from 'multer'
+import axios from 'axios'
+import minimist from 'minimist'
+import fs from 'fs-extra'
+import path from 'path'
+import os from 'os'
+import { PicGo } from '../dist/index.js'
+import * as pack from '../package.json'
 
 const tempDir = path.join(os.homedir(), '.piclist', 'serverTemp')
 fs.ensureDirSync(tempDir)
@@ -39,8 +42,7 @@ if (argv.host) {
 }
 
 function showVersion() {
-  const pkg = require('../package.json')
-  console.log(`PicList-Core ${pkg.version}`)
+  console.log(`PicList-Core ${pack.version}`)
 }
 
 function showHelp() {
@@ -69,7 +71,6 @@ if (configPath !== true && configPath !== '') {
   configPath = ''
 }
 
-const { PicGo } = require('..')
 const picgo = new PicGo(configPath)
 const errorMessage = 'Upload failed, please check your network and config'
 
@@ -215,7 +216,7 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
           const picBeds = picgo.getConfig('uploader')
           const currentPicBedList = picBeds?.[picbed]?.configList
           if (currentPicBedList) {
-            const currentConfig = currentPicBedList?.find((item) => item._configName === configName)
+            const currentConfig = currentPicBedList?.find(item => item._configName === configName)
             changeCurrentUploader(picbed, currentConfig, currentConfig._id)
           }
         }

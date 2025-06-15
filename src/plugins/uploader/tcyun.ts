@@ -56,7 +56,9 @@ const postOptions = (
   if (isV4) {
     return {
       method: 'POST',
-      url: `http://${area}.file.myqcloud.com/files/v2/${signature.appId}/${signature.bucket}/${encodeURI(path)}${fileName}`,
+      url: `http://${area}.file.myqcloud.com/files/v2/${signature.appId}/${signature.bucket}/${encodeURI(
+        path
+      )}${fileName}`,
       headers: {
         Host: `${area}.file.myqcloud.com`,
         Authorization: signature.signature,
@@ -141,6 +143,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
     }
     return ctx
   } catch (err: any) {
+    ctx.log.error(err)
     if ((!tcYunOptions.version || tcYunOptions.version === 'v4') && err.error) {
       try {
         const body = JSON.parse(err.error)

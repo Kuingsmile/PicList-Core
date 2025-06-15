@@ -1,6 +1,6 @@
 import chalk from 'chalk'
 import dayjs from 'dayjs'
-import fs, { createFileSync } from 'fs-extra'
+import fs from 'fs-extra'
 import path from 'path'
 import util from 'util'
 
@@ -34,7 +34,9 @@ export class Logger implements ILogger {
         try {
           const result = this.checkLogFileIsLarge(this.logPath)
           if (result.isLarge) {
-            const warningMsg = `Log file is too large (> ${result.logFileSizeLimit! / 1024 / 1024 || '10'} MB), recreate log file`
+            const warningMsg = `Log file is too large (> ${
+              result.logFileSizeLimit! / 1024 / 1024 || '10'
+            } MB), recreate log file`
             console.log(chalk.yellow('[PicList WARN]:'), warningMsg)
             this.recreateLogFile(this.logPath)
             msg.unshift(warningMsg)
@@ -68,7 +70,7 @@ export class Logger implements ILogger {
   private recreateLogFile(logPath: string): void {
     if (fs.existsSync(logPath)) {
       fs.unlinkSync(logPath)
-      createFileSync(logPath)
+      fs.createFileSync(logPath)
     }
   }
 

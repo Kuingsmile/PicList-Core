@@ -1,18 +1,15 @@
 import { spawn } from 'child_process'
 import dayjs from 'dayjs'
-import fs, { ensureDirSync } from 'fs-extra'
+import fs from 'fs-extra'
 import isWsl from 'is-wsl'
 import path from 'path'
 import os from 'os'
 
-import macClipboardScript from './clipboard/mac.applescript'
-import windowsClipboardScript from './clipboard/windows.ps1'
-import windows10ClipboardScript from './clipboard/windows10.ps1'
-import linuxClipboardScript from './clipboard/linux.sh'
-import wslClipboardScript from './clipboard/wsl.sh'
 import { IBuildInEvent } from './enum'
 import { IPicGo, IClipboardImage } from '../types'
 import { CLIPBOARD_IMAGE_FOLDER } from './static'
+import { fileURLToPath } from 'url'
+import { dirname } from 'path'
 
 export type Platform = 'darwin' | 'win32' | 'win10' | 'linux' | 'wsl'
 
@@ -26,16 +23,6 @@ const getCurrentPlatform = (): Platform => {
   } else {
     return 'linux'
   }
-}
-
-const platform2ScriptContent: {
-  [key in Platform]: string
-} = {
-  darwin: macClipboardScript,
-  win32: windowsClipboardScript,
-  win10: windows10ClipboardScript,
-  linux: linuxClipboardScript,
-  wsl: wslClipboardScript
 }
 
 /**
@@ -54,8 +41,11 @@ const platform2ScriptFilename: {
 
 function createImageFolder(ctx: IPicGo): void {
   const imagePath = path.join(ctx.baseDir, CLIPBOARD_IMAGE_FOLDER)
-  ensureDirSync(imagePath)
+  fs.ensureDirSync(imagePath)
 }
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 // Thanks to vs-picgo: https://github.com/Spades-S/vs-picgo/blob/master/src/extension.ts
 const getClipboardImage = async (ctx: IPicGo): Promise<IClipboardImage> => {
@@ -65,9 +55,11 @@ const getClipboardImage = async (ctx: IPicGo): Promise<IClipboardImage> => {
   return await new Promise<IClipboardImage>((resolve: any, reject: any): void => {
     const platform = getCurrentPlatform()
     const scriptPath = path.join(ctx.baseDir, platform2ScriptFilename[platform])
-    // If the script does not exist yet, we need to write the content to the script file
+    // If the script does not exist yet, copy it from the resources folder
     if (!fs.existsSync(scriptPath)) {
-      fs.writeFileSync(scriptPath, platform2ScriptContent[platform], 'utf8')
+      const resourcesPath = path.join(__dirname, './utils/clipboard/', platform2ScriptFilename[platform])
+      fs.copyFileSync(resourcesPath, scriptPath)
+      ctx.log.info(`Copied script from ${resourcesPath} to ${scriptPath}`)
     }
     let execution
     if (platform === 'darwin') {

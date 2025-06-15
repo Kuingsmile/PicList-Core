@@ -1,18 +1,18 @@
 name: publish
 on:
-  push:
-    branches:
-      - master
+  workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Clone repo
-        uses: actions/checkout@v1
-      - name: Setup node
-        uses: actions/setup-node@v1
+        uses: actions/checkout@v4
         with:
-          node-version: '16.x'
+          ref: v2
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
       - name: Install modules
         run: yarn

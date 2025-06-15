@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
 import { Command } from 'commander'
-import inquirer, { Inquirer } from 'inquirer'
+import inquirer from 'inquirer'
 
 import commanders from '../plugins/commander'
 import { getCurrentPluginName } from './LifecyclePlugins'
@@ -15,7 +14,7 @@ export class Commander implements ICommander {
   private readonly ctx: IPicGo
 
   program: Command
-  inquirer: Inquirer
+  inquirer: typeof inquirer
 
   constructor(ctx: IPicGo) {
     this.program = new Command()

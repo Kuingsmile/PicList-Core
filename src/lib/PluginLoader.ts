@@ -1,6 +1,6 @@
-import fs, { readJSONSync } from 'fs-extra'
+import fs from 'fs-extra'
 import path from 'path'
-import { sync } from 'resolve'
+import resolve from 'resolve'
 import { IBuildInEvent } from '../utils/enum'
 import { IPicGo, IPicGoPlugin, IPluginLoader, IPicGoPluginInterface } from '../types/index'
 import { setCurrentPluginName } from './LifecyclePlugins'
@@ -34,7 +34,7 @@ export class PluginLoader implements IPluginLoader {
   // get plugin entry
   private resolvePlugin(ctx: IPicGo, name: string): string {
     try {
-      return sync(name, { basedir: ctx.baseDir })
+      return resolve.sync(name, { basedir: ctx.baseDir })
     } catch (err) {
       return path.join(ctx.baseDir, 'node_modules', name)
     }
@@ -48,7 +48,7 @@ export class PluginLoader implements IPluginLoader {
       return false
     }
     const packagePath = path.join(this.ctx.baseDir, 'package.json')
-    const json = readJSONSync(packagePath)
+    const json = fs.readJSONSync(packagePath)
     const deps = Object.keys(json.dependencies || {})
     const devDeps = Object.keys(json.devDependencies || {})
     const modules = deps.concat(devDeps).filter((name: string) => {

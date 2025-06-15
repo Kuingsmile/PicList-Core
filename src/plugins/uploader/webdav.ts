@@ -1,4 +1,4 @@
-import fs, { ensureDirSync } from 'fs-extra'
+import fs from 'fs-extra'
 import path from 'path'
 import { WebDAVClient, WebDAVClientOptions, AuthType, createClient } from 'webdav'
 
@@ -52,7 +52,7 @@ const buildImageUrl = (
 const saveImageToTemp = (ctx: IPicGo, fileName: string, imageBuffer: Buffer): void => {
   const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'webdavplist')
   const imgTempFilePath = path.join(imgTempPath, fileName)
-  ensureDirSync(path.dirname(imgTempFilePath))
+  fs.ensureDirSync(path.dirname(imgTempFilePath))
   fs.writeFileSync(imgTempFilePath, imageBuffer)
 }
 
@@ -108,6 +108,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
 
     return ctx
   } catch (err: any) {
+    ctx.log.error(err)
     ctx.emit(IBuildInEvent.NOTIFICATION, {
       title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
       body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS')

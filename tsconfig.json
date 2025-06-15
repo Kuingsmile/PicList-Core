@@ -3,23 +3,23 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "esnext",
+    "target": "esnext",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "esModuleInterop": true,
+    "skipLibCheck": true,
+    "importHelpers": true,
     "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
     "strictNullChecks": true,
     "strictFunctionTypes": true,
     "sourceMap": true,
-    "target": "es2017",
     "declaration": true,
+    "typeRoots": ["./node_modules/@types", "./src/types/*"],
     "outDir": "dist",
     "rootDir": "src",
-    "lib": [
-      "es2017",
-      "es2015",
-      "es6"
-    ],
+    "lib": ["esnext", "dom", "ScriptHost"]
   },
-  "exclude": [ "node_modules", "dist"]
+  "exclude": ["node_modules", "dist"]
 }
