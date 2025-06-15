@@ -57,7 +57,7 @@ const handleBuildinModule = async (ctx: IPicGo, name?: string): Promise<void> =>
     value
   }))
 
-  const prompts: any[] = [
+  const prompts = [
     {
       type: 'list',
       name: 'buildin',
@@ -127,7 +127,7 @@ const handlePlugin = async (ctx: IPicGo, name?: string): Promise<void> => {
   }
 
   // Show selection prompt
-  const prompts: any[] = [
+  const prompts = [
     {
       type: 'list',
       name: 'plugin',

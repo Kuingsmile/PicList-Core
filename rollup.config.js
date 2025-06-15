@@ -1,13 +1,14 @@
-import { readFileSync } from 'fs'
-import { fileURLToPath } from 'url'
-import { dirname, resolve } from 'path'
-import { defineConfig } from 'rollup'
-import typescript from '@rollup/plugin-typescript'
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import commonjs from '@rollup/plugin-commonjs'
-import nodeResolve from '@rollup/plugin-node-resolve'
-import copy from 'rollup-plugin-copy'
 import json from '@rollup/plugin-json'
+import nodeResolve from '@rollup/plugin-node-resolve'
 import replace from '@rollup/plugin-replace'
+import typescript from '@rollup/plugin-typescript'
+import { defineConfig } from 'rollup'
+import copy from 'rollup-plugin-copy'
 import { dts } from 'rollup-plugin-dts'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -21,7 +22,8 @@ const builtinModules = [
   'cluster',
   'console',
   'constants',
-  'crypto',
+  'node:crypto',
+  'node:events',
   'dgram',
   'dns',
   'domain',
@@ -75,7 +77,6 @@ const external = [
   './src/utils/clipboard/wsl.sh'
 ]
 
-
 const version = process.env.VERSION || pkg.version
 const sourcemap = 'inline'
 const banner = `/*
@@ -84,38 +85,38 @@ const banner = `/*
  * Released under the MIT License.
  */`
 
-export default defineConfig( [
+export default defineConfig([
   {
     input: './src/index.ts',
-  // Creating regex of the packages to make sure sub-paths of the
-  // packages such as `lowdb/adapters/FileSync` are also treated as external
-  external,
-  plugins: [
-    nodeResolve({
-      preferBuiltins: true,
-      exportConditions: ['node']
-    }),
-    typescript({
-      tsconfig: './tsconfig.json',
-      sourceMap: true,
-      inlineSources: true,
-      declaration: true,
-      declarationDir: 'dist',
-      rootDir: 'src'
-    }),
-    commonjs(),
-    json(),
-    copy({
-      targets: [
-        { src: 'assets', dest: 'dist' },
-        { src: 'src/utils/clipboard/*', dest: 'dist/utils/clipboard' },
-      ]
-    }),
-    replace({
-      'process.env.PICGO_VERSION': JSON.stringify(pkg.version),
-      preventAssignment: true
-    })
-  ],
+    // Creating regex of the packages to make sure sub-paths of the
+    // packages such as `lowdb/adapters/FileSync` are also treated as external
+    external,
+    plugins: [
+      nodeResolve({
+        preferBuiltins: true,
+        exportConditions: ['node']
+      }),
+      typescript({
+        tsconfig: './tsconfig.json',
+        sourceMap: true,
+        inlineSources: true,
+        declaration: true,
+        declarationDir: 'dist',
+        rootDir: 'src'
+      }),
+      commonjs(),
+      json(),
+      copy({
+        targets: [
+          { src: 'assets', dest: 'dist' },
+          { src: 'src/utils/clipboard/*', dest: 'dist/utils/clipboard' }
+        ]
+      }),
+      replace({
+        'process.env.PICGO_VERSION': JSON.stringify(pkg.version),
+        preventAssignment: true
+      })
+    ],
     output: {
       file: 'dist/index.js',
       format: 'esm',

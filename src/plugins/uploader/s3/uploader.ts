@@ -2,10 +2,12 @@ import url from 'node:url'
 
 import {
   GetObjectCommand,
+  ObjectCannedACL,
   PutObjectCommand,
   PutObjectCommandOutput,
   S3Client,
-  S3ClientConfig} from '@aws-sdk/client-s3'
+  S3ClientConfig
+} from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { NodeHttpHandler, NodeHttpHandlerOptions } from '@smithy/node-http-handler'
 import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent'
@@ -26,9 +28,7 @@ function createS3Client(opts: IAwsS3PListUserConfig): S3Client {
   try {
     const u = new url.URL(opts.endpoint!)
     sslEnabled = u.protocol === 'https:'
-  } catch {
-     
-  }
+  } catch {}
 
   const httpHandlerOpts: NodeHttpHandlerOptions = {}
   if (sslEnabled) {
@@ -57,7 +57,7 @@ interface ICreateUploadTaskOpts {
   bucketName: string
   path: string
   item: IImgInfo
-  acl: string
+  acl: ObjectCannedACL
   urlPrefix?: string
 }
 

@@ -1,5 +1,6 @@
+import { ObjectCannedACL } from '@aws-sdk/client-s3'
 import { Command } from 'commander'
-import inquirer from 'inquirer'
+import { Inquirer } from 'inquirer'
 import { FormatEnum, GravityEnum } from 'sharp'
 
 import { IRequestPromiseOptions } from './oldRequest'
@@ -146,7 +147,7 @@ export interface IHelper {
 
 export interface ICommander extends ILifecyclePlugins {
   program: Command
-  inquirer: typeof inquirer
+  inquirer: Inquirer
 }
 
 export interface IPluginLoader {
@@ -513,7 +514,7 @@ export interface IAwsS3PListUserConfig {
   urlPrefix?: string
   pathStyleAccess?: boolean
   rejectUnauthorized?: boolean
-  acl?: string
+  acl?: ObjectCannedACL
   disableBucketPrefixToURL?: boolean | string
 }
 /** PicGo 配置文件类型定义 */

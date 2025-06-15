@@ -17,7 +17,8 @@ import {
   ILogger,
   IPathTransformedImgInfo,
   IPicGo,
-  IPluginNameType} from '../types'
+  IPluginNameType
+} from '../types'
 
 export function randomStringGenerator(length: number): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -186,7 +187,7 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
         clearTimeout(timeoutId)
         resolve({
           success: false,
-           
+
           reason: `request ${url} error, ${error?.message ?? ''}`
         })
       }
