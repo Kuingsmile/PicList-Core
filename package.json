@@ -35,7 +35,7 @@
     "cz": "git-cz",
     "release": "bump-version",
     "publish:npm": "cross-env NODE_ENV=production rimraf ./dist && rollup -c rollup.config.js && npm publish",
-    "prepare": "husky install"
+    "prepare": "husky"
   },
   "keywords": [
     "picture",
