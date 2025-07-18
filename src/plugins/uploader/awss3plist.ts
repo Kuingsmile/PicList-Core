@@ -34,7 +34,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         path: formatPath(img, userConfig.uploadPath),
         item: img,
         acl: userConfig.acl || 'public-read',
-        urlPrefix
+        urlPrefix,
+        options: userConfig.options || ''
       })
       delete img.buffer
       delete img.base64Image
@@ -184,6 +185,21 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_MESSAGE_URLPREFIX')
+      }
+    },
+    {
+      name: 'options',
+      type: 'input',
+      default: userConfig.options || '',
+      required: false,
+      get prefix() {
+        return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_OPTIONS')
+      },
+      get alias() {
+        return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_OPTIONS')
+      },
+      get message() {
+        return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_MESSAGE_OPTIONS')
       }
     },
     {

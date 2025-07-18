@@ -59,6 +59,7 @@ interface ICreateUploadTaskOpts {
   item: IImgInfo
   acl: string
   urlPrefix?: string
+  options: string
 }
 
 async function createUploadTask(opts: ICreateUploadTaskOpts): Promise<IUploadResult> {
@@ -84,6 +85,10 @@ async function createUploadTask(opts: ICreateUploadTaskOpts): Promise<IUploadRes
       url = await getFileURL(opts, output.ETag!, output.VersionId!)
     } else {
       url = `${opts.urlPrefix}/${opts.path}`
+    }
+
+    if (opts.options) {
+      url += opts.options.startsWith('?') ? opts.options : `?${opts.options}`
     }
 
     return {
