@@ -1,3 +1,5 @@
+import { ObjectCannedACL } from '@aws-sdk/client-s3'
+
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IAwsS3PListUserConfig, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
@@ -32,7 +34,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         bucketName: userConfig.bucketName,
         path: formatPath(img, userConfig.uploadPath),
         item: img,
-        acl: userConfig.acl || 'public-read',
+        acl: (userConfig.acl || 'public-read') as ObjectCannedACL,
         urlPrefix,
         options: userConfig.options || ''
       })

@@ -1,5 +1,7 @@
-import { JSONStore } from '@picgo/store'
-import { IJSON } from '@picgo/store/dist/types'
+import { JSONStore } from '@piclist/store'
+interface IJSON {
+  [propsName: string]: string | number | IJSON
+}
 
 import { IConfig, IPicGo } from '../types'
 

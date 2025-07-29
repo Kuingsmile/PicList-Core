@@ -1,9 +1,9 @@
 import crypto from 'node:crypto'
 import { URL } from 'node:url'
 
-import FileType from 'file-type'
+import { fileTypeFromBuffer } from 'file-type'
 import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent'
-import mime from 'mime'
+import { lookup } from 'mime-types'
 
 import { IImgInfo } from '../../../types'
 
@@ -137,14 +137,14 @@ export async function extractInfo(info: IImgInfo): Promise<{
     result.contentEncoding = 'base64'
   } else {
     if (info.extname) {
-      result.contentType = mime.getType(info.extname)!
+      result.contentType = lookup(info.extname) || undefined
     }
     result.body = info.buffer
   }
 
   // fallback to detect from buffer
   if (!result.contentType) {
-    const fileType = await FileType.fromBuffer(result.body!)
+    const fileType = await fileTypeFromBuffer(result.body!)
     result.contentType = fileType?.mime
   }
 

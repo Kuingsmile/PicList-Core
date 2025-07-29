@@ -3,8 +3,8 @@ import path from 'node:path'
 import { render as ejsRender } from 'ejs'
 import fs from 'fs-extra'
 import { ensureDirSync } from 'fs-extra/esm'
-import globby from 'globby'
-import match from 'minimatch'
+import { globby } from 'globby'
+import { minimatch } from 'minimatch'
 
 import { IFileTree, IOptions, IPicGo } from '../types'
 
@@ -25,7 +25,7 @@ const generate = async (ctx: IPicGo, options: IOptions): Promise<any> => {
     _files = _files.filter((item: string) => {
       let glob = ''
       Object.keys(opts.filters).forEach((key: string) => {
-        if (match(item, key, { dot: true })) {
+        if (minimatch(item, key, { dot: true })) {
           glob = item
         }
       })

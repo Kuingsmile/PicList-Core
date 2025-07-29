@@ -2,6 +2,7 @@ import url from 'node:url'
 
 import {
   GetObjectCommand,
+  ObjectCannedACL,
   PutObjectCommand,
   PutObjectCommandOutput,
   S3Client,
@@ -56,7 +57,7 @@ interface ICreateUploadTaskOpts {
   bucketName: string
   path: string
   item: IImgInfo
-  acl: string
+  acl?: ObjectCannedACL
   urlPrefix?: string
   options: string
 }
