@@ -1,20 +1,21 @@
-import axios from 'axios'
+import https from 'node:https'
+import { URL } from 'node:url'
+
 import type { AxiosRequestConfig, AxiosResponse } from 'axios'
+import axios from 'axios'
 import FormData from 'form-data'
-import https from 'https'
 import { httpsOverHttp } from 'tunnel'
-import { URL } from 'url'
 
 import type {
-  IPicGo,
-  Undefinable,
-  IConfigChangePayload,
   IConfig,
-  IRequestConfig,
-  IOldReqOptions,
-  IResponse,
+  IConfigChangePayload,
   IFullResponse,
-  IRequest
+  IOldReqOptions,
+  IPicGo,
+  IRequest,
+  IRequestConfig,
+  IResponse,
+  Undefinable
 } from '../types'
 import { IBusEvent } from '../utils/enum'
 import { eventBus } from '../utils/eventBus'

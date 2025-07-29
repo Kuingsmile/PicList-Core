@@ -1,15 +1,19 @@
-import { ZH_CN, ILocalesKey, ILocales } from './zh-CN'
-import { merge } from 'lodash'
-import { IPicGo, IStringKeyMap, II18nManager } from '../types'
-import path from 'path'
-import fs, { pathExistsSync, ensureDirSync } from 'fs-extra'
+import path from 'node:path'
+
+import { I18n, ObjectAdapter } from '@piclist/i18n'
+import fs from 'fs-extra'
+import { ensureDirSync, pathExistsSync } from 'fs-extra/esm'
 import yaml from 'js-yaml'
+import { merge } from 'lodash-es'
 
-import { ObjectAdapter, I18n } from '@picgo/i18n'
-
-import { ILocale } from '@picgo/i18n/dist/types'
+import { II18nManager, IPicGo, IStringKeyMap } from '../types'
 import { EN } from './en'
+import { ILocales, ILocalesKey, ZH_CN } from './zh-CN'
 import { ZH_TW } from './zh-TW'
+
+interface ILocale {
+  [key: string]: any
+}
 
 const languageList: IStringKeyMap<IStringKeyMap<string>> = {
   'zh-CN': ZH_CN,

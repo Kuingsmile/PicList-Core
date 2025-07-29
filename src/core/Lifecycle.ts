@@ -1,35 +1,37 @@
+import { EventEmitter } from 'node:events'
+import path from 'node:path'
+
 import axios from 'axios'
-import { EventEmitter } from 'events'
-import fs, { emptyDirSync, ensureDirSync } from 'fs-extra'
+import fs from 'fs-extra'
+import { emptyDirSync, ensureDirSync } from 'fs-extra/esm'
 import heicConvert from 'heic-convert'
-import { cloneDeep } from 'lodash'
-import path from 'path'
+import { cloneDeep } from 'lodash-es'
 
 import {
-  IBuildInWaterMarkOptions,
   IBuildInCompressOptions,
+  IBuildInSkipProcessOptions,
+  IBuildInWaterMarkOptions,
+  IImgInfo,
   ILifecyclePlugins,
   IPathTransformedImgInfo,
   IPicGo,
   IPlugin,
-  Undefinable,
-  IImgInfo,
-  IBuildInSkipProcessOptions
+  Undefinable
 } from '../types'
 import {
+  getConvertedFormat,
   getURLFile,
   handleUrlEncode,
-  imageCompress,
-  isUrl,
-  isNeedCompress,
-  isNeedAddWatermark,
   imageAddWaterMark,
+  imageCompress,
+  isNeedAddWatermark,
+  isNeedCompress,
+  isUrl,
   removeExif,
-  renameFileNameWithCustomString,
-  getConvertedFormat
+  renameFileNameWithCustomString
 } from '../utils/common'
-import { IBuildInEvent } from '../utils/enum'
 import { createContext } from '../utils/createContext'
+import { IBuildInEvent } from '../utils/enum'
 
 // Constants
 const MESSAGES = {
@@ -353,7 +355,7 @@ export class Lifecycle extends EventEmitter {
     ctx: IPicGo
   ): Promise<Buffer> {
     const heicResult = await heicConvert({
-      buffer: fileBuffer,
+      buffer: fileBuffer.buffer,
       format: 'JPEG',
       quality: 1
     })

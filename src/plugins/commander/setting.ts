@@ -119,7 +119,7 @@ const handlePlugin = async (ctx: IPicGo, name?: string): Promise<void> => {
       return
     }
 
-    const plugin = ctx.pluginLoader.getPlugin(pluginName)
+    const plugin = await ctx.pluginLoader.getPlugin(pluginName)
     if (plugin?.config) {
       await handleConfig(ctx, plugin.config(ctx), 'plugin', pluginName)
     }
@@ -137,7 +137,7 @@ const handlePlugin = async (ctx: IPicGo, name?: string): Promise<void> => {
   ]
 
   const answer = await ctx.cmd.inquirer.prompt<IStringKeyMap<string>>(prompts)
-  const plugin = ctx.pluginLoader.getPlugin(answer.plugin)
+  const plugin = await ctx.pluginLoader.getPlugin(answer.plugin)
   if (plugin?.config) {
     await handleConfig(ctx, plugin.config(ctx), 'plugin', answer.plugin)
   }

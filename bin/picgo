@@ -1,18 +1,20 @@
 #!/usr/bin/env node
-const path = require('path')
-const minimist = require('minimist')
-const os = require('os')
+import { homedir } from 'node:os'
+import { resolve } from 'node:path'
+
+import minimist from 'minimist'
+
+import { PicGo } from '../dist/index.esm.js'
 
 const argv = minimist(process.argv.slice(2))
 let configPath = argv.c || argv.config || ''
 if (configPath !== true && configPath !== '') {
-  configPath = configPath.replace(/^~/, os.homedir())
-  configPath = path.resolve(configPath)
+  configPath = configPath.replace(/^~/, homedir())
+  configPath = resolve(configPath)
 } else {
   configPath = ''
 }
-const { PicGo } = require('..')
-const picgo = new PicGo(configPath)
+const picgo = await PicGo.create(configPath)
 picgo.registerCommands()
 
 try {

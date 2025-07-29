@@ -1,7 +1,8 @@
 import { lookup } from 'mime-types'
-import { IPicListConfig, IPicGo, IPluginConfig, IOldReqOptionsWithFullResponse } from '../../types'
-import { IBuildInEvent } from '../../utils/enum'
+
 import { ILocalesKey } from '../../i18n/zh-CN'
+import { IOldReqOptionsWithFullResponse, IPicGo, IPicListConfig, IPluginConfig } from '../../types'
+import { IBuildInEvent } from '../../utils/enum'
 import { buildInUploaderNames } from './utils'
 
 const postOptions = (options: IPicListConfig, fileName: string, image: Buffer): IOldReqOptionsWithFullResponse => {

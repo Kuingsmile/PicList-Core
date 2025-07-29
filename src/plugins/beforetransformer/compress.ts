@@ -1,4 +1,4 @@
-import { IPicGo, IPluginConfig, IBuildInCompressOptions } from '../../types'
+import { IBuildInCompressOptions, IPicGo, IPluginConfig } from '../../types'
 import { createField } from '../uploader/utils'
 
 const config = (ctx: IPicGo): IPluginConfig[] => {

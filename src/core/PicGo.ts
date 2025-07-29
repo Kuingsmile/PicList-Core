@@ -1,42 +1,37 @@
-import { EventEmitter } from 'events'
-import { remove, ensureFileSync, pathExistsSync } from 'fs-extra'
-import { get, set, unset } from 'lodash'
-import { homedir } from 'os'
-import path from 'path'
+import { EventEmitter } from 'node:events'
+import { homedir } from 'node:os'
+import path from 'node:path'
 
+import { ensureFileSync, pathExistsSync, remove } from 'fs-extra/esm'
+import { get, set, unset } from 'lodash-es'
+
+import { I18nManager } from '../i18n'
 import { Commander } from '../lib/Commander'
 import { LifecyclePlugins, setCurrentPluginName } from '../lib/LifecyclePlugins'
 import { Logger } from '../lib/Logger'
 import { PluginHandler } from '../lib/PluginHandler'
 import { PluginLoader } from '../lib/PluginLoader'
 import { Request } from '../lib/Request'
-
-import { Lifecycle } from './Lifecycle'
-
-import buildInUploaders from '../plugins/uploader'
 import buildInTransformers from '../plugins/transformer'
-
-import getClipboardImage from '../utils/getClipboardImage'
-
+import buildInUploaders from '../plugins/uploader'
+import {
+  IConfig,
+  IHelper,
+  II18nManager,
+  IImgInfo,
+  IPicGo,
+  IPicGoPlugin,
+  IPicGoPluginInterface,
+  IPluginLoader,
+  IRequest,
+  IStringKeyMap
+} from '../types'
 import { isConfigKeyInBlackList, isInputConfigValid } from '../utils/common'
 import DB from '../utils/db'
 import { IBuildInEvent, IBusEvent } from '../utils/enum'
 import { eventBus } from '../utils/eventBus'
-
-import { I18nManager } from '../i18n'
-
-import {
-  IHelper,
-  IImgInfo,
-  IConfig,
-  IPicGo,
-  IStringKeyMap,
-  IPluginLoader,
-  II18nManager,
-  IPicGoPlugin,
-  IPicGoPluginInterface,
-  IRequest
-} from '../types'
+import getClipboardImage from '../utils/getClipboardImage'
+import { Lifecycle } from './Lifecycle'
 
 export class PicGo extends EventEmitter implements IPicGo {
   private _config!: IConfig
@@ -86,7 +81,12 @@ export class PicGo extends EventEmitter implements IPicGo {
     this.cmd = new Commander(this)
     this.pluginHandler = new PluginHandler(this)
     this.initConfig()
-    this.init()
+  }
+
+  static async create(configPath: string = ''): Promise<PicGo> {
+    const ctx = new PicGo(configPath)
+    await ctx.init()
+    return ctx
   }
 
   private initConfigPath(): void {
@@ -106,7 +106,7 @@ export class PicGo extends EventEmitter implements IPicGo {
     this._config = this.db.read(true) as IConfig
   }
 
-  private init(): void {
+  private async init(): Promise<void> {
     try {
       // init 18n at first
       this.i18n = new I18nManager(this)
@@ -118,7 +118,7 @@ export class PicGo extends EventEmitter implements IPicGo {
       buildInTransformers().register(this)
       setCurrentPluginName('')
       // load third-party plugins
-      this._pluginLoader.load()
+      await this._pluginLoader.load()
       this.lifecycle = new Lifecycle(this)
     } catch (e: any) {
       this.emit(IBuildInEvent.UPLOAD_PROGRESS, -1)
@@ -132,10 +132,10 @@ export class PicGo extends EventEmitter implements IPicGo {
    * if provide plugin name, will register plugin by name
    * or just instantiate a plugin
    */
-  use(plugin: IPicGoPlugin, name?: string): IPicGoPluginInterface {
+  async use(plugin: IPicGoPlugin, name?: string): Promise<IPicGoPluginInterface> {
     if (name) {
-      this.pluginLoader.registerPlugin(name, plugin)
-      return this.pluginLoader.getPlugin(name)!
+      await this.pluginLoader.registerPlugin(name, plugin)
+      return (await this.pluginLoader.getPlugin(name))!
     }
     return plugin(this)
   }
@@ -182,7 +182,7 @@ export class PicGo extends EventEmitter implements IPicGo {
     Object.keys(config).forEach((name: string) => {
       if (isConfigKeyInBlackList(name)) {
         this.log.warn(`the config.${name} can't be modified`)
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+
         delete config[name]
       }
       set(this._config, name, config[name])

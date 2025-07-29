@@ -1,6 +1,7 @@
 import { Command } from 'commander'
 import { Inquirer } from 'inquirer'
 import { FormatEnum, GravityEnum } from 'sharp'
+
 import { IRequestPromiseOptions } from './oldRequest'
 
 export interface IPicGo extends NodeJS.EventEmitter {
@@ -160,9 +161,9 @@ export interface IPluginLoader {
    *
    * you should use ctx.setConfig to change the config context
    */
-  registerPlugin: (name: string, plugin?: IPicGoPlugin) => void
+  registerPlugin: (name: string, plugin?: IPicGoPlugin) => Promise<void>
   unregisterPlugin: (name: string) => void
-  getPlugin: (name: string) => IPicGoPluginInterface | undefined
+  getPlugin: (name: string) => Promise<IPicGoPluginInterface | undefined>
   /**
    * get enabled plugin list
    */

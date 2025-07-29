@@ -1,12 +1,15 @@
-import { terser } from 'rollup-plugin-terser'
-import pkg from './package.json'
-import typescript from 'rollup-plugin-typescript2'
+import { readFileSync } from 'node:fs'
+import { builtinModules } from 'node:module'
+
 import commonjs from '@rollup/plugin-commonjs'
+import json from '@rollup/plugin-json'
+import replace from '@rollup/plugin-replace'
+import terser from '@rollup/plugin-terser'
+import typescript from '@rollup/plugin-typescript'
 import copy from 'rollup-plugin-copy'
 import { string } from 'rollup-plugin-string'
-import json from '@rollup/plugin-json'
-import builtins from 'builtins'
-import replace from '@rollup/plugin-replace'
+
+const pkg = JSON.parse(readFileSync('./package.json', 'utf8'))
 
 const version = process.env.VERSION || pkg.version
 const sourcemap = 'inline'
@@ -22,32 +25,21 @@ const commonOptions = {
   // packages such as `lowdb/adapters/FileSync` are also treated as external
   // See https://github.com/rollup/rollup/issues/3684#issuecomment-926558056
   external: [
-    ...Object.keys(pkg.dependencies),
-    ...builtins()
-  ].map(packageName => new RegExp(`^${packageName}(/.*)?`)),
+    ...Object.keys(pkg.dependencies).map(packageName => new RegExp(`^${packageName}(/.*)?`)),
+    ...builtinModules.map(moduleName => new RegExp(`^(node:)?${moduleName}(/.*)?`))
+  ],
   plugins: [
     typescript({
-      tsconfigOverride: {
-        compilerOptions: {
-          target: 'ES2017',
-          module: 'ES2015'
-        }
-      }
+      tsconfig: './tsconfig.json'
     }),
     copy({
-      targets: [
-        { src: 'assets', dest: 'dist' }
-      ]
+      targets: [{ src: 'assets', dest: 'dist' }]
     }),
     // terser(),
     commonjs(),
     string({
       // Required to be specified
-      include: [
-        '**/*.applescript',
-        '**/*.ps1',
-        '**/*.sh'
-      ]
+      include: ['**/*.applescript', '**/*.ps1', '**/*.sh']
     }),
     json(),
     replace({
@@ -66,22 +58,26 @@ if (!isDev) {
 
 /** @type import('rollup').RollupOptions */
 const nodeCjs = {
-  output: [{
-    file: 'dist/index.cjs.js',
-    format: 'cjs',
-    banner,
-    sourcemap
-  }],
+  output: [
+    {
+      file: 'dist/index.cjs.js',
+      format: 'cjs',
+      banner,
+      sourcemap
+    }
+  ],
   ...commonOptions
 }
 
 const nodeEsm = {
-  output: [{
-    file: 'dist/index.esm.js',
-    format: 'esm',
-    banner,
-    sourcemap
-  }],
+  output: [
+    {
+      file: 'dist/index.esm.js',
+      format: 'esm',
+      banner,
+      sourcemap
+    }
+  ],
   ...commonOptions
 }
 

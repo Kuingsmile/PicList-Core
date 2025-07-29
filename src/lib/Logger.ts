@@ -1,12 +1,14 @@
+import path from 'node:path'
+import util from 'node:util'
+
 import chalk from 'chalk'
 import dayjs from 'dayjs'
-import fs, { createFileSync } from 'fs-extra'
-import path from 'path'
-import util from 'util'
+import fs from 'fs-extra'
+import { createFileSync } from 'fs-extra/esm'
 
-import { ILogType } from '../utils/enum'
-import { ILogArgvType, ILogArgvTypeWithError, Undefinable, ILogColor, ILogger, IPicGo } from '../types'
+import { ILogArgvType, ILogArgvTypeWithError, ILogColor, ILogger, IPicGo, Undefinable } from '../types'
 import { forceNumber, isDev } from '../utils/common'
+import { ILogType } from '../utils/enum'
 
 export class Logger implements ILogger {
   private readonly level = {

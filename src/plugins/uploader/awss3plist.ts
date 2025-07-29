@@ -1,9 +1,8 @@
-import uploader from './s3/uploader'
-
-import { formatPath } from './s3/utils'
-import { IAwsS3PListUserConfig, IPicGo, IPluginConfig } from '../../types'
 import { ILocalesKey } from '../../i18n/zh-CN'
+import { IAwsS3PListUserConfig, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import uploader from './s3/uploader'
+import { formatPath } from './s3/utils'
 import { buildInUploaderNames } from './utils'
 
 function formatDisableBucketPrefixToURL(disableBucketPrefixToURL: string | boolean | undefined): boolean {

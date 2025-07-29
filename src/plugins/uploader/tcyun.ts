@@ -1,8 +1,10 @@
-import crypto from 'crypto'
+import crypto from 'node:crypto'
+
 import { lookup } from 'mime-types'
-import { IPicGo, IPluginConfig, ITcyunConfig, IOldReqOptionsWithFullResponse } from '../../types'
-import { IBuildInEvent } from '../../utils/enum'
+
 import { ILocalesKey } from '../../i18n/zh-CN'
+import { IOldReqOptionsWithFullResponse, IPicGo, IPluginConfig, ITcyunConfig } from '../../types'
+import { IBuildInEvent } from '../../utils/enum'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
 export interface ISignature {

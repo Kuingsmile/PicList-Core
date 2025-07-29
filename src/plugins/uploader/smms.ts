@@ -1,7 +1,8 @@
 import axios from 'axios'
-import { IPicGo, IPluginConfig, ISmmsConfig, IOldReqOptions } from '../../types'
-import { IBuildInEvent } from '../../utils/enum'
+
 import { ILocalesKey } from '../../i18n/zh-CN'
+import { IOldReqOptions, IPicGo, IPluginConfig, ISmmsConfig } from '../../types'
+import { IBuildInEvent } from '../../utils/enum'
 import { buildInUploaderNames, createField } from './utils'
 
 const postOptions = (fileName: string, image: Buffer, apiToken: string, domain = ''): IOldReqOptions => {

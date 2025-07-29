@@ -1,17 +1,18 @@
 import { spawn } from 'cross-spawn'
+
+import { ILocalesKey } from '../i18n/zh-CN'
 import {
-  IResult,
-  IProcessEnv,
-  IPluginProcessResult,
+  IPicGo,
   IPluginHandler,
   IPluginHandlerOptions,
-  Undefinable,
-  IPicGo,
-  IPluginHandlerResult
+  IPluginHandlerResult,
+  IPluginProcessResult,
+  IProcessEnv,
+  IResult,
+  Undefinable
 } from '../types'
+import { getNormalPluginName, getProcessPluginName } from '../utils/common'
 import { IBuildInEvent } from '../utils/enum'
-import { getProcessPluginName, getNormalPluginName } from '../utils/common'
-import { ILocalesKey } from '../i18n/zh-CN'
 
 export class PluginHandler implements IPluginHandler {
   // Thanks to feflow -> https://github.com/feflow/feflow/blob/master/lib/internal/install/plugin.js
@@ -50,9 +51,9 @@ export class PluginHandler implements IPluginHandler {
       // 2. install local pacage
       const result = await this.execCommand('install', fullNameList, this.ctx.baseDir, options, env)
       if (!result.code) {
-        pkgNameList.forEach((pluginName: string) => {
-          this.ctx.pluginLoader.registerPlugin(pluginName)
-        })
+        for (const item of fullNameList) {
+          await this.ctx.pluginLoader.registerPlugin(item)
+        }
         this.ctx.log.success(this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_INSTALL_SUCCESS'))
         this.ctx.emit('installSuccess', {
           title: this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_INSTALL_SUCCESS'),
@@ -235,7 +236,7 @@ export class PluginHandler implements IPluginHandler {
       try {
         const npm = spawn('npm', args, {
           cwd: where,
-          env: Object.assign({}, process.env, env)
+          env: { ...process.env, ...env }
         })
 
         let output = ''

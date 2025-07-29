@@ -1,6 +1,6 @@
-import { IPicGo, IPluginConfig, IOldReqOptions, IAdvancedPlistConfig } from '../../types'
-import { IBuildInEvent } from '../../utils/enum'
 import { ILocalesKey } from '../../i18n/zh-CN'
+import { IAdvancedPlistConfig, IOldReqOptions, IPicGo, IPluginConfig } from '../../types'
+import { IBuildInEvent } from '../../utils/enum'
 import { buildInUploaderNames } from './utils'
 
 const postOptions = (

@@ -1,11 +1,12 @@
+import path from 'node:path'
+
+import { render as ejsRender } from 'ejs'
+import fs from 'fs-extra'
+import { ensureDirSync } from 'fs-extra/esm'
+import globby from 'globby'
 import match from 'minimatch'
 
-import fs, { ensureDirSync } from 'fs-extra'
-import path from 'path'
-import globby from 'globby'
-import { render as ejsRender } from 'ejs'
-
-import { IPicGo, IOptions, IFileTree } from '../types'
+import { IFileTree, IOptions, IPicGo } from '../types'
 
 /**
  * Generate template files to destination files.
@@ -14,7 +15,7 @@ import { IPicGo, IOptions, IFileTree } from '../types'
  */
 const generate = async (ctx: IPicGo, options: IOptions): Promise<any> => {
   try {
-    const opts = getOptions(options.tmp)
+    const opts = await getOptions(options.tmp)
     const source = path.join(options.tmp, 'template')
     let answers = {}
     if (opts.prompts && opts.prompts.length > 0) {
@@ -60,7 +61,7 @@ const generate = async (ctx: IPicGo, options: IOptions): Promise<any> => {
  * @param data options data
  */
 const filters = (ctx: IPicGo, exp: any, data: any): boolean => {
-  // eslint-disable-next-line @typescript-eslint/restrict-plus-operands, no-new-func, @typescript-eslint/no-implied-eval
+  // eslint-disable-next-line no-new-func
   const fn = new Function('data', 'with (data) { return ' + exp + '}')
   try {
     return fn(data)
@@ -74,11 +75,10 @@ const filters = (ctx: IPicGo, exp: any, data: any): boolean => {
  * Get template options
  * @param {string} templatePath
  */
-const getOptions = (templatePath: string): any => {
+const getOptions = async (templatePath: string): Promise<any> => {
   const optionsPath = path.join(templatePath, 'index.js')
   if (fs.existsSync(optionsPath)) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const options = require(optionsPath)
+    const options = await import(optionsPath)
     return options
   } else {
     return {}

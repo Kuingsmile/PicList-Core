@@ -1,9 +1,11 @@
-import crypto from 'crypto'
+import crypto from 'node:crypto'
+import { URL } from 'node:url'
+
 import FileType from 'file-type'
+import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent'
 import mime from 'mime'
-import { HttpsProxyAgent, HttpProxyAgent } from 'hpagent'
+
 import { IImgInfo } from '../../../types'
-import { URL } from 'url'
 
 class FileNameGenerator {
   date: Date

@@ -1,4 +1,4 @@
-import { IPicGo, IPluginConfig, IBuildInWaterMarkOptions } from '../../types'
+import { IBuildInWaterMarkOptions, IPicGo, IPluginConfig } from '../../types'
 import { createField } from '../uploader/utils'
 
 const config = (ctx: IPicGo): IPluginConfig[] => {

@@ -1,6 +1,7 @@
-import { IConfig, IPicGo } from '../types'
 import { JSONStore } from '@picgo/store'
 import { IJSON } from '@picgo/store/dist/types'
+
+import { IConfig, IPicGo } from '../types'
 
 class DB {
   private readonly ctx: IPicGo

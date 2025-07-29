@@ -1,14 +1,18 @@
 #!/usr/bin/env node
-const http = require('http')
-const multer = require('multer')
-const axios = require('axios')
-const minimist = require('minimist')
-const fs = require('fs-extra')
-const path = require('path')
-const os = require('os')
+import http from 'node:http'
+import os from 'node:os'
+import path from 'node:path'
+
+import axios from 'axios'
+import fs from 'fs-extra'
+import { ensureDirSync } from 'fs-extra/esm'
+import minimist from 'minimist'
+import multer from 'multer'
+
+import { PicGo } from '../dist/index.esm.js'
 
 const tempDir = path.join(os.homedir(), '.piclist', 'serverTemp')
-fs.ensureDirSync(tempDir)
+ensureDirSync(tempDir)
 
 const argv = minimist(process.argv.slice(2))
 
@@ -18,11 +22,6 @@ let defaultHost = '0.0.0.0'
 
 if (argv.h || argv.help) {
   showHelp()
-  process.exit(0)
-}
-
-if (argv.v || argv.version) {
-  showVersion()
   process.exit(0)
 }
 
@@ -36,11 +35,6 @@ if (argv.p || argv.port) {
 
 if (argv.host) {
   defaultHost = String(argv.host)
-}
-
-function showVersion() {
-  const pkg = require('../package.json')
-  console.log(`PicList-Core ${pkg.version}`)
 }
 
 function showHelp() {
@@ -69,11 +63,10 @@ if (configPath !== true && configPath !== '') {
   configPath = ''
 }
 
-const { PicGo } = require('..')
-const picgo = new PicGo(configPath)
+const picgo = await PicGo.create(configPath)
 const errorMessage = 'Upload failed, please check your network and config'
 
-handleResponse = ({
+const handleResponse = ({
   response,
   statusCode = 200,
   header = {
@@ -94,7 +87,7 @@ handleResponse = ({
   response.end()
 }
 
-ensureHTTPLink = url => {
+const ensureHTTPLink = url => {
   return url.startsWith('http') ? url : `http://${url}`
 }
 
@@ -134,16 +127,16 @@ class Router {
   }
 }
 
-let router = new Router()
+const router = new Router()
 
 const multerStorage = multer.diskStorage({
-  destination: function (_req, _file, cb) {
+  destination(_req, _file, cb) {
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir)
     }
     cb(null, tempDir)
   },
-  filename: function (_req, file, cb) {
+  filename(_req, file, cb) {
     if (!/[^\u0000-\u00ff]/.test(file.originalname)) {
       file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8')
     }
@@ -215,7 +208,7 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
           const picBeds = picgo.getConfig('uploader')
           const currentPicBedList = picBeds?.[picbed]?.configList
           if (currentPicBedList) {
-            const currentConfig = currentPicBedList?.find((item) => item._configName === configName)
+            const currentConfig = currentPicBedList?.find(item => item._configName === configName)
             changeCurrentUploader(picbed, currentConfig, currentConfig._id)
           }
         }
@@ -417,7 +410,7 @@ class Server {
             const handler = router.getHandler(url, 'POST')?.handler
             if (handler) {
               handler({
-                list: list,
+                list,
                 response,
                 urlparams: urlSP
               })
@@ -519,4 +512,4 @@ class Server {
 const server = new Server()
 server.startup()
 
-module.exports = server
+export default server

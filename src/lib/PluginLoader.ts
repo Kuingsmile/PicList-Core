@@ -1,8 +1,12 @@
-import fs, { readJSONSync } from 'fs-extra'
-import path from 'path'
-import { sync } from 'resolve'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+
+import fs from 'fs-extra'
+import { readJSONSync } from 'fs-extra/esm'
+import resolve from 'resolve'
+
+import { IPicGo, IPicGoPlugin, IPicGoPluginInterface, IPluginLoader } from '../types/index'
 import { IBuildInEvent } from '../utils/enum'
-import { IPicGo, IPicGoPlugin, IPluginLoader, IPicGoPluginInterface } from '../types/index'
 import { setCurrentPluginName } from './LifecyclePlugins'
 
 /**
@@ -34,14 +38,14 @@ export class PluginLoader implements IPluginLoader {
   // get plugin entry
   private resolvePlugin(ctx: IPicGo, name: string): string {
     try {
-      return sync(name, { basedir: ctx.baseDir })
+      return resolve.sync(name, { basedir: ctx.baseDir })
     } catch (err) {
       return path.join(ctx.baseDir, 'node_modules', name)
     }
   }
 
   // load all third party plugin
-  load(): boolean {
+  async load(): Promise<boolean> {
     const pluginDir = path.join(this.ctx.baseDir, 'node_modules/')
     // Thanks to hexo -> https://github.com/hexojs/hexo/blob/master/lib/hexo/load_plugins.js
     if (!fs.existsSync(pluginDir)) {
@@ -57,12 +61,12 @@ export class PluginLoader implements IPluginLoader {
       return fs.existsSync(path)
     })
     for (const module of modules) {
-      this.registerPlugin(module)
+      await this.registerPlugin(module)
     }
     return true
   }
 
-  registerPlugin(name: string, plugin?: IPicGoPlugin): void {
+  async registerPlugin(name: string, plugin?: IPicGoPlugin): Promise<void> {
     if (!name || typeof name !== 'string') {
       this.ctx.log.warn('Please provide valid plugin')
       return
@@ -77,8 +81,8 @@ export class PluginLoader implements IPluginLoader {
         ) {
           this.list.push(name)
           setCurrentPluginName(name)
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          this.getPlugin(name)!.register(this.ctx)
+          const plugins = await this.getPlugin(name)
+          plugins!.register(this.ctx)
           const plugin = `picgoPlugins[${name}]`
           this.ctx.saveConfig({
             [plugin]: true
@@ -120,13 +124,49 @@ export class PluginLoader implements IPluginLoader {
   }
 
   // get plugin by name
-  getPlugin(name: string): IPicGoPluginInterface | undefined {
+  async getPlugin(name: string): Promise<IPicGoPluginInterface | undefined> {
     if (this.pluginMap.has(name)) {
       return this.pluginMap.get(name)
     }
-    const pluginDir = path.join(this.ctx.baseDir, 'node_modules/')
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const plugin = require(pluginDir + name)(this.ctx)
+
+    // Resolve the actual plugin entry point
+    let pluginPath: string
+    try {
+      // First try to resolve using the resolve library
+      pluginPath = this.resolvePlugin(this.ctx, name)
+    } catch (err) {
+      // Fallback: try to find the entry point manually
+      const pluginDir = path.join(this.ctx.baseDir, 'node_modules', name)
+      const packageJsonPath = path.join(pluginDir, 'package.json')
+
+      if (fs.existsSync(packageJsonPath)) {
+        try {
+          const packageJson = readJSONSync(packageJsonPath)
+          const main = packageJson.main || packageJson.module || 'index.js'
+          pluginPath = path.join(pluginDir, main)
+        } catch {
+          // If package.json is malformed, try common entry points
+          const possibleEntries = ['index.js', 'src/index.js', 'dist/index.js', 'lib/index.js']
+          pluginPath = ''
+          for (const entry of possibleEntries) {
+            const entryPath = path.join(pluginDir, entry)
+            if (fs.existsSync(entryPath)) {
+              pluginPath = entryPath
+              break
+            }
+          }
+          if (!pluginPath) {
+            throw new Error(`Cannot find entry point for plugin: ${name}`)
+          }
+        }
+      } else {
+        throw new Error(`Plugin package.json not found: ${name}`)
+      }
+    }
+
+    const pluginUrl = pathToFileURL(pluginPath).href
+    const mod = await import(pluginUrl)
+    const plugin = (mod.default || mod)(this.ctx)
     this.pluginMap.set(name, plugin)
     return plugin
   }

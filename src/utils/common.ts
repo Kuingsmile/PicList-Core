@@ -1,20 +1,25 @@
-import fs, { readFile, readJSONSync } from 'fs-extra'
-import path from 'path'
+import crypto from 'node:crypto'
+import path, { dirname } from 'node:path'
+import { fileURLToPath, URL } from 'node:url'
+
+import fs from 'fs-extra'
+import { readJSONSync } from 'fs-extra/esm'
 import { imageSize } from 'image-size'
-import { URL } from 'url'
-import TextToSVG from 'text-to-svg'
 import sharp from 'sharp'
-import crypto from 'crypto'
+import TextToSVG from 'text-to-svg'
 import { v4 as uuidv4 } from 'uuid'
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
 import {
-  IImgSize,
-  IPathTransformedImgInfo,
-  IPluginNameType,
-  ILogger,
-  IPicGo,
   IBuildInCompressOptions,
-  IBuildInWaterMarkOptions
+  IBuildInWaterMarkOptions,
+  IImgSize,
+  ILogger,
+  IPathTransformedImgInfo,
+  IPicGo,
+  IPluginNameType
 } from '../types'
 
 export function randomStringGenerator(length: number): string {
@@ -135,7 +140,7 @@ export const getFSFile = async (filePath: string): Promise<IPathTransformedImgIn
     return {
       extname: path.extname(filePath),
       fileName: path.basename(filePath),
-      buffer: await readFile(filePath),
+      buffer: await fs.readFile(filePath),
       success: true
     }
   } catch {
@@ -184,7 +189,7 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
         clearTimeout(timeoutId)
         resolve({
           success: false,
-          // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+
           reason: `request ${url} error, ${error?.message ?? ''}`
         })
       }

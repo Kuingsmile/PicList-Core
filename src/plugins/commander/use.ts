@@ -1,4 +1,4 @@
-import { IPicGo, IPlugin, Undefinable, ICLIConfigs, IStringKeyMap } from '../../types'
+import { ICLIConfigs, IPicGo, IPlugin, IStringKeyMap, Undefinable } from '../../types'
 import { uploaderTranslators } from './utils'
 
 const use: IPlugin = {

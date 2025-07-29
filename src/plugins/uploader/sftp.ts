@@ -1,9 +1,10 @@
-import fs, { ensureDirSync, moveSync, removeSync } from 'fs-extra'
-import path from 'path'
+import path from 'node:path'
 
+import { ensureDirSync, moveSync, outputFileSync, removeSync } from 'fs-extra/esm'
+
+import { ILocalesKey } from '../../i18n/zh-CN'
 import { IPicGo, IPluginConfig, ISftpPlistConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
-import { ILocalesKey } from '../../i18n/zh-CN'
 import SSHClient from '../../utils/sshClient'
 import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
 
@@ -37,7 +38,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         ensureDirSync(imgTempPath)
         const tempFilePath = path.join(uploadTempPath, img.fileName)
         ensureDirSync(path.dirname(tempFilePath))
-        fs.writeFileSync(tempFilePath, image)
+        outputFileSync(tempFilePath, image)
         const client = SSHClient.getInstance()
         await client.connect(sftpplistConfig)
         const remotePath = path.join(`/${sftpplistConfig.uploadPath}`.replace(/\/\/+/g, '/'), img.fileName)
