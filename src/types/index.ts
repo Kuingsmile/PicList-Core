@@ -5,114 +5,37 @@ import { FormatEnum, GravityEnum } from 'sharp'
 import { IRequestPromiseOptions } from './oldRequest'
 
 export interface IPicGo extends NodeJS.EventEmitter {
-  /**
-   * picgo configPath
-   *
-   * if do not provide, then it will use default configPath
-   */
   configPath: string
-  /**
-   * the picgo configPath's baseDir
-   */
   baseDir: string
-  /**
-   * picgo logger factory
-   */
   log: ILogger
-  /**
-   * picgo commander, for cli
-   */
   cmd: ICommander
-  /**
-   * after transformer, the input will be output
-   */
   output: IImgInfo[]
-  /**
-   * the processed input
-   */
   input: any[]
-  /**
-   * the origin input
-   */
   rawInput: any[]
-  /**
-   * processed input path
-   */
   processedInput: any[]
-  /**
-   * register\unregister\get picgo's plugin
-   */
   pluginLoader: IPluginLoader
-  /**
-   * install\uninstall\update picgo's plugin via npm
-   */
   pluginHandler: IPluginHandler
   /**
    * @deprecated will be removed in v1.5.0+
-   *
-   * use request instead.
-   *
-   * http request tool
    */
   Request: IRequest
-  /**
-   * plugin system core part transformer\uploader\beforeTransformPlugins...
-   */
   helper: IHelper
-  /**
-   * picgo-core version
-   */
   VERSION: string
-  /**
-   * electron picgo's version
-   */
   GUI_VERSION?: string
-  /**
-   * will be released in v1.5.0+
-   *
-   * replace old Request
-   *
-   * http request tool
-   */
   request: IRequest['request']
-
   rawInputPath?: string[]
-
   i18n: II18nManager
 
-  /**
-   * get picgo config
-   */
   getConfig: <T>(name?: string) => T
-  /**
-   * save picgo config to configPath
-   */
   saveConfig: (config: IStringKeyMap<any>) => void
-  /**
-   * remove some [propName] in config[key] && save config to configPath
-   */
   removeConfig: (key: string, propName: string) => void
-  /**
-   * set picgo config to ctx && will not save to configPath
-   */
   setConfig: (config: IStringKeyMap<any>) => void
-  /**
-   * unset picgo config to ctx && will not save to configPath
-   */
   unsetConfig: (key: string, propName: string) => void
-  /**
-   * upload gogogo
-   */
   upload: (input?: any[]) => Promise<IImgInfo[] | Error>
-  /**
-   * transform gogogo
-   */
   uploadReturnCtx: (input?: any[]) => Promise<IPicGo>
 }
 
-/**
- * for plugin config
- */
+// plugin config
 export interface IPluginConfig {
   name: string
   type: string
@@ -124,9 +47,8 @@ export interface IPluginConfig {
   [propName: string]: any
 }
 
-/**
- * for lifecycle plugins
- */
+// for lifecycle plugins
+
 export interface ILifecyclePlugins {
   register: (id: string, plugin: IPlugin) => void
   unregister: (id: string) => void
@@ -150,27 +72,10 @@ export interface ICommander extends ILifecyclePlugins {
 }
 
 export interface IPluginLoader {
-  /**
-   * register [local plugin] or [provided plugin]
-   *
-   * if the second param (plugin) is provided
-   *
-   * then picgo will register this plugin and enable it by default
-   *
-   * but picgo won't write any config to config file
-   *
-   * you should use ctx.setConfig to change the config context
-   */
   registerPlugin: (name: string, plugin?: IPicGoPlugin) => Promise<void>
   unregisterPlugin: (name: string) => void
   getPlugin: (name: string) => Promise<IPicGoPluginInterface | undefined>
-  /**
-   * get enabled plugin list
-   */
   getList: () => string[]
-  /**
-   * get all plugin list (enabled or not)
-   */
   getFullList: () => string[]
   hasPlugin: (name: string) => boolean
 }
@@ -267,8 +172,6 @@ export interface IRequestLibOnlyOptions {
 
 export type IRequestConfig<T> = T extends IRequestLibOnlyOptions ? IOldReqOptions : AxiosRequestConfig
 
-// export type INewRequest<T = any, U = any> = (config: IRequestConfig<T>) => Promise<IResponse<T, U>>
-
 export interface IRequest {
   request: <
     T,
@@ -284,9 +187,6 @@ export interface IRequest {
 
 export type ILogColor = 'blue' | 'green' | 'yellow' | 'red'
 
-/**
- * for uploading image info
- */
 export interface IImgInfo {
   buffer?: Buffer
   base64Image?: string
@@ -319,6 +219,7 @@ export interface ISmmsConfig {
   token: string
   backupDomain?: string
 }
+
 /** 内置高级自定义图床 */
 export interface IAdvancedPlistConfig {
   endpoint: string
@@ -330,6 +231,7 @@ export interface IAdvancedPlistConfig {
   customPrefix?: string
   webPath?: string
 }
+
 /** 内置alist 图床配置项 */
 export interface IAlistConfig {
   url: string
@@ -340,12 +242,14 @@ export interface IAlistConfig {
   webPath?: string
   customUrl?: string
 }
+
 /** 本地图床配置项 */
 export interface ILocalConfig {
   path: string
   customUrl?: string
   webPath?: string
 }
+
 /** 七牛云图床配置项 */
 export interface IQiniuConfig {
   accessKey: string
@@ -361,6 +265,7 @@ export interface IQiniuConfig {
   /** 自定义存储路径，比如 `img/` */
   path: string
 }
+
 /** 又拍云图床配置项 */
 export interface IUpyunConfig {
   /** 存储空间名，及你的服务名 */
@@ -382,6 +287,7 @@ export interface IUpyunConfig {
   /** 自定义API接入点 */
   endpoint: string
 }
+
 /** 腾讯云图床配置项 */
 export interface ITcyunConfig {
   secretId: string
@@ -405,6 +311,7 @@ export interface ITcyunConfig {
   /** 是否支持极智压缩 */
   slim: boolean
 }
+
 /** GitHub 图床配置项 */
 export interface IGithubConfig {
   /** 仓库名，格式是 `username/reponame` */
@@ -418,6 +325,7 @@ export interface IGithubConfig {
   /** 分支名，默认是 `main` */
   branch: string
 }
+
 /** 阿里云图床配置项 */
 export interface IAliyunConfig {
   accessKeyId: string
@@ -435,6 +343,7 @@ export interface IAliyunConfig {
   /** 针对图片的一些后缀处理参数 PicGo 2.2.0+ PicGo-Core 1.4.0+ */
   options: string
 }
+
 /** Imgur 图床配置项 */
 export interface IImgurConfig {
   /** imgur 的 `clientId` */
@@ -448,6 +357,7 @@ export interface IImgurConfig {
   /** imgur album name */
   album: string
 }
+
 /** Webdav 图床配置项 */
 export interface IWebdavPlistConfig {
   /** webdav 的 `host` */
@@ -469,6 +379,7 @@ export interface IWebdavPlistConfig {
   /** webdav 的 `options` */
   options: string
 }
+
 /** 内置sftp 图床配置项 */
 export interface ISftpPlistConfig {
   host: string
@@ -484,6 +395,7 @@ export interface ISftpPlistConfig {
   fileMode?: string
   dirMode?: string
 }
+
 /** PicList 图床配置项 */
 export interface IPicListConfig {
   host: string
@@ -492,6 +404,7 @@ export interface IPicListConfig {
   configName?: string
   serverKey?: string
 }
+
 /** 内置lsky 图床配置项 */
 export interface ILskyConfig {
   version: string
@@ -501,6 +414,7 @@ export interface ILskyConfig {
   albumId: string
   permission: IStringKeyMap<string>
 }
+
 /** 内置aws s3 图床配置项 */
 export interface IAwsS3PListUserConfig {
   accessKeyID: string
@@ -517,6 +431,7 @@ export interface IAwsS3PListUserConfig {
   disableBucketPrefixToURL?: boolean | string
   options?: string
 }
+
 /** PicGo 配置文件类型定义 */
 export interface IConfig {
   picBed: {
@@ -556,9 +471,7 @@ export interface IConfig {
  */
 export interface IPlugin {
   handle: ((ctx: IPicGo) => Promise<any>) | ((ctx: IPicGo) => void)
-  /** The name of this handler */
   name?: string
-  /** The config of this handler */
   config?: (ctx: IPicGo) => IPluginConfig[]
   [propName: string]: any
 }
@@ -567,13 +480,7 @@ export type IPluginNameType = 'simple' | 'scope' | 'normal' | 'unknown'
 
 export interface IPluginProcessResult {
   success: boolean
-  /**
-   * the package.json's name filed
-   */
   pkgName: string
-  /**
-   * the plugin name or the fs absolute path
-   */
   fullName: string
 }
 
@@ -668,22 +575,6 @@ export interface IImgSize {
   height: number
   real?: boolean
   extname?: string
-}
-
-/**
- * for initUtils
- */
-export type IFileTree = Record<string, string | Buffer>
-
-export interface IOptions {
-  template: string // template name
-  dest: string // destination for template to generate
-  hasSlash: boolean // check if is officail template
-  inPlace: boolean // check if is given project name
-  clone: boolean // check if use git clone
-  offline: boolean // check if use offline mode
-  tmp: string // cache template
-  project: string // project name
 }
 
 /**

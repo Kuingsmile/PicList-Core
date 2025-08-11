@@ -1,8 +1,9 @@
 import path from 'node:path'
 
-import { Config, NodeSSH } from 'node-ssh-no-cpu-features'
+import type { Config } from 'node-ssh-no-cpu-features'
+import { NodeSSH } from 'node-ssh-no-cpu-features'
 
-import { ISftpPlistConfig } from '../types'
+import type { ISftpPlistConfig } from '../types'
 
 class SSHClient {
   private static instance: SSHClient
