@@ -57,22 +57,11 @@ if (!isDev) {
 }
 
 /** @type import('rollup').RollupOptions */
-const nodeCjs = {
-  output: [
-    {
-      file: 'dist/index.cjs.js',
-      format: 'cjs',
-      banner,
-      sourcemap
-    }
-  ],
-  ...commonOptions
-}
 
 const nodeEsm = {
   output: [
     {
-      file: 'dist/index.esm.js',
+      file: 'dist/index.js',
       format: 'esm',
       banner,
       sourcemap
@@ -82,9 +71,7 @@ const nodeEsm = {
 }
 
 const bundles = []
-const env = process.env.BUNDLES || ''
-if (env.includes('cjs')) bundles.push(nodeCjs)
-if (env.includes('esm')) bundles.push(nodeEsm)
-if (bundles.length === 0) bundles.push(nodeCjs, nodeEsm)
+
+bundles.push(nodeEsm)
 
 export default bundles

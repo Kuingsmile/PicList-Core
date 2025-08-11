@@ -9,7 +9,7 @@ import { ensureDirSync } from 'fs-extra/esm'
 import minimist from 'minimist'
 import multer from 'multer'
 
-import { PicGo } from '../dist/index.esm.js'
+import { PicGo } from '../dist/index.js'
 
 const tempDir = path.join(os.homedir(), '.piclist', 'serverTemp')
 ensureDirSync(tempDir)

@@ -37,7 +37,7 @@ You can refer to the [DeepWiki of PiclList-Core](https://deepwiki.com/Kuingsmile
 
 ## Installation
 
-PicList requires Node.js >= 16
+PicList requires Node.js >= 20
 
 ### Prerequisites
 

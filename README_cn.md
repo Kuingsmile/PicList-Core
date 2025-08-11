@@ -37,7 +37,7 @@ PicList-Core 是一个功能强大的图片上传工具，提供 CLI 和 API 两
 
 ## 安装
 
-PicList 需要 Node.js >= 16
+PicList 需要 Node.js >= 20
 
 ### 前置条件
 
