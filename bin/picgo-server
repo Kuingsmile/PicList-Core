@@ -20,23 +20,6 @@ let key = ''
 let defaultPort = 36677
 let defaultHost = '0.0.0.0'
 
-if (argv.h || argv.help) {
-  showHelp()
-  process.exit(0)
-}
-
-if (argv.k || argv.key) {
-  key = String(argv.k || argv.key)
-}
-
-if (argv.p || argv.port) {
-  defaultPort = Number(argv.p || argv.port) || defaultPort
-}
-
-if (argv.host) {
-  defaultHost = String(argv.host)
-}
-
 function showHelp() {
   console.log(`
     Usage: picgo-server [options]
@@ -53,6 +36,31 @@ function showHelp() {
       picgo-server -k 123456
       picgo-server -c /path/to/config.json -k 123456
   `)
+}
+
+const ensureHTTPLink = url => {
+  return url.startsWith('http') ? url : `http://${url}`
+}
+
+function isLoopback(addr = '') {
+  return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1'
+}
+
+if (argv.h || argv.help) {
+  showHelp()
+  process.exit(0)
+}
+
+if (argv.k || argv.key) {
+  key = String(argv.k || argv.key)
+}
+
+if (argv.p || argv.port) {
+  defaultPort = Number(argv.p || argv.port) || defaultPort
+}
+
+if (argv.host) {
+  defaultHost = String(argv.host)
 }
 
 let configPath = argv.c || argv.config || ''
@@ -82,43 +90,42 @@ const handleResponse = ({
   if (body && body.success === false) {
     console.log('[PicList Server] upload failed, see log for more detail ↑')
   }
-  response.writeHead(statusCode, header)
-  response.write(JSON.stringify(body))
-  response.end()
-}
-
-const ensureHTTPLink = url => {
-  return url.startsWith('http') ? url : `http://${url}`
+  try {
+    response.writeHead(statusCode, header)
+    response.end(JSON.stringify(body))
+  } catch (e) {
+    console.error('[PicList Server] response error:', e)
+  }
 }
 
 class Router {
   constructor() {
-    this.router = new Map()
+    this.routes = new Map()
   }
 
-  addRoute(method, url, callback, urlparams) {
-    if (!this.router.has(url)) {
-      this.router.set(url, new Map())
+  add(method, url, callback, urlparams) {
+    if (!this.routes.has(url)) {
+      this.routes.set(url, new Map())
     }
-    this.router.get(url).set(method, { handler: callback, urlparams })
+    this.routes.get(url).set(method, { handler: callback, urlparams })
   }
 
   get(url, callback, urlparams) {
-    this.addRoute('GET', url, callback, urlparams)
+    this.add('GET', url, callback, urlparams)
   }
 
   post(url, callback, urlparams) {
-    this.addRoute('POST', url, callback, urlparams)
+    this.add('POST', url, callback, urlparams)
   }
 
   any(url, callback, urlparams) {
-    this.addRoute('GET', url, callback, urlparams)
-    this.addRoute('POST', url, callback, urlparams)
+    this.add('GET', url, callback, urlparams)
+    this.add('POST', url, callback, urlparams)
   }
 
   getHandler(url, method) {
-    if (this.router.has(url)) {
-      const methods = this.router.get(url)
+    if (this.routes.has(url)) {
+      const methods = this.routes.get(url)
       if (methods.has(method)) {
         return methods.get(method)
       }
@@ -183,11 +190,13 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
         }
       })
     }
+
+    let needRestore = false
     let currentPicBedType = ''
     let currentPicBedConfig = {}
     let currentPicBedConfigId = ''
     const currentPicBed = picgo.getConfig('picBed') || {}
-    let needRestore = false
+
     if (picbed) {
       currentPicBedType = currentPicBed.uploader || currentPicBed.current || 'smms'
       currentPicBedConfig = currentPicBed[currentPicBedType] || {}
@@ -285,9 +294,19 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
   }
 })
 
+router.any('/heartbeat', async ({ response }) => {
+  handleResponse({
+    response,
+    body: {
+      success: true,
+      result: 'alive'
+    }
+  })
+})
+
 async function responseForGet({ response }) {
   response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-  response.write(`
+  response.end(`
       <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -345,20 +364,8 @@ async function responseForGet({ response }) {
 }</pre>
 
 </body>
-</html>
-      `)
-  response.end()
+</html>`)
 }
-
-router.any('/heartbeat', async ({ response }) => {
-  handleResponse({
-    response,
-    body: {
-      success: true,
-      result: 'alive'
-    }
-  })
-})
 
 class Server {
   constructor() {
@@ -371,102 +378,106 @@ class Server {
       return
     }
 
-    if (request.method === 'POST') {
-      const [url, query] = (request.url || '').split('?')
-      if (!router.getHandler(url, 'POST')) {
-        console.log(`[PicList Server] don't support [${url}] endpoint`)
+    const rawUrl = request.url || ''
+    const [url, query] = rawUrl.split('?')
+    const method = request.method || 'GET'
+    const handlerEntry = router.getHandler(url, method)
+
+    if (!handlerEntry) {
+      console.log(`[PicList Server] don't support [${method}] ${url} endpoint`)
+      if (method === 'GET' || method === 'POST') {
         handleResponse({
           response,
-          statusCode: 404,
-          body: {
-            success: false
+          statusCode: method === 'POST' ? 404 : 404,
+          body: { success: false }
+        })
+      } else {
+        response.statusCode = 405
+        response.end()
+      }
+      return
+    }
+
+    if (method === 'POST') {
+      let urlSP = query ? new URLSearchParams(query) : undefined
+      const remote = request.socket?.remoteAddress
+      if (isLoopback(remote)) {
+        if (urlSP) {
+          urlSP.set('key', key)
+        } else {
+          urlSP = new URLSearchParams('key=' + key)
+        }
+      }
+
+      const contentType = String(request.headers['content-type'] || '')
+      const isForm = contentType.startsWith('multipart/form-data')
+      if (isForm) {
+        uploadMulter.any()(request, response, err => {
+          if (err) {
+            console.log('[PicList Server]', err)
+            return handleResponse({
+              response,
+              body: {
+                success: false,
+                message: 'Error processing formData'
+              }
+            })
+          }
+          const list = request.files.map(file => file.path)
+          if (handlerEntry.handler) {
+            handlerEntry.handler({
+              list,
+              response,
+              urlparams: urlSP
+            })
           }
         })
       } else {
-        let urlSP = query ? new URLSearchParams(query) : undefined
-        console.log('[PicList Server] get the request from IP:', request.socket.remoteAddress)
-        if (request.socket.remoteAddress === '127.0.0.1' || request.socket.remoteAddress === '::1') {
-          if (urlSP) {
-            urlSP.set('key', key)
-          } else {
-            urlSP = new URLSearchParams('key=' + key)
-          }
-        }
-        if (request.headers['content-type'] && request.headers['content-type'].startsWith('multipart/form-data')) {
-          uploadMulter.any()(request, response, err => {
-            if (err) {
-              console.log('[PicList Server]', err)
-              return handleResponse({
-                response,
-                body: {
-                  success: false,
-                  message: 'Error processing formData'
-                }
-              })
-            }
-
-            const list = request.files.map(file => file.path)
-
-            const handler = router.getHandler(url, 'POST')?.handler
-            if (handler) {
-              handler({
-                list,
-                response,
-                urlparams: urlSP
-              })
-            }
-          })
-        } else {
-          let body = ''
-          let postObj
-          request.on('data', chunk => {
-            body += chunk
-          })
-          request.on('end', () => {
-            try {
-              postObj = body === '' ? {} : JSON.parse(body)
-            } catch (err) {
-              console.log('[PicList Server]', err)
-              return handleResponse({
-                response,
-                body: {
-                  success: false,
-                  message: 'Not sending data in JSON format'
-                }
-              })
-            }
+        let body = ''
+        let postObj
+        request.on('data', chunk => {
+          body += chunk
+        })
+        request.on('end', () => {
+          try {
+            postObj = body === '' ? {} : JSON.parse(body)
             console.log('[PicList Server] get the request', body)
-            const handler = router.getHandler(url, 'POST')?.handler
-            if (handler) {
-              handler({
+            if (handlerEntry.handler) {
+              handlerEntry.handler({
                 ...postObj,
                 response,
                 urlparams: urlSP
               })
             }
-          })
-        }
+          } catch (err) {
+            console.log('[PicList Server]', err)
+            return handleResponse({
+              response,
+              body: {
+                success: false,
+                message: 'Not sending data in JSON format'
+              }
+            })
+          }
+        })
       }
-    } else if (request.method === 'GET') {
-      const [url, query] = (request.url || '').split('?')
-      if (!router.getHandler(url, 'GET')) {
-        console.log(`[PicList Server] don't support [${url}] endpoint`)
-        response.statusCode = 404
-        response.end()
-      } else {
-        const handler = router.getHandler(url, 'GET')?.handler
-        if (handler) {
-          handler({
-            response,
-            urlparams: query ? new URLSearchParams(query) : undefined
-          })
-        }
-      }
-    } else {
-      console.log(`[PicList Server] don't support [${request.method}] method`)
-      response.statusCode = 405
-      response.end()
+      return
     }
+
+    if (request.method === 'GET') {
+      if (handlerEntry.handler) {
+        handlerEntry.handler({
+          response,
+          urlparams: query ? new URLSearchParams(query) : undefined
+        })
+      }
+
+      return
+    }
+
+    console.log(`[PicList Server] don't support [${request.method}] method`)
+    response.statusCode = 405
+    response.end()
   }
 
   listen(port) {
@@ -474,10 +485,12 @@ class Server {
     if (typeof port === 'string') {
       port = parseInt(port, 10)
     }
+
     this.httpServer.listen(port, defaultHost).on('error', async err => {
       if (err.code === 'EADDRINUSE') {
         try {
-          await axios.post(ensureHTTPLink(`${defaultHost}:${port}/heartbeat`))
+          const probeHost = defaultHost === '0.0.0.0' || defaultHost === '::' ? '127.0.0.1' : defaultHost
+          await axios.post(ensureHTTPLink(`${probeHost}:${port}/heartbeat`))
           console.log(`[PicList Server] server is already running at ${port}, no need to start again`)
           this.shutdown(true)
         } catch (e) {
@@ -497,9 +510,13 @@ class Server {
   }
 
   shutdown(hasStarted) {
-    this.httpServer.close()
-    if (!hasStarted) {
-      console.log('[PicList Server] shutdown')
+    try {
+      this.httpServer.close()
+      if (!hasStarted) {
+        console.log('[PicList Server] shutdown')
+      }
+    } catch (error) {
+      console.error('[PicList Server] error shutting down', error)
     }
   }
 
@@ -511,5 +528,14 @@ class Server {
 
 const server = new Server()
 server.startup()
+
+process.on('SIGINT', () => {
+  server.shutdown()
+  process.exit(0)
+})
+process.on('SIGTERM', () => {
+  server.shutdown()
+  process.exit(0)
+})
 
 export default server
