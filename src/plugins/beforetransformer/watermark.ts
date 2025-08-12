@@ -42,6 +42,15 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     createField(
       ctx,
       'watermark',
+      'watermarkImageOpacity',
+      'input',
+      userConfig.watermarkImageOpacity || 255,
+      false,
+      'BUILDIN'
+    ),
+    createField(
+      ctx,
+      'watermark',
       'watermarkPosition',
       'list',
       userConfig.watermarkPosition || 'southeast',

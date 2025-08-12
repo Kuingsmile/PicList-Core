@@ -657,6 +657,7 @@ export interface IBuildInWaterMarkOptions {
   watermarkColor?: string
   watermarkImagePath?: string
   watermarkPosition?: availableWatermarkPosition
+  watermarkImageOpacity?: number
 }
 
 export interface IBuildInCompressOptions {

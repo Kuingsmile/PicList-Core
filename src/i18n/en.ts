@@ -283,6 +283,8 @@ export const EN: ILocales = {
   BUILDIN_WATERMARK_MESSAGE_WATERMARKIMAGEPATH: 'Please enter the watermark image path',
   BUILDIN_WATERMARK_WATERMARKPOSITION: 'Set watermark position',
   BUILDIN_WATERMARK_MESSAGE_WATERMARKPOSITION: 'Please select watermark position',
+  BUILDIN_WATERMARK_WATERMARKIMAGEOPACITY: 'Set watermark image opacity',
+  BUILDIN_WATERMARK_MESSAGE_WATERMARKIMAGEOPACITY: 'Please enter an integer between 0-255',
 
   BUILDIN_COMPRESS: 'Processing Settings',
   BUILDIN_COMPRESS_QUALITY: 'Set image quality',

@@ -394,7 +394,8 @@ export async function AddWatermark(
   watermarkScaleRatio?: number,
   watermarkColor?: string,
   watermarkImagePath?: string,
-  position?: sharp.Gravity
+  position?: sharp.Gravity,
+  watermarkImageOpacity?: number
 ): Promise<Buffer> {
   watermarkScaleRatio =
     !watermarkScaleRatio || watermarkScaleRatio < 0 || watermarkScaleRatio > 1 ? 0.15 : watermarkScaleRatio
@@ -409,7 +410,8 @@ export async function AddWatermark(
     watermarkColor,
     watermarkImagePath,
     imgWidth,
-    watermarkDegree
+    watermarkDegree,
+    watermarkImageOpacity
   )
   return await image
     .composite([
@@ -431,12 +433,27 @@ async function createWatermark(
   watermarkColor?: string,
   watermarkImagePath?: string,
   imgWidth: number = 200,
-  watermarkDegree: number = 0
+  watermarkDegree: number = 0,
+  watermarkImageOpacity: number = 255
 ): Promise<Buffer> {
   let watermark: any
   if (watermarkType === 'image') {
+    watermarkImageOpacity = forceNumber(watermarkImageOpacity)
     watermarkImagePath = watermarkImagePath || defaultWatermarkImagePath
-    watermark = await sharp(watermarkImagePath).toBuffer()
+    watermark = await sharp(watermarkImagePath)
+      .composite([
+        {
+          input: Buffer.from([255, 255, 255, watermarkImageOpacity > 255 ? 255 : watermarkImageOpacity]),
+          raw: {
+            width: 1,
+            height: 1,
+            channels: 4
+          },
+          tile: true,
+          blend: 'dest-in'
+        }
+      ])
+      .toBuffer()
   } else {
     watermark = await text2SVG(
       defaultWatermarkFontPath,
@@ -541,7 +558,8 @@ export async function imageAddWaterMark(
         forceNumber(options.watermarkScaleRatio),
         options.watermarkColor,
         options.watermarkImagePath,
-        options.watermarkPosition
+        options.watermarkPosition,
+        forceNumber(options.watermarkImageOpacity)
       ),
       { animated: true }
     )
