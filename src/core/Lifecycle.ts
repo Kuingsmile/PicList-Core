@@ -283,11 +283,6 @@ export class Lifecycle extends EventEmitter {
   ): Promise<Buffer | undefined> {
     let transformedBuffer: Buffer | undefined
 
-    // Apply watermark
-    if (isNeedAddWatermark(watermarkOptions, extension) && !shouldSkipExtension) {
-      transformedBuffer = await this.addWatermark(fileBuffer, watermarkOptions!, ctx)
-    }
-
     // Apply compression
     if (isNeedCompress(compressOptions, extension) && !shouldSkipExtension) {
       transformedBuffer = await this.compressImage(
@@ -299,6 +294,11 @@ export class Lifecycle extends EventEmitter {
         tempFilePath,
         ctx
       )
+    }
+
+    // Apply watermark
+    if (isNeedAddWatermark(watermarkOptions, extension) && !shouldSkipExtension) {
+      transformedBuffer = await this.addWatermark(fileBuffer, watermarkOptions!, ctx)
     }
 
     // Remove EXIF if needed
