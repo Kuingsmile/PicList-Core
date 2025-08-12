@@ -1,6 +1,6 @@
 {
   "name": "piclist",
-  "version": "1.9.14",
+  "version": "2.0.0",
   "description": "Modified PicGo core, A tool for picture uploading",
   "author": {
     "name": "Kuingsmile",
@@ -39,7 +39,7 @@
     "upload",
     "util"
   ],
- "config": {
+  "config": {
     "commitizen": {
       "path": "./node_modules/cz-customizable"
     },

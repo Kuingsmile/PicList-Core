@@ -1,3 +1,16 @@
+##  (2025-08-12)
+
+* :arrow_up: Upgrade(custom): upgrade deps 75e5a11
+* :package: Chore(custom): remove unused files 6be4d68
+* :sparkles: Feature(custom): add image watermark opacity setting a1d41f5
+* :sparkles: Feature(custom): add options for s3 88e2c7f, closes Kuingsmile/Piclist#343
+* :sparkles: Feature(custom): change  watermark and image compress order bc380a6
+* :sparkles: Feature(custom): migrate to esm 838cb84
+* :sparkles: Feature(custom): optimize server 0dc69b2
+* :sparkles: Feature(custom): remove cjs support 9cd9674
+
+
+
 ## :tada: 1.9.14 (2025-06-12)
 
 
