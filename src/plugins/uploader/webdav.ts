@@ -123,7 +123,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
 
   return [
     createField(ctx, 'webdavplist', 'host', 'input', userConfig.host || '', true),
-    createField(ctx, 'webdavplist', 'sslEnabled', 'confirm', userConfig.sslEnabled ?? false, false, undefined, {
+    createField(ctx, 'webdavplist', 'sslEnabled', 'confirm', !!userConfig.sslEnabled, false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_SSLENABLED')
       }

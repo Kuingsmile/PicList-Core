@@ -14,7 +14,9 @@ const __dirname = dirname(__filename)
 
 import type {
   IBuildInCompressOptions,
+  IBuildInCompressOptionsTreated,
   IBuildInWaterMarkOptions,
+  IBuildInWaterMarkOptionsTreated,
   IImgSize,
   ILogger,
   IPathTransformedImgInfo,
@@ -350,7 +352,7 @@ export function safeParse<T>(str: string): T | string {
   try {
     return JSON.parse(str)
   } catch (error) {
-    return str
+    return JSON.parse('{}')
   }
 }
 
@@ -537,6 +539,54 @@ const imageFormatList = [
 ]
 
 const validOutputFormat = (format: string): boolean => availableConvertFormatList.includes(format)
+
+export function getTreatedWaterMarkOptions(
+  raw: IBuildInWaterMarkOptions | undefined,
+  picBed: string
+): IBuildInWaterMarkOptionsTreated {
+  raw = raw || {}
+  const options: IBuildInWaterMarkOptionsTreated = {
+    isAddWatermark: !!(raw.isAddWatermarkMap?.[picBed] ?? raw.isAddWatermark),
+    watermarkType: (raw.watermarkTypeMap?.[picBed] ?? raw.watermarkType) || 'text',
+    isFullScreenWatermark: !!(raw.isFullScreenWatermarkMap?.[picBed] ?? raw.isFullScreenWatermark),
+    watermarkDegree: forceNumber(raw.watermarkDegreeMap?.[picBed] ?? raw.watermarkDegree),
+    watermarkText: (raw.watermarkTextMap?.[picBed] ?? raw.watermarkText) || '',
+    watermarkFontPath: raw.watermarkFontPath || '',
+    watermarkScaleRatio: forceNumber(raw.watermarkScaleRatioMap?.[picBed] ?? raw.watermarkScaleRatio),
+    watermarkColor: (raw.watermarkColorMap?.[picBed] ?? raw.watermarkColor) || 'rgba(204, 204, 204, 0.45)',
+    watermarkImagePath: (raw.watermarkImagePathMap?.[picBed] ?? raw.watermarkImagePath) || '',
+    watermarkPosition: (raw.watermarkPositionMap?.[picBed] ?? raw.watermarkPosition) || 'southeast',
+    watermarkImageOpacity: forceNumber(raw.watermarkImageOpacityMap?.[picBed] ?? raw.watermarkImageOpacity),
+    picBed
+  }
+  return options
+}
+
+export function getTreatedCompressOptions(
+  raw: IBuildInCompressOptions | undefined,
+  picBed: string
+): IBuildInCompressOptionsTreated {
+  raw = raw || {}
+  const options: IBuildInCompressOptionsTreated = {
+    quality: forceNumber(raw.qualityMap?.[picBed] ?? raw.quality),
+    isConvert: !!(raw.isConvertMap?.[picBed] ?? raw.isConvert),
+    convertFormat: (raw.convertFormatMap?.[picBed] ?? raw.convertFormat) || 'jpg',
+    isReSize: !!(raw.isReSizeMap?.[picBed] ?? raw.isReSize),
+    reSizeHeight: forceNumber(raw.reSizeHeightMap?.[picBed] ?? raw.reSizeHeight),
+    reSizeWidth: forceNumber(raw.reSizeWidthMap?.[picBed] ?? raw.reSizeWidth),
+    skipReSizeOfSmallImg: !!(raw.skipReSizeOfSmallImgMap?.[picBed] ?? raw.skipReSizeOfSmallImg),
+    isReSizeByPercent: !!(raw.isReSizeByPercentMap?.[picBed] ?? raw.isReSizeByPercent),
+    reSizePercent: forceNumber(raw.reSizePercentMap?.[picBed] ?? raw.reSizePercent),
+    isRotate: !!(raw.isRotateMap?.[picBed] ?? raw.isRotate),
+    rotateDegree: forceNumber(raw.rotateDegreeMap?.[picBed] ?? raw.rotateDegree),
+    isRemoveExif: !!(raw.isRemoveExifMap?.[picBed] ?? raw.isRemoveExif),
+    isFlip: !!(raw.isFlipMap?.[picBed] ?? raw.isFlip),
+    isFlop: !!(raw.isFlopMap?.[picBed] ?? raw.isFlop),
+    formatConvertObj: (raw.formatConvertObjMap?.[picBed] ?? raw.formatConvertObj) || {},
+    picBed
+  }
+  return options
+}
 
 export async function imageAddWaterMark(
   img: Buffer,

@@ -32,9 +32,9 @@ function createS3Client(opts: IAwsS3PListUserConfig): S3Client {
 
   const httpHandlerOpts: NodeHttpHandlerOptions = {}
   if (sslEnabled) {
-    httpHandlerOpts.httpsAgent = getProxyAgent(opts.proxy, true, opts.rejectUnauthorized ?? false) as HttpsProxyAgent
+    httpHandlerOpts.httpsAgent = getProxyAgent(opts.proxy, true, !!opts.rejectUnauthorized) as HttpsProxyAgent
   } else {
-    httpHandlerOpts.httpAgent = getProxyAgent(opts.proxy, false, opts.rejectUnauthorized ?? false) as HttpProxyAgent
+    httpHandlerOpts.httpAgent = getProxyAgent(opts.proxy, false, !!opts.rejectUnauthorized) as HttpProxyAgent
   }
 
   const clientOptions: S3ClientConfig = {

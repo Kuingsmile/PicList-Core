@@ -648,6 +648,32 @@ export type availableWatermarkPosition = keyof GravityEnum
 
 export interface IBuildInWaterMarkOptions {
   isAddWatermark?: boolean
+  isAddWatermarkMap?: { [key: string]: boolean }
+  watermarkType?: 'text' | 'image'
+  watermarkTypeMap?: { [key: string]: 'text' | 'image' }
+  isFullScreenWatermark?: boolean
+  isFullScreenWatermarkMap?: { [key: string]: boolean }
+  watermarkDegree?: number
+  watermarkDegreeMap?: { [key: string]: number }
+  watermarkText?: string
+  watermarkTextMap?: { [key: string]: string }
+  watermarkFontPath?: string
+  watermarkFontPathMap?: { [key: string]: string }
+  watermarkScaleRatio?: number
+  watermarkScaleRatioMap?: { [key: string]: number }
+  watermarkColor?: string
+  watermarkColorMap?: { [key: string]: string }
+  watermarkImagePath?: string
+  watermarkImagePathMap?: { [key: string]: string }
+  watermarkPosition?: availableWatermarkPosition
+  watermarkPositionMap?: { [key: string]: availableWatermarkPosition }
+  watermarkImageOpacity?: number
+  watermarkImageOpacityMap?: { [key: string]: number }
+  [propName: string]: any
+}
+
+export interface IBuildInWaterMarkOptionsTreated {
+  isAddWatermark?: boolean
   watermarkType?: 'text' | 'image'
   isFullScreenWatermark?: boolean
   watermarkDegree?: number
@@ -658,9 +684,44 @@ export interface IBuildInWaterMarkOptions {
   watermarkImagePath?: string
   watermarkPosition?: availableWatermarkPosition
   watermarkImageOpacity?: number
+  [propName: string]: any
 }
 
 export interface IBuildInCompressOptions {
+  quality?: number
+  qualityMap?: { [key: string]: number }
+  isConvert?: boolean
+  isConvertMap?: { [key: string]: boolean }
+  convertFormat?: availableConvertFormat
+  convertFormatMap?: { [key: string]: availableConvertFormat }
+  isReSize?: boolean
+  isReSizeMap?: { [key: string]: boolean }
+  reSizeWidth?: number
+  reSizeWidthMap?: { [key: string]: number }
+  reSizeHeight?: number
+  reSizeHeightMap?: { [key: string]: number }
+  skipReSizeOfSmallImg?: boolean
+  skipReSizeOfSmallImgMap?: { [key: string]: boolean }
+  isReSizeByPercent?: boolean
+  isReSizeByPercentMap?: { [key: string]: boolean }
+  reSizePercent?: number
+  reSizePercentMap?: { [key: string]: number }
+  isRotate?: boolean
+  isRotateMap?: { [key: string]: boolean }
+  rotateDegree?: number
+  rotateDegreeMap?: { [key: string]: number }
+  isRemoveExif?: boolean
+  isRemoveExifMap?: { [key: string]: boolean }
+  isFlip?: boolean
+  isFlipMap?: { [key: string]: boolean }
+  isFlop?: boolean
+  isFlopMap?: { [key: string]: boolean }
+  formatConvertObj?: any
+  formatConvertObjMap?: { [key: string]: any }
+  [propName: string]: any
+}
+
+export interface IBuildInCompressOptionsTreated {
   quality?: number
   isConvert?: boolean
   convertFormat?: availableConvertFormat
@@ -675,6 +736,7 @@ export interface IBuildInCompressOptions {
   isRemoveExif?: boolean
   isFlip?: boolean
   isFlop?: boolean
+  formatConvertObj?: any
   [propName: string]: any
 }
 

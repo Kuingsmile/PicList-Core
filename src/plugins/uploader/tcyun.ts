@@ -202,7 +202,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_OPTIONS')
       }
     }),
-    createField(ctx, 'TENCENTCLOUD', 'slim', 'confirm', userConfig.slim ?? false, false, undefined, {
+    createField(ctx, 'TENCENTCLOUD', 'slim', 'confirm', !!userConfig.slim, false, undefined, {
       get confirmText() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SLIM_CONFIRM')
       },

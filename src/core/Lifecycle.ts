@@ -20,6 +20,8 @@ import {
 } from '../types'
 import {
   getConvertedFormat,
+  getTreatedCompressOptions,
+  getTreatedWaterMarkOptions,
   getURLFile,
   handleUrlEncode,
   imageAddWaterMark,
@@ -28,7 +30,8 @@ import {
   isNeedCompress,
   isUrl,
   removeExif,
-  renameFileNameWithCustomString
+  renameFileNameWithCustomString,
+  safeParse
 } from '../utils/common'
 import { createContext } from '../utils/createContext'
 import { IBuildInEvent } from '../utils/enum'
@@ -98,13 +101,25 @@ export class Lifecycle extends EventEmitter {
     const compressOptions = ctx.getConfig<Undefinable<IBuildInCompressOptions>>('buildIn.compress')
     const watermarkOptions = ctx.getConfig<Undefinable<IBuildInWaterMarkOptions>>('buildIn.watermark')
 
+    const type = this.getUploaderType(ctx)
+
     if (compressOptions) {
-      const type = this.getUploaderType(ctx)
-      const uploader = ctx.helper.uploader.get(type)
-      compressOptions.picBed = !uploader ? 'smms' : type
+      compressOptions.picBed = type
+      const formatConvertObj =
+        typeof compressOptions.formatConvertObj === 'string'
+          ? safeParse(compressOptions.formatConvertObj)
+          : compressOptions.formatConvertObj
+      compressOptions.formatConvertObj = formatConvertObj
     }
 
-    return { compressOptions, watermarkOptions }
+    if (watermarkOptions) {
+      watermarkOptions.picBed = type
+    }
+
+    const treatedCompressOptions = getTreatedCompressOptions(compressOptions, type)
+    const treatedWatermarkOptions = getTreatedWaterMarkOptions(watermarkOptions, type)
+
+    return { compressOptions: treatedCompressOptions, watermarkOptions: treatedWatermarkOptions }
   }
 
   private getUploaderType(ctx: IPicGo): string {
