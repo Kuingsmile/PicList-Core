@@ -1,4 +1,4 @@
-import { lookup } from 'mime-types'
+import mime from 'mime'
 
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IOldReqOptionsWithFullResponse, IPicGo, IPicListConfig, IPluginConfig } from '../../types'
@@ -26,7 +26,7 @@ const postOptions = (options: IPicListConfig, fileName: string, image: Buffer): 
         value: image,
         options: {
           filename: fileName,
-          contentType: lookup(fileName)
+          contentType: mime.getType(fileName) || 'application/octet-stream'
         }
       }
     },

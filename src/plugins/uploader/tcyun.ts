@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 
-import { lookup } from 'mime-types'
+import mime from 'mime'
 
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IOldReqOptionsWithFullResponse, IPicGo, IPluginConfig, ITcyunConfig } from '../../types'
@@ -78,7 +78,7 @@ const postOptions = (
     headers: {
       Host: host,
       Authorization: `q-sign-algorithm=sha1&q-ak=${secretId}&q-sign-time=${signature.signTime}&q-key-time=${signature.signTime}&q-header-list=host&q-url-param-list=&q-signature=${signature.signature}`,
-      contentType: lookup(fileName) || 'application/octet-stream',
+      contentType: mime.getType(fileName) || 'application/octet-stream',
       'User-Agent': userAgent
     },
     body: image,

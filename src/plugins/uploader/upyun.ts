@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 
-import { lookup } from 'mime-types'
+import mime from 'mime'
 
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IOldReqOptionsWithFullResponse, IPicGo, IPluginConfig, IUpyunConfig } from '../../types'
@@ -42,7 +42,7 @@ const postOptions = (
     headers: {
       Authorization: signature,
       Date: new Date().toUTCString(),
-      'Content-Type': lookup(fileName) || 'application/octet-stream'
+      'Content-Type': mime.getType(fileName) || 'application/octet-stream'
     },
     body: image,
     resolveWithFullResponse: true

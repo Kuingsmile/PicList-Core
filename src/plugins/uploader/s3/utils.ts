@@ -3,7 +3,7 @@ import { URL } from 'node:url'
 
 import { fileTypeFromBuffer } from 'file-type'
 import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent'
-import { lookup } from 'mime-types'
+import mime from 'mime'
 
 import { IImgInfo } from '../../../types'
 
@@ -137,7 +137,7 @@ export async function extractInfo(info: IImgInfo): Promise<{
     result.contentEncoding = 'base64'
   } else {
     if (info.extname) {
-      result.contentType = lookup(info.extname) || undefined
+      result.contentType = mime.getType(info.extname) || undefined
     }
     result.body = info.buffer
   }

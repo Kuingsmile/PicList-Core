@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 
-import { lookup } from 'mime-types'
+import mime from 'mime'
 
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IAliyunConfig, IOldReqOptionsWithFullResponse, IPicGo, IPluginConfig } from '../../types'
@@ -12,7 +12,7 @@ const getCurrentUTCDate = (): string => new Date().toUTCString()
 // generate OSS signature
 const generateSignature = (options: IAliyunConfig, fileName: string): string => {
   const date = getCurrentUTCDate()
-  const mimeType = lookup(fileName) || 'application/octet-stream'
+  const mimeType = mime.getType(fileName) || 'application/octet-stream'
   const signString = `PUT\n\n${mimeType}\n${date}\n/${options.bucket}/${options.path}${fileName}`
   const signature = crypto.createHmac('sha1', options.accessKeySecret).update(signString).digest('base64')
   return `OSS ${options.accessKeyId}:${signature}`
@@ -30,7 +30,7 @@ const postOptions = (
     Host: `${options.bucket}.${options.area}.aliyuncs.com`,
     Authorization: signature,
     Date: getCurrentUTCDate(),
-    'Content-Type': lookup(fileName) || 'application/octet-stream'
+    'Content-Type': mime.getType(fileName) || 'application/octet-stream'
   },
   body: image,
   resolveWithFullResponse: true

@@ -1,4 +1,4 @@
-import { lookup } from 'mime-types'
+import mime from 'mime'
 
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IGithubConfig, IOldReqOptionsWithJSON, IPicGo, IPluginConfig } from '../../types'
@@ -11,7 +11,7 @@ function buildGithubApiUrl(repo: string, path: string, fileName: string, extra: 
 
 const postOptions = (fileName: string, options: IGithubConfig, data: any): IOldReqOptionsWithJSON => {
   const { token, repo } = options
-  const contentType = lookup(fileName) || 'application/octet-stream'
+  const contentType = mime.getType(fileName) || 'application/octet-stream'
   return {
     method: 'PUT',
     url: buildGithubApiUrl(repo, options.path, fileName),

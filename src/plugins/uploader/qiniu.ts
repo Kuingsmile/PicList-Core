@@ -1,4 +1,4 @@
-import { lookup } from 'mime-types'
+import mime from 'mime'
 import qiniu from 'qiniu'
 
 import { ILocalesKey } from '../../i18n/zh-CN'
@@ -18,7 +18,7 @@ function postOptions(options: IQiniuConfig, fileName: string, token: string, img
     url: `http://upload${area}.qiniup.com/putb64/-1/key/${base64FileName}`,
     headers: {
       Authorization: `UpToken ${token}`,
-      'Content-Type': lookup(fileName) || 'application/octet-stream'
+      'Content-Type': mime.getType(fileName) || 'application/octet-stream'
     },
     body: imgBase64
   }
