@@ -1,6 +1,6 @@
 # PicList-Core
 
-English | [简体中文](./README_cn.md)
+[English](./README_en.md) | [简体中文](./README.md)
 
 ![standard](https://img.shields.io/badge/code%20style-standard-green.svg?style=flat-square)
 ![GitHub](https://img.shields.io/github/license/mashape/apistatus.svg?style=flat-square)
@@ -8,40 +8,40 @@ English | [简体中文](./README_cn.md)
 
 ![picgo-core](https://cdn.jsdelivr.net/gh/Molunerfinn/test/picgo/picgo-core-fix.jpg)
 
-A powerful tool for image uploading with both CLI & API support. PicList-Core extends PicGo-Core with additional features while maintaining plugin compatibility. Check out [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) for a collection of powerful plugins.
+PicList-Core 是一个功能强大的图片上传工具，提供 CLI 和 API 两种调用方式。它在 PicGo-Core 的基础上增强了功能，同时保持插件兼容性。查看 [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) 获取丰富的插件资源。
 
-You can refer to the [DeepWiki of PiclList-Core](https://deepwiki.com/Kuingsmile/PicList-Core/) for more information.
+你可以查看 [PiclList-Core 的 DeepWiki](https://deepwiki.com/Kuingsmile/PicList-Core/) 获取更多信息。
 
-**Natively supports Typora integration**.
+**原生支持 Typora 集成**。
 
-## Enhanced Features
+## 增强功能
 
-- **Image processing capabilities**:
-  - Add watermarks, compress images, and convert formats
-  - Configure via `picgo set buildin watermark` and `picgo set buildin compress` CLI commands
-  - Processing happens during beforeTransform phase, ensuring compatibility with all plugins
+- **图像处理能力**：
+  - 添加水印、压缩图片和转换格式
+  - 通过 `picgo set buildin watermark` 和 `picgo set buildin compress` CLI 命令进行配置
+  - 处理过程发生在 beforeTransform 阶段，确保与所有插件兼容
 
-- **Advanced renaming**:
-  - Set custom rename rules via `picgo set buildin rename`
+- **高级重命名**：
+  - 通过 `picgo set buildin rename` 设置自定义重命名规则
 
-- **Additional built-in image hosting services**:
-  - WebDAV, SFTP, Local path, AWS S3
-  - Improved Imgur support with account-based uploads
+- **额外内置图床**：
+  - WebDAV、SFTP、本地路径、AWS S3
+  - 改进的 Imgur 支持，支持账户上传
 
-- **Built-in server**:
-  - Similar to PicList-Desktop server
-  - Launch with `picgo-server` command
+- **内置服务器**：
+  - 类似于 PicList-Desktop 服务器
+  - 使用 `picgo-server` 命令启动
 
-- **Bug fixes**:
-  - Addresses several issues from the original PicGo-Core
+- **错误修复**：
+  - 解决了原始 PicGo-Core 的多个问题
 
-## Installation
+## 安装
 
-PicList requires Node.js >= 20
+PicList 需要 Node.js >= 20
 
-### Prerequisites
+### 前置条件
 
-PicList depends on [sharp](https://sharp.pixelplumbing.com/). Install it first:
+PicList 依赖 [sharp](https://sharp.pixelplumbing.com/)，请先安装它：
 
 ```bash
 npm config set sharp_binary_host "https://npmmirror.com/mirrors/sharp"
@@ -49,35 +49,35 @@ npm config set sharp_libvips_binary_host "https://npmmirror.com/mirrors/sharp-li
 npm install sharp
 ```
 
-### Global install
+### 全局安装
 
 ```bash
 npm install piclist -g
 
-# or
+# 或者
 
 yarn global add piclist
 ```
 
-### Local install
+### 本地安装
 
 ```bash
 npm install piclist -D
 
-# or
+# 或者
 
 yarn add piclist -D
 ```
 
-## Usage
+## 使用方法
 
 ### Docker
 
-You can use docker to run PicList-Core.
+你可以使用Docker运行PicList-Core。
 
 #### docker run
 
-Change the `./piclist` to your own path, this path is where you put your `config.json` file, and change the `piclist123456` to your own secret key.
+将`./piclist`更改为你自己的路径，该路径是放置`config.json`文件的位置，并将`piclist123456`更改为你自己的密钥。
 
 ```bash
 docker run -d \
@@ -91,7 +91,7 @@ docker run -d \
 
 #### docker-compose
 
-download `docker-compose.yml` from this repo, or copy the following content to `docker-compose.yml`:
+从本仓库下载`docker-compose.yml`，或将以下内容复制到`docker-compose.yml`:
 
 ```yaml
 version: '3.3'
@@ -108,46 +108,46 @@ services:
     command: node /usr/local/bin/picgo-server -k piclist123456
 ```
 
-You can change the `./piclist` to your own path, this path is where you put your `config.json` file, and change the `command` to your own secret key.
+你可以将`./piclist`更改为你自己的路径，该路径是放置`config.json`文件的位置，并在`command`中更改密钥。
 
-Then run:
+然后运行:
 
 ```bash
 docker-compose up -d
 ```
 
-#### Install plugins in docker
+#### 在Docker中安装插件
 
-You can use `docker exec` to install plugins in docker.
+你可以使用`docker exec`在Docker中安装插件。
 
 ```bash
 docker exec -it piclist sh
 picgo install picgo-plugin-xxx
 ```
 
-#### Change config in docker
+#### 在Docker中更新配置
 
-You can use `docker exec` to change config in docker.
+你可以使用`docker exec`在Docker中更新配置。
 
 ```bash
 docker exec -it piclist sh
 picgo set xxx
 ```
 
-### Server
+### 服务器
 
-You can use `picgo-server` to start a server, default port is `36677`.
+你可以使用`picgo-server`启动服务器，默认端口为`36677`。
 
-Start server:
+启动服务器:
 
 ```bash
 picgo-server
 node ./bin/picgo-server
 ```
 
-> It's highly recommended to add `--key` to avoid unauthorized access. Example: `picgo-server --key 123456`，
+> 强烈建议添加`--key`参数以避免未经授权的访问。例如：`picgo-server --key 123456`
 
-Show help:
+显示帮助:
 
 ```bash
 $ picgo-server -h
@@ -156,12 +156,12 @@ $ picgo-server -h
 
   Options:
 
-    -h, --help          Print this help message
-    -c, --config        Set config path
-    -p, --port          Set port, default port is 36677
-    --host              Set host, default host is 0.0.0.0
-    -k, --key           Set secret key to avoid unauthorized access
-    -v, --version       Print version number
+    -h, --help          显示帮助信息
+    -c, --config        设置配置路径
+    -p, --port          设置端口，默认端口为36677
+    --host              设置主机，默认主机为0.0.0.0
+    -k, --key           设置密钥以避免未经授权的访问
+    -v, --version       显示版本号
 
   Examples:
     picgo-server -c /path/to/config.json
@@ -169,16 +169,16 @@ $ picgo-server -h
     picgo-server -c /path/to/config.json -k 123456
 ```
 
-#### endpoints
+#### 接口
 
-- `/upload?picbed=xxx&key=xxx` upload picture, `picbed` to set pic-bed, `key` to set secret key
-- `/heartbeat` heartbeat
+- `/upload?picbed=xxx&key=xxx` 上传图片，`picbed`用于设置图床，`key`用于设置密钥
+- `/heartbeat` 心跳检测
 
-### Use in CLI
+### CLI使用
 
-> PicList-Core uses `SM.MS` as the default upload pic-bed.
+> PicList-Core使用`SM.MS`作为默认上传图床。
 
-Show help:
+显示帮助:
 
 ```bash
 $ picgo -h
@@ -187,63 +187,63 @@ $ picgo -h
 
   Options:
 
-    -v, --version                 output the version number
-    -d, --debug                   debug mode
-    -s, --silent                  silent mode
-    -c, --config <path>           set config path
-    -h, --help                    output usage information
+    -v, --version                 输出版本号
+    -d, --debug                   调试模式
+    -s, --silent                  静默模式
+    -c, --config <path>           设置配置路径
+    -h, --help                    输出使用信息
 
   Commands:
 
-    install|add <plugins...>             install picgo plugin
-    uninstall|rm <plugins...>            uninstall picgo plugin
-    update <plugins...>                  update picgo plugin
-    set|config <module> [name]           configure config of picgo modules
-    upload|u [input...]                  upload, go go go
-    use [module]                         use modules of picgo
-    init [options] <template> [project]  create picgo plugin\'s development templates
+    install|add <plugins...>             安装picgo插件
+    uninstall|rm <plugins...>            卸载picgo插件
+    update <plugins...>                  更新picgo插件
+    set|config <module> [name]           配置picgo模块
+    upload|u [input...]                  上传，开始上传
+    use [module]                         使用picgo模块
+    init [options] <template> [project]  创建picgo插件的开发模板
 ```
 
-#### Upload a picture from path
+#### 从路径上传图片
 
 ```bash
 picgo upload /xxx/xx/xx.jpg
 ```
 
-#### Upload a picture from clipboard
+#### 从剪贴板上传图片
 
-> picture from clipboard will be converted to `png`
+> 从剪贴板获取的图片将被转换为`png`格式
 
 ```bash
 picgo upload
 ```
 
-### Use in node project
+### 在Node项目中使用
 
-#### Common JS
+#### CommonJS
 
 ```js
 const { PicGo } = require('piclist')
 ```
 
-#### ES Module
+#### ES模块
 
 ```js
 import { PicGo } from 'piclist'
 ```
 
-#### API usage example
+#### API使用示例
 
 ```js
 const picgo = new PicGo()
 
-// upload a picture from path
+// 从路径上传图片
 picgo.upload(['/xxx/xxx.jpg'])
 
-// upload a picture from clipboard
+// 从剪贴板上传图片
 picgo.upload()
 ```
 
-## Documentation
+## 文档
 
-For more details, you can checkout [documentation of PicGo-Core](https://picgo.github.io/PicGo-Core-Doc/).
+获取更多详细信息，请查看[PicGo-Core文档](https://picgo.github.io/PicGo-Core-Doc/)。
