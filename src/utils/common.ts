@@ -24,12 +24,27 @@ import type {
   IPluginNameType
 } from '../types'
 
+const mask = 0b111111
+const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+
 // --- rename helper ---
 export function randomStringGenerator(length: number): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  return Array.from({ length })
-    .map(() => chars.charAt(Math.floor(Math.random() * chars.length)))
-    .join('')
+  const out = new Array(length)
+  let i = 0
+  let pool = 0
+  let bits = 0
+  while (i < length) {
+    if (bits < 6) {
+      pool = (pool << 30) | ((Math.random() * 0x40000000) >>> 0)
+      bits += 30
+      continue
+    }
+    const idx = pool & mask
+    pool >>>= 6
+    bits -= 6
+    if (idx < 62) out[i++] = chars[idx]
+  }
+  return out.join('')
 }
 
 export function renameFileNameWithTimestamp(oldName: string): string {
@@ -105,7 +120,7 @@ export const isUrl = (url: string): boolean => /^https?:\/\//.test(url)
 export const isUrlEncode = (url: string): boolean => {
   url = url || ''
   try {
-    // the whole url encode or decode shold not use encodeURIComponent or decodeURIComponent
+    // the whole url encode or decode should not use encodeURIComponent or decodeURIComponent
     return url !== decodeURI(url)
   } catch (e) {
     return false
