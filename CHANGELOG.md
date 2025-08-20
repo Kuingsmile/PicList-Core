@@ -1,3 +1,9 @@
+##  (2025-08-20)
+
+* :bug: Fix(custom): replace mime-type with mime 18e6b75
+
+
+
 ##  (2025-08-12)
 
 * :arrow_up: Upgrade(custom): upgrade deps 75e5a11
