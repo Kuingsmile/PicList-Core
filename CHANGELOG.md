@@ -1,3 +1,11 @@
+##  (2025-08-21)
+
+* :pencil: Docs(custom): update readme be7edd1
+* :sparkles: Feature(custom): support set image process setting for per picbed a98185b
+* :zap: Perf(custom): optimize random string generation algorithm c386b48
+
+
+
 ##  (2025-08-20)
 
 * :bug: Fix(custom): replace mime-type with mime 18e6b75
