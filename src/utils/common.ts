@@ -63,6 +63,10 @@ function getMd5(input: crypto.BinaryLike): string {
   return crypto.createHash('md5').update(input).digest('hex')
 }
 
+function getSha256(input: crypto.BinaryLike): string {
+  return crypto.createHash('sha256').update(input).digest('hex')
+}
+
 export function renameFileNameWithCustomString(
   oldName: string,
   customFormat: string,
@@ -82,6 +86,7 @@ export function renameFileNameWithCustomString(
     '{s}': () => formatHelper(now.getSeconds()),
     '{ms}': () => now.getMilliseconds().toString().padStart(3, '0'),
     '{md5}': () => getMd5(fileBuffer || filebasename),
+    '{sha256}': () => getSha256(fileBuffer || filebasename),
     '{md5-16}': () => getMd5(fileBuffer || filebasename).slice(0, 16),
     '{filename}': () => (affixFileName ? path.basename(affixFileName, path.extname(affixFileName)) : filebasename),
     '{uuid}': () => uuidv4().replace(/-/g, ''),
@@ -101,9 +106,14 @@ export function renameFileNameWithCustomString(
       return acc.replace(new RegExp(cur, 'g'), conversionMap[cur]())
     }, customFormat) + ext
   const strRegex = /{str-(\d+)}/gi
+  const sha256Regex = /{sha256-(\d+)}/gi
   newName = newName.replace(strRegex, (_, group1) => {
     const length = parseInt(group1, 10)
     return randomStringGenerator(length)
+  })
+  newName = newName.replace(sha256Regex, (_, group1) => {
+    const length = parseInt(group1, 10)
+    return getSha256(fileBuffer || filebasename).slice(0, length)
   })
   newName = newName.replace(/{(localFolder:?(\d+)?)}/gi, (_result, key, count) => {
     count = Math.max(1, count || 0)
