@@ -4,24 +4,47 @@ import { resolve } from 'node:path'
 
 import minimist from 'minimist'
 
-import { PicGo } from '../dist/index.js'
-
-const argv = minimist(process.argv.slice(2))
-let configPath = argv.c || argv.config || ''
-if (configPath !== true && configPath !== '') {
-  configPath = configPath.replace(/^~/, homedir())
-  configPath = resolve(configPath)
-} else {
-  configPath = ''
+function getConfigPath(argv) {
+  const configArg = argv.c || argv.config
+  if (typeof configArg !== 'string' || configArg.trim() === '') {
+    return ''
+  }
+  return resolve(configArg.replace(/^~/, homedir()))
 }
-const picgo = await PicGo.create(configPath)
-picgo.registerCommands()
 
-try {
-  picgo.cmd.program.parse(process.argv)
-} catch (e) {
-  picgo.log.error(e)
-  if (process.argv.includes('--debug')) {
-    Promise.reject(e)
+async function main() {
+  const argv = minimist(process.argv.slice(2))
+  const configPath = getConfigPath(argv)
+
+  const { PicGo } = await import('../dist/index.js')
+
+  const picgo = await PicGo.create(configPath)
+  picgo.registerCommands()
+
+  try {
+    await picgo.cmd.program.parseAsync(process.argv)
+    return 0
+  } catch (err) {
+    if (picgo?.log?.error) {
+      picgo.log.error(err)
+    } else {
+      console.error('PicGo Error:', err instanceof Error ? err.message : err)
+    }
+
+    if (process.argv.includes('--debug')) {
+      console.error(err)
+    }
+
+    return 1
   }
 }
+
+main()
+  .then(code => process.exit(code))
+  .catch(err => {
+    console.error('Fatal PicGo startup error:', err)
+    if (process.argv.includes('--debug')) {
+      console.error(err)
+    }
+    process.exit(1)
+  })
