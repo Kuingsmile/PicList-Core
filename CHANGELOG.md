@@ -1,3 +1,16 @@
+##  (2025-11-14)
+
+* :arrow_up: Upgrade(custom): upgrade deps dcb971f
+* :arrow_up: Upgrade(custom): upgrade deps e25e7c7
+* :arrow_up: Upgrade(custom): upgrade deps e0358be
+* :arrow_up: Upgrade(custom): upgrade deps ebc991a
+* :bug: Fix(custom): fix wayland image upload bug 41a9b96, closes #19
+* :package: Chore(custom): update tseslint usage a0dc819
+* :sparkles: Feature(custom): add webpath for github c7eb33c
+* :sparkles: Feature(custom): optimize cli script 1e2792c
+
+
+
 ##  (2025-09-25)
 
 * :arrow_up: Upgrade(custom): upgrade deps 7b29f04
