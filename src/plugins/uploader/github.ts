@@ -43,6 +43,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   if (!githubOptions) throw new Error("Can't find github config")
 
   const uploadPath = formatPathHelper({ path: githubOptions.path })
+  const webPath = formatPathHelper({ path: githubOptions.webPath || '' })
   githubOptions.path = uploadPath
   githubOptions.customUrl = (githubOptions.customUrl || '').replace(/\/$/, '')
   try {
@@ -68,7 +69,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
             delete img.base64Image
             delete img.buffer
             img.imgUrl = githubOptions.customUrl
-              ? `${githubOptions.customUrl}/${encodePath(`${uploadPath}${img.fileName}`)}`
+              ? `${githubOptions.customUrl}/${encodePath(`${webPath || uploadPath}${img.fileName}`)}`
               : body.content.download_url
             img.hash = body.content.sha
           } else {
@@ -82,7 +83,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           if (Object.keys(res).length) {
             img.hash = res.sha
             img.imgUrl = githubOptions.customUrl
-              ? `${githubOptions.customUrl}/${encodePath(`${uploadPath}${img.fileName}`)}`
+              ? `${githubOptions.customUrl}/${encodePath(`${webPath || uploadPath}${img.fileName}`)}`
               : res.download_url
           } else {
             throw err
@@ -158,6 +159,21 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_MESSAGE_PATH')
       },
       default: userConfig.path || '',
+      required: false
+    },
+    {
+      name: 'webPath',
+      type: 'input',
+      get prefix() {
+        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_WEBPATH')
+      },
+      get alias() {
+        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_WEBPATH')
+      },
+      get message() {
+        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_MESSAGE_WEBPATH')
+      },
+      default: userConfig.webPath || '',
       required: false
     },
     {

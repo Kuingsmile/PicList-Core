@@ -107,11 +107,13 @@ export const ZH_TW: ILocales = {
   PICBED_GITHUB_TOKEN: '設定Token',
   PICBED_GITHUB_REPO: '設定倉庫名稱',
   PICBED_GITHUB_PATH: '設定儲存路徑',
+  PICBED_GITHUB_WEBPATH: '設定網站路徑',
   PICBED_GITHUB_BRANCH: '設定分支名稱',
   PICBED_GITHUB_CUSTOMURL: '設定自訂網址',
   PICBED_GITHUB_MESSAGE_REPO: '格式: username/repo',
   PICBED_GITHUB_MESSAGE_BRANCH: '例如: main',
   PICBED_GITHUB_MESSAGE_PATH: '例如: test/',
+  PICBED_GITHUB_MESSAGE_WEBPATH: '用於拼接網址路徑',
   PICBED_GITHUB_MESSAGE_CUSTOMURL: '例如: https://test.com',
 
   // qiniu

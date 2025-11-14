@@ -105,11 +105,13 @@ export const EN: ILocales = {
   PICBED_GITHUB_TOKEN: 'Set Token',
   PICBED_GITHUB_REPO: 'Set Repo Name',
   PICBED_GITHUB_PATH: 'Set Path',
+  PICBED_GITHUB_WEBPATH: 'Set Web Path',
   PICBED_GITHUB_BRANCH: 'Set Branch',
   PICBED_GITHUB_CUSTOMURL: 'Set Custom URL',
   PICBED_GITHUB_MESSAGE_REPO: 'Ex. username/repo',
   PICBED_GITHUB_MESSAGE_BRANCH: 'Ex. main',
   PICBED_GITHUB_MESSAGE_PATH: 'Ex. test/',
+  PICBED_GITHUB_MESSAGE_WEBPATH: 'Used to generate URL path',
   PICBED_GITHUB_MESSAGE_CUSTOMURL: 'Ex. https://test.com',
 
   // qiniu

@@ -320,6 +320,8 @@ export interface IGithubConfig {
   token: string
   /** 自定义存储路径，比如 `img/` */
   path: string
+  /** 网站路径，用于拼接网址路径 */
+  webPath?: string
   /** 自定义域名，注意要加 `http://` 或者 `https://` */
   customUrl: string
   /** 分支名，默认是 `main` */

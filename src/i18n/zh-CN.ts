@@ -105,11 +105,13 @@ export const ZH_CN = {
   PICBED_GITHUB_TOKEN: '设定Token',
   PICBED_GITHUB_REPO: '设定仓库名',
   PICBED_GITHUB_PATH: '设定存储路径',
+  PICBED_GITHUB_WEBPATH: '设定网站路径',
   PICBED_GITHUB_BRANCH: '设定分支名',
   PICBED_GITHUB_CUSTOMURL: '设定自定义域名',
   PICBED_GITHUB_MESSAGE_REPO: '格式: username/repo',
   PICBED_GITHUB_MESSAGE_BRANCH: '例如: main',
   PICBED_GITHUB_MESSAGE_PATH: '例如: test/',
+  PICBED_GITHUB_MESSAGE_WEBPATH: '用于拼接网址路径',
   PICBED_GITHUB_MESSAGE_CUSTOMURL: '例如: https://test.com',
 
   // qiniu
