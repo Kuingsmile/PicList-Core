@@ -18,10 +18,10 @@ const postOptions = (fileName: string, options: IGithubConfig, data: any): IOldR
     headers: {
       Authorization: `token ${token}`,
       'User-Agent': 'PicList',
-      'Content-Type': contentType
+      'Content-Type': contentType,
     },
     body: data,
-    json: true
+    json: true,
   } as const
 }
 
@@ -32,9 +32,9 @@ const getOptions = (fileName: string, options: IGithubConfig): IOldReqOptionsWit
     url: buildGithubApiUrl(repo, options.path, fileName, `?ref=${branch}`),
     headers: {
       Authorization: `token ${token}`,
-      'User-Agent': 'PicList'
+      'User-Agent': 'PicList',
     },
-    json: true
+    json: true,
   }
 }
 
@@ -55,7 +55,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           message: 'Upload by PicList',
           branch: githubOptions.branch,
           content: base64Image,
-          path: uploadPath + encodeURI(img.fileName)
+          path: uploadPath + encodeURI(img.fileName),
         }
         const postConfig = postOptions(img.fileName, githubOptions, data)
         try {
@@ -95,7 +95,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   } catch (err: any) {
     ctx.emit(IBuildInEvent.NOTIFICATION, {
       title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-      body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS_AND_NETWORK')
+      body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS_AND_NETWORK'),
     })
     throw err
   }
@@ -117,7 +117,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_MESSAGE_REPO')
       },
       default: userConfig.repo || '',
-      required: true
+      required: true,
     },
     {
       name: 'branch',
@@ -132,7 +132,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_MESSAGE_BRANCH')
       },
       default: userConfig.branch || 'master',
-      required: true
+      required: true,
     },
     {
       name: 'token',
@@ -144,7 +144,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_TOKEN')
       },
       default: userConfig.token || '',
-      required: true
+      required: true,
     },
     {
       name: 'path',
@@ -159,7 +159,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_MESSAGE_PATH')
       },
       default: userConfig.path || '',
-      required: false
+      required: false,
     },
     {
       name: 'webPath',
@@ -174,7 +174,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_MESSAGE_WEBPATH')
       },
       default: userConfig.webPath || '',
-      required: false
+      required: false,
     },
     {
       name: 'customUrl',
@@ -189,8 +189,8 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_MESSAGE_CUSTOMURL')
       },
       default: userConfig.customUrl || '',
-      required: false
-    }
+      required: false,
+    },
   ]
   return config
 }
@@ -201,6 +201,6 @@ export default function register(ctx: IPicGo): void {
       return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB')
     },
     handle,
-    config
+    config,
   })
 }

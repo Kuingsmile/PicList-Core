@@ -328,5 +328,5 @@ export const ZH_TW: ILocales = {
   PLUGIN_HANDLER_PLUGIN_UPDATE_SUCCESS: '插件更新成功',
   PLUGIN_HANDLER_PLUGIN_UPDATE_FAILED: '插件更新失敗',
   PLUGIN_HANDLER_PLUGIN_UPDATE_FAILED_REASON: '插件更新失敗，失敗碼為${code}，錯誤記錄為 \n ${data}',
-  PLUGIN_HANDLER_PLUGIN_UPDATE_FAILED_VALID: '插件更新失敗，請輸入正確的插件名稱'
+  PLUGIN_HANDLER_PLUGIN_UPDATE_FAILED_VALID: '插件更新失敗，請輸入正確的插件名稱',
 }

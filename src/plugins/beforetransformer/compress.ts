@@ -28,8 +28,8 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         'tiff',
         'tif',
         'v',
-        'webp'
-      ]
+        'webp',
+      ],
     }),
     createField(ctx, 'compress', 'isReSize', 'confirm', userConfig.isReSize || false, false, 'BUILDIN'),
     createField(ctx, 'compress', 'reSizeWidth', 'input', userConfig.reSizeWidth || 500, false, 'BUILDIN'),
@@ -41,7 +41,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       'confirm',
       userConfig.skipReSizeOfSmallImg || false,
       false,
-      'BUILDIN'
+      'BUILDIN',
     ),
     createField(
       ctx,
@@ -50,18 +50,18 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       'confirm',
       userConfig.isReSizeByPercent || false,
       false,
-      'BUILDIN'
+      'BUILDIN',
     ),
     createField(ctx, 'compress', 'reSizePercent', 'input', userConfig.reSizePercent || 50, false, 'BUILDIN'),
     createField(ctx, 'compress', 'isFlip', 'confirm', userConfig.isFlip || false, false, 'BUILDIN'),
     createField(ctx, 'compress', 'isFlop', 'confirm', userConfig.isFlop || false, false, 'BUILDIN'),
     createField(ctx, 'compress', 'isRotate', 'confirm', userConfig.isRotate || false, false, 'BUILDIN'),
     createField(ctx, 'compress', 'rotateDegree', 'input', userConfig.rotateDegree || 90, false, 'BUILDIN'),
-    createField(ctx, 'compress', 'isRemoveExif', 'confirm', userConfig.isRemoveExif || false, false, 'BUILDIN')
+    createField(ctx, 'compress', 'isRemoveExif', 'confirm', userConfig.isRemoveExif || false, false, 'BUILDIN'),
   ]
   return config
 }
 
 export default {
-  config
+  config,
 }

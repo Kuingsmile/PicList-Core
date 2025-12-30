@@ -15,7 +15,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const uploadPath = localConfig.path || ''
   const customUrl = (localConfig.customUrl || '').replace(/\/$/, '')
   const webPath = formatPathHelper({
-    path: localConfig.webPath?.replace(/\\/g, '/')
+    path: localConfig.webPath?.replace(/\\/g, '/'),
   })
   const imgList = ctx.output
   for (const img of imgList) {
@@ -41,10 +41,10 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         }
         img.hash = path.join(uploadPath, img.fileName)
         img.galleryPath = `http://localhost:36699/local/${encodePath(img.fileName).replace(/^\//, '')}`
-      } catch (e: any) {
+      } catch (_e: any) {
         ctx.emit(IBuildInEvent.NOTIFICATION, {
           title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-          body: 'failed to upload image'
+          body: 'failed to upload image',
         })
         throw new Error('failed to upload image')
       }
@@ -69,7 +69,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_MESSAGE_PATH')
       },
-      required: true
+      required: true,
     },
     {
       name: 'customUrl',
@@ -84,7 +84,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_MESSAGE_CUSTOMURL')
       },
-      required: false
+      required: false,
     },
     {
       name: 'webPath',
@@ -99,8 +99,8 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       required: false,
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_MESSAGE_WEBPATH')
-      }
-    }
+      },
+    },
   ]
   return config
 }
@@ -111,6 +111,6 @@ export default function register(ctx: IPicGo): void {
       return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL')
     },
     handle,
-    config
+    config,
   })
 }

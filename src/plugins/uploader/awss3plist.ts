@@ -36,7 +36,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         item: img,
         acl: (userConfig.acl || 'public-read') as ObjectCannedACL,
         urlPrefix,
-        options: userConfig.options || ''
+        options: userConfig.options || '',
       })
       delete img.buffer
       delete img.base64Image
@@ -49,7 +49,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     ctx.emit(IBuildInEvent.NOTIFICATION, {
       title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
       body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS_AND_NETWORK'),
-      text: ''
+      text: '',
     })
     throw err
   }
@@ -63,7 +63,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     uploadPath: '{year}/{month}/{md5}.{extName}',
     pathStyleAccess: false,
     rejectUnauthorized: false,
-    acl: 'public-read'
+    acl: 'public-read',
   }
   let userConfig = ctx.getConfig<IAwsS3PListUserConfig>('picBed.aws-s3-plist') || {}
   userConfig = { ...defaultConfig, ...userConfig }
@@ -81,7 +81,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_MESSAGE_ACCESSKEYID')
-      }
+      },
     },
     {
       name: 'secretAccessKey',
@@ -96,7 +96,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_MESSAGE_SECRET_ACCESSKEY')
-      }
+      },
     },
     {
       name: 'bucketName',
@@ -111,7 +111,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_MESSAGE_BUCKET')
-      }
+      },
     },
     {
       name: 'uploadPath',
@@ -126,7 +126,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_MESSAGE_UPLOADPATH')
-      }
+      },
     },
     {
       name: 'region',
@@ -141,7 +141,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_MESSAGE_REGION')
-      }
+      },
     },
     {
       name: 'endpoint',
@@ -156,7 +156,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_MESSAGE_ENDPOINT')
-      }
+      },
     },
     {
       name: 'proxy',
@@ -171,7 +171,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_MESSAGE_PROXY')
-      }
+      },
     },
     {
       name: 'urlPrefix',
@@ -186,7 +186,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_MESSAGE_URLPREFIX')
-      }
+      },
     },
     {
       name: 'options',
@@ -201,7 +201,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_MESSAGE_OPTIONS')
-      }
+      },
     },
     {
       name: 'pathStyleAccess',
@@ -216,7 +216,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_MESSAGE_PATHSTYLEACCESS')
-      }
+      },
     },
     {
       name: 'rejectUnauthorized',
@@ -231,7 +231,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_MESSAGE_REJECTUNAUTHORIZED')
-      }
+      },
     },
     {
       name: 'acl',
@@ -244,7 +244,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         'authenticated-read',
         'aws-exec-read',
         'bucket-owner-read',
-        'bucket-owner-full-control'
+        'bucket-owner-full-control',
       ],
       required: false,
       get prefix() {
@@ -255,7 +255,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_MESSAGE_ACL')
-      }
+      },
     },
     {
       name: 'disableBucketPrefixToURL',
@@ -270,8 +270,8 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_MESSAGE_DISABLEBUCKETPREFIXTOURL')
-      }
-    }
+      },
+    },
   ]
   return config
 }
@@ -282,6 +282,6 @@ export default function register(ctx: IPicGo): void {
       return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST')
     },
     handle,
-    config
+    config,
   })
 }

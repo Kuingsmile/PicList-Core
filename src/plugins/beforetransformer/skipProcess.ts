@@ -11,12 +11,12 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       'input',
       userConfig.skipProcessExtList || 'zip,rar,7z,tar,gz,tar.gz,tar.bz2,tar.xz',
       false,
-      'BUILDIN'
-    )
+      'BUILDIN',
+    ),
   ]
   return config
 }
 
 export default {
-  config
+  config,
 }

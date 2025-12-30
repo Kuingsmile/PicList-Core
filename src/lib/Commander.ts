@@ -30,17 +30,17 @@ export class Commander implements ICommander {
       .version(process.env.PICGO_VERSION, '-v, --version')
       .option('-d, --debug', 'debug mode', () => {
         this.ctx.setConfig({
-          debug: true
+          debug: true,
         })
       })
       .option('-s, --silent', 'silent mode', () => {
         this.ctx.setConfig({
-          silent: true
+          silent: true,
         })
       })
       .on('command:*', () => {
         this.ctx.log.error(
-          `Invalid command: ${this.program.args.join(' ')}\nSee --help for a list of available commands.`
+          `Invalid command: ${this.program.args.join(' ')}\nSee --help for a list of available commands.`,
         )
         process.exit(1)
       })

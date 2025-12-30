@@ -24,7 +24,7 @@ import {
   IPicGoPluginInterface,
   IPluginLoader,
   IRequest,
-  IStringKeyMap
+  IStringKeyMap,
 } from '../types'
 import { isConfigKeyInBlackList, isInputConfigValid } from '../utils/common'
 import DB from '../utils/db'
@@ -74,7 +74,7 @@ export class PicGo extends EventEmitter implements IPicGo {
       uploader: new LifecyclePlugins('uploader'),
       beforeTransformPlugins: new LifecyclePlugins('beforeTransformPlugins'),
       beforeUploadPlugins: new LifecyclePlugins('beforeUploadPlugins'),
-      afterUploadPlugins: new LifecyclePlugins('afterUploadPlugins')
+      afterUploadPlugins: new LifecyclePlugins('afterUploadPlugins'),
     }
     this.initConfigPath()
     this.log = new Logger(this)
@@ -188,7 +188,7 @@ export class PicGo extends EventEmitter implements IPicGo {
       set(this._config, name, config[name])
       eventBus.emit(IBusEvent.CONFIG_CHANGE, {
         configName: name,
-        value: config[name]
+        value: config[name],
       })
     })
   }

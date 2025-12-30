@@ -6,7 +6,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   const config: IPluginConfig[] = [
     createField(ctx, 'watermark', 'isAddWatermark', 'confirm', userConfig.isAddWatermark || false, false, 'BUILDIN'),
     createField(ctx, 'watermark', 'watermarkType', 'list', userConfig.watermarkType || 'text', false, 'BUILDIN', {
-      choices: ['text', 'image']
+      choices: ['text', 'image'],
     }),
     createField(
       ctx,
@@ -15,7 +15,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       'confirm',
       userConfig.isFullScreenWatermark || false,
       false,
-      'BUILDIN'
+      'BUILDIN',
     ),
     createField(ctx, 'watermark', 'watermarkDegree', 'input', userConfig.watermarkDegree || 0, false, 'BUILDIN'),
     createField(ctx, 'watermark', 'watermarkText', 'input', userConfig.watermarkText || '', false, 'BUILDIN'),
@@ -27,7 +27,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       'input',
       userConfig.watermarkScaleRatio || 0.15,
       false,
-      'BUILDIN'
+      'BUILDIN',
     ),
     createField(
       ctx,
@@ -36,7 +36,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       'input',
       userConfig.watermarkColor || 'rgba(204, 204, 204, 0.45)',
       false,
-      'BUILDIN'
+      'BUILDIN',
     ),
     createField(ctx, 'watermark', 'watermarkImagePath', 'input', userConfig.watermarkImagePath || '', false, 'BUILDIN'),
     createField(
@@ -46,7 +46,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       'input',
       userConfig.watermarkImageOpacity || 255,
       false,
-      'BUILDIN'
+      'BUILDIN',
     ),
     createField(
       ctx,
@@ -67,14 +67,14 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
           'west',
           'east',
           'center',
-          'centre'
-        ]
-      }
-    )
+          'centre',
+        ],
+      },
+    ),
   ]
   return config
 }
 
 export default {
-  config
+  config,
 }

@@ -12,15 +12,15 @@ const postOptions = (fileName: string, image: Buffer, apiToken: string, domain =
     headers: {
       contentType: 'multipart/form-data',
       'User-Agent': 'PicList',
-      Authorization: apiToken
+      Authorization: apiToken,
     },
     formData: {
       smfile: {
         value: image,
-        options: { filename: fileName }
+        options: { filename: fileName },
       },
-      ssl: 'true'
-    }
+      ssl: 'true',
+    },
   }
 }
 
@@ -49,7 +49,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       img.imgUrl = body.images
       try {
         const uploadHistory = await axios.get(`https://${domain}/api/v2/upload_history`, {
-          headers: { Authorization: smmsConfig.token }
+          headers: { Authorization: smmsConfig.token },
         })
         const matchedImage = uploadHistory.data?.data?.find((image: any) => image.url === body.images)
         if (matchedImage) img.hash = matchedImage.hash
@@ -60,7 +60,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       const errorMsg = body.message || 'Upload failed'
       ctx.emit(IBuildInEvent.NOTIFICATION, {
         title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-        body: errorMsg
+        body: errorMsg,
       })
       throw new Error(errorMsg)
     }
@@ -77,13 +77,13 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     createField(ctx, 'SMMS', 'token', 'input', userConfig.token || '', true, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_SMMS_MESSAGE_TOKEN')
-      }
+      },
     }),
     createField(ctx, 'SMMS', 'backupDomain', 'input', userConfig.backupDomain || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_SMMS_MESSAGE_BACKUP_DOMAIN')
-      }
-    })
+      },
+    }),
   ]
 }
 
@@ -93,6 +93,6 @@ export default function register(ctx: IPicGo): void {
       return ctx.i18n.translate<ILocalesKey>('PICBED_SMMS')
     },
     handle,
-    config
+    config,
   })
 }

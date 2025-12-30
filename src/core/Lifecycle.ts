@@ -16,7 +16,7 @@ import {
   IPathTransformedImgInfo,
   IPicGo,
   IPlugin,
-  Undefinable
+  Undefinable,
 } from '../types'
 import {
   getConvertedFormat,
@@ -31,7 +31,7 @@ import {
   isUrl,
   removeExif,
   renameFileNameWithCustomString,
-  safeParse
+  safeParse,
 } from '../utils/common'
 import { createContext } from '../utils/createContext'
 import { IBuildInEvent } from '../utils/enum'
@@ -44,7 +44,7 @@ const MESSAGES = {
   DOWNLOAD_TTF: 'Download ttf file',
   DOWNLOAD_TTF_SUCCESS: 'Download ttf file successfully',
   DOWNLOAD_TTF_FAILED: 'Download ttf file failed',
-  DOWNLOAD_TTF_SKIP: 'Download ttf file failed, skip add watermark'
+  DOWNLOAD_TTF_SKIP: 'Download ttf file failed, skip add watermark',
 } as const
 
 const PROGRESS = {
@@ -52,7 +52,7 @@ const PROGRESS = {
   TRANSFORM: 30,
   UPLOAD: 60,
   COMPLETE: 100,
-  FAILED: -1
+  FAILED: -1,
 } as const
 
 const DEFAULT_SKIP_EXTENSIONS = ['zip', 'rar', '7z', 'tar', 'gz', 'tar.gz', 'tar.bz2', 'tar.xz']
@@ -88,7 +88,7 @@ export class Lifecycle extends EventEmitter {
       fs.writeFileSync(this.ttfPath, res.data)
       this.ctx.log.info(MESSAGES.DOWNLOAD_TTF_SUCCESS)
       return true
-    } catch (e: any) {
+    } catch (_e: any) {
       this.ctx.log.error(MESSAGES.DOWNLOAD_TTF_FAILED)
       return false
     }
@@ -140,7 +140,7 @@ export class Lifecycle extends EventEmitter {
       skipProcessExtList.map((item: string) => {
         const formattedItem = item.trim().toLowerCase()
         return formattedItem.startsWith('.') ? formattedItem : `.${formattedItem}`
-      })
+      }),
     )
   }
 
@@ -232,12 +232,12 @@ export class Lifecycle extends EventEmitter {
     tempFilePath: string,
     compressOptions: Undefinable<IBuildInCompressOptions>,
     watermarkOptions: Undefinable<IBuildInWaterMarkOptions>,
-    skipExtensions: Set<string>
+    skipExtensions: Set<string>,
   ): Promise<void> {
     await Promise.allSettled(
       ctx.input.map(async (item: string, index: number) => {
         await this.processImage(item, index, ctx, tempFilePath, compressOptions, watermarkOptions, skipExtensions)
-      })
+      }),
     )
   }
 
@@ -248,7 +248,7 @@ export class Lifecycle extends EventEmitter {
     tempFilePath: string,
     compressOptions: Undefinable<IBuildInCompressOptions>,
     watermarkOptions: Undefinable<IBuildInWaterMarkOptions>,
-    skipExtensions: Set<string>
+    skipExtensions: Set<string>,
   ): Promise<void> {
     const itemIsUrl = isUrl(item)
     const info: IPathTransformedImgInfo = itemIsUrl ? await getURLFile(item, ctx) : { success: false }
@@ -268,7 +268,7 @@ export class Lifecycle extends EventEmitter {
       shouldSkipExtension,
       item,
       tempFilePath,
-      ctx
+      ctx,
     )
 
     if (transformedBuffer) {
@@ -281,7 +281,7 @@ export class Lifecycle extends EventEmitter {
         extension,
         compressOptions,
         itemIsUrl,
-        info
+        info,
       )
     }
   }
@@ -294,7 +294,7 @@ export class Lifecycle extends EventEmitter {
     shouldSkipExtension: boolean,
     item: string,
     tempFilePath: string,
-    ctx: IPicGo
+    ctx: IPicGo,
   ): Promise<Buffer | undefined> {
     let transformedBuffer: Buffer | undefined
 
@@ -307,7 +307,7 @@ export class Lifecycle extends EventEmitter {
         compressOptions!,
         item,
         tempFilePath,
-        ctx
+        ctx,
       )
     }
 
@@ -328,7 +328,7 @@ export class Lifecycle extends EventEmitter {
   private async addWatermark(
     fileBuffer: Buffer,
     watermarkOptions: IBuildInWaterMarkOptions,
-    ctx: IPicGo
+    ctx: IPicGo,
   ): Promise<Buffer | undefined> {
     if (!(watermarkOptions?.watermarkFontPath || watermarkOptions?.watermarkType === 'image')) {
       const downloadTTFRet = await this.downloadTTF()
@@ -349,7 +349,7 @@ export class Lifecycle extends EventEmitter {
     compressOptions: IBuildInCompressOptions,
     item: string,
     tempFilePath: string,
-    ctx: IPicGo
+    ctx: IPicGo,
   ): Promise<Buffer> {
     ctx.log.info(MESSAGES.COMPRESS)
     const normalizedExtension = extension.toLowerCase()
@@ -367,12 +367,12 @@ export class Lifecycle extends EventEmitter {
     extension: string,
     tempFilePath: string,
     compressOptions: IBuildInCompressOptions,
-    ctx: IPicGo
+    ctx: IPicGo,
   ): Promise<Buffer> {
     const heicResult = await heicConvert({
       buffer: fileBuffer.buffer,
       format: 'JPEG',
-      quality: 1
+      quality: 1,
     })
     const tempHeicConvertFile = path.join(tempFilePath, `${path.basename(item, extension)}.jpg`)
     fs.writeFileSync(tempHeicConvertFile, Buffer.from(heicResult))
@@ -388,7 +388,7 @@ export class Lifecycle extends EventEmitter {
     extension: string,
     compressOptions: Undefinable<IBuildInCompressOptions>,
     itemIsUrl: boolean,
-    info: IPathTransformedImgInfo
+    info: IPathTransformedImgInfo,
   ): Promise<void> {
     let newExt = compressOptions?.isConvert ? getConvertedFormat(compressOptions, extension) : extension
     newExt = newExt.startsWith('.') ? newExt : `.${newExt}`
@@ -399,7 +399,7 @@ export class Lifecycle extends EventEmitter {
 
     ctx.rawInputPath![index] = path.join(
       path.dirname(item),
-      itemIsUrl ? path.basename(tempFile) : `${path.basename(item, extension)}${newExt}`
+      itemIsUrl ? path.basename(tempFile) : `${path.basename(item, extension)}${newExt}`,
     )
 
     fs.writeFileSync(tempFile, transformedBuffer)
@@ -423,7 +423,7 @@ export class Lifecycle extends EventEmitter {
           ctx.rawInputPath![index],
           format,
           undefined,
-          item.base64Image ? item.base64Image : item.buffer
+          item.base64Image ? item.base64Image : item.buffer,
         )
         fileName = fileName.replace(/\/+/g, '/')
         if (fileName.slice(-1) === '/') {
@@ -523,7 +523,7 @@ export class Lifecycle extends EventEmitter {
           ctx.log.error(`${lifeCycleName}: ${pluginNames[index]} error`)
           throw e
         }
-      })
+      }),
     )
     return ctx
   }

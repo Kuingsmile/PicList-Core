@@ -13,7 +13,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           success: true,
           buffer: item,
           fileName: '',
-          extname: ''
+          extname: '',
         }
       } else if (isUrl(item)) {
         info = await getURLFile(item, ctx)
@@ -28,12 +28,12 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           fileName: info.fileName || `${dayjs().format('YYYYMMDDHHmmssSSS')}${extname}`,
           width: imgSize.width,
           height: imgSize.height,
-          extname: info.extname
+          extname: info.extname,
         }
       } else {
         ctx.log.error(info.reason)
       }
-    })
+    }),
   )
   // remove empty item
   ctx.output = results.filter(item => item)
@@ -54,5 +54,5 @@ const getImgSize = (ctx: IPicGo, file: Buffer, path: string | Buffer): IImgSize 
 }
 
 export default {
-  handle
+  handle,
 }

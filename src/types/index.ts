@@ -179,9 +179,9 @@ export interface IRequest {
       ? IOldReqOptions
       : IRequestConfig<U> extends AxiosRequestConfig
         ? AxiosRequestConfig
-        : never
+        : never,
   >(
-    config: U
+    config: U,
   ) => Promise<IResponse<T, U>>
 }
 
@@ -490,12 +490,12 @@ export interface IPluginHandler {
   install: (
     plugins: string[],
     options: IPluginHandlerOptions,
-    env?: IProcessEnv
+    env?: IProcessEnv,
   ) => Promise<IPluginHandlerResult<boolean>>
   update: (
     plugins: string[],
     options: IPluginHandlerOptions,
-    env?: IProcessEnv
+    env?: IProcessEnv,
   ) => Promise<IPluginHandlerResult<boolean>>
   uninstall: (plugins: string[]) => Promise<IPluginHandlerResult<boolean>>
 }
@@ -650,27 +650,27 @@ export type availableWatermarkPosition = keyof GravityEnum
 
 export interface IBuildInWaterMarkOptions {
   isAddWatermark?: boolean
-  isAddWatermarkMap?: { [key: string]: boolean }
+  isAddWatermarkMap?: Record<string, boolean>
   watermarkType?: 'text' | 'image'
-  watermarkTypeMap?: { [key: string]: 'text' | 'image' }
+  watermarkTypeMap?: Record<string, 'text' | 'image'>
   isFullScreenWatermark?: boolean
-  isFullScreenWatermarkMap?: { [key: string]: boolean }
+  isFullScreenWatermarkMap?: Record<string, boolean>
   watermarkDegree?: number
-  watermarkDegreeMap?: { [key: string]: number }
+  watermarkDegreeMap?: Record<string, number>
   watermarkText?: string
-  watermarkTextMap?: { [key: string]: string }
+  watermarkTextMap?: Record<string, string>
   watermarkFontPath?: string
-  watermarkFontPathMap?: { [key: string]: string }
+  watermarkFontPathMap?: Record<string, string>
   watermarkScaleRatio?: number
-  watermarkScaleRatioMap?: { [key: string]: number }
+  watermarkScaleRatioMap?: Record<string, number>
   watermarkColor?: string
-  watermarkColorMap?: { [key: string]: string }
+  watermarkColorMap?: Record<string, string>
   watermarkImagePath?: string
-  watermarkImagePathMap?: { [key: string]: string }
+  watermarkImagePathMap?: Record<string, string>
   watermarkPosition?: availableWatermarkPosition
-  watermarkPositionMap?: { [key: string]: availableWatermarkPosition }
+  watermarkPositionMap?: Record<string, availableWatermarkPosition>
   watermarkImageOpacity?: number
-  watermarkImageOpacityMap?: { [key: string]: number }
+  watermarkImageOpacityMap?: Record<string, number>
   [propName: string]: any
 }
 
@@ -691,35 +691,35 @@ export interface IBuildInWaterMarkOptionsTreated {
 
 export interface IBuildInCompressOptions {
   quality?: number
-  qualityMap?: { [key: string]: number }
+  qualityMap?: Record<string, number>
   isConvert?: boolean
-  isConvertMap?: { [key: string]: boolean }
+  isConvertMap?: Record<string, boolean>
   convertFormat?: availableConvertFormat
-  convertFormatMap?: { [key: string]: availableConvertFormat }
+  convertFormatMap?: Record<string, availableConvertFormat>
   isReSize?: boolean
-  isReSizeMap?: { [key: string]: boolean }
+  isReSizeMap?: Record<string, boolean>
   reSizeWidth?: number
-  reSizeWidthMap?: { [key: string]: number }
+  reSizeWidthMap?: Record<string, number>
   reSizeHeight?: number
-  reSizeHeightMap?: { [key: string]: number }
+  reSizeHeightMap?: Record<string, number>
   skipReSizeOfSmallImg?: boolean
-  skipReSizeOfSmallImgMap?: { [key: string]: boolean }
+  skipReSizeOfSmallImgMap?: Record<string, boolean>
   isReSizeByPercent?: boolean
-  isReSizeByPercentMap?: { [key: string]: boolean }
+  isReSizeByPercentMap?: Record<string, boolean>
   reSizePercent?: number
-  reSizePercentMap?: { [key: string]: number }
+  reSizePercentMap?: Record<string, number>
   isRotate?: boolean
-  isRotateMap?: { [key: string]: boolean }
+  isRotateMap?: Record<string, boolean>
   rotateDegree?: number
-  rotateDegreeMap?: { [key: string]: number }
+  rotateDegreeMap?: Record<string, number>
   isRemoveExif?: boolean
-  isRemoveExifMap?: { [key: string]: boolean }
+  isRemoveExifMap?: Record<string, boolean>
   isFlip?: boolean
-  isFlipMap?: { [key: string]: boolean }
+  isFlipMap?: Record<string, boolean>
   isFlop?: boolean
-  isFlopMap?: { [key: string]: boolean }
+  isFlopMap?: Record<string, boolean>
   formatConvertObj?: any
-  formatConvertObjMap?: { [key: string]: any }
+  formatConvertObjMap?: Record<string, any>
   [propName: string]: any
 }
 

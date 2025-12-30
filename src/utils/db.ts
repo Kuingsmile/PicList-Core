@@ -18,8 +18,8 @@ class DB {
           uploader: 'smms',
           current: 'smms',
           smms: {
-            token: ''
-          }
+            token: '',
+          },
         })
       } catch (e: any) {
         this.ctx.log.error(e)

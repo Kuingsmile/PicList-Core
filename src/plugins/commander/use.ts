@@ -20,17 +20,17 @@ const use: IPlugin = {
                 choices: ctx.helper.uploader.getIdList().map((item: string) => {
                   return {
                     name: uploaderTranslators(ctx)[item] || item,
-                    value: item
+                    value: item,
                   }
                 }),
-                default: ctx.getConfig('picBed.uploader') || ctx.getConfig('picBed.current') || 'smms'
+                default: ctx.getConfig('picBed.uploader') || ctx.getConfig('picBed.current') || 'smms',
               },
               transformer: {
                 type: 'list',
                 name: 'transformer',
                 message: 'Use a transformer',
                 choices: ctx.helper.transformer.getIdList(),
-                default: ctx.getConfig<Undefinable<string>>('picBed.transformer') || 'path'
+                default: ctx.getConfig<Undefinable<string>>('picBed.transformer') || 'path',
               },
               plugins: {
                 type: 'checkbox',
@@ -38,9 +38,9 @@ const use: IPlugin = {
                 message: 'Use plugins',
                 choices: ctx.pluginLoader.getFullList(),
                 default: Object.keys(ctx.getConfig('picgoPlugins')).filter((item: string) =>
-                  ctx.getConfig(`picgoPlugins.${item}`)
-                )
-              }
+                  ctx.getConfig(`picgoPlugins.${item}`),
+                ),
+              },
             }
             // if an option is specific, then just set this option in config
             if (module) {
@@ -68,14 +68,14 @@ const use: IPlugin = {
               })
               // save config for plugins
               ctx.saveConfig({
-                picgoPlugins: plugins
+                picgoPlugins: plugins,
               })
             }
             // save config for uploader & transformer
             ctx.saveConfig({
               'picBed.current': answer.uploader || ctx.getConfig<string>('picBed.current'),
               'picBed.uploader': answer.uploader || ctx.getConfig<string>('picBed.current'),
-              'picBed.transformer': answer.transformer || 'path'
+              'picBed.transformer': answer.transformer || 'path',
             })
             ctx.log.success('Configure saved successfully!')
           } catch (e: any) {
@@ -88,7 +88,7 @@ const use: IPlugin = {
           ctx.log.error(e)
         })
       })
-  }
+  },
 }
 
 export default use

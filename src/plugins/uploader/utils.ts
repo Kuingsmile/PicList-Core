@@ -5,7 +5,7 @@ export function formatPathHelper({
   path,
   startSlash = false,
   endSlash = true,
-  rootToEmpty = true
+  rootToEmpty = true,
 }: {
   path?: string
   startSlash?: boolean
@@ -42,7 +42,7 @@ export const buildInUploaderNames = {
   smms: 'smms',
   tcyun: 'tcyun',
   upyun: 'upyun',
-  webdavplist: 'webdavplist'
+  webdavplist: 'webdavplist',
 }
 
 export const createField = (
@@ -53,21 +53,21 @@ export const createField = (
   defaultValue: any,
   required: boolean,
   i18nPrefix: string = 'PICBED',
-  extras?: any
+  extras?: any,
 ) => ({
   name,
   type,
   get prefix() {
     return ctx.i18n.translate<ILocalesKey>(
-      `${i18nPrefix}_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey
+      `${i18nPrefix}_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey,
     )
   },
   get alias() {
     return ctx.i18n.translate<ILocalesKey>(
-      `${i18nPrefix}_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey
+      `${i18nPrefix}_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey,
     )
   },
   default: defaultValue,
   required,
-  ...extras
+  ...extras,
 })

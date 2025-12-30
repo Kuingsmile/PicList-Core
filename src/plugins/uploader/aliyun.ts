@@ -22,7 +22,7 @@ const postOptions = (
   options: IAliyunConfig,
   fileName: string,
   signature: string,
-  image: Buffer
+  image: Buffer,
 ): IOldReqOptionsWithFullResponse => ({
   method: 'PUT',
   url: `https://${options.bucket}.${options.area}.aliyuncs.com/${encodePath(`${options.path}${fileName}`)}`,
@@ -30,10 +30,10 @@ const postOptions = (
     Host: `${options.bucket}.${options.area}.aliyuncs.com`,
     Authorization: signature,
     Date: getCurrentUTCDate(),
-    'Content-Type': mime.getType(fileName) || 'application/octet-stream'
+    'Content-Type': mime.getType(fileName) || 'application/octet-stream',
   },
   body: image,
-  resolveWithFullResponse: true
+  resolveWithFullResponse: true,
 })
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
@@ -71,7 +71,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   } catch (err: any) {
     ctx.emit(IBuildInEvent.NOTIFICATION, {
       title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-      body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS')
+      body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS'),
     })
     throw err
   }
@@ -86,28 +86,28 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     createField(ctx, 'alicloud', 'area', 'input', userConfig.area || '', true, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_AREA')
-      }
+      },
     }),
     createField(ctx, 'alicloud', 'path', 'input', userConfig.path || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_PATH')
-      }
+      },
     }),
     createField(ctx, 'alicloud', 'webPath', 'input', userConfig.webPath || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_WEBPATH')
-      }
+      },
     }),
     createField(ctx, 'alicloud', 'customUrl', 'input', userConfig.customUrl || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_CUSTOMURL')
-      }
+      },
     }),
     createField(ctx, 'alicloud', 'options', 'input', userConfig.options || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_OPTIONS')
-      }
-    })
+      },
+    }),
   ]
 }
 
@@ -117,6 +117,6 @@ export default function register(ctx: IPicGo): void {
       return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD')
     },
     handle,
-    config
+    config,
   })
 }

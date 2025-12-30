@@ -81,11 +81,11 @@ const handleResponse = ({
     'Content-Type': 'application/json',
     'access-control-allow-headers': '*',
     'access-control-allow-methods': 'POST, GET, OPTIONS',
-    'access-control-allow-origin': '*'
+    'access-control-allow-origin': '*',
   },
   body = {
-    success: false
-  }
+    success: false,
+  },
 }) => {
   if (body && body.success === false) {
     console.log('[PicList Server] upload failed, see log for more detail ↑')
@@ -148,28 +148,28 @@ const multerStorage = multer.diskStorage({
       file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8')
     }
     cb(null, file.originalname)
-  }
+  },
 })
 
 const uploadMulter = multer({
-  storage: multerStorage
+  storage: multerStorage,
 })
 
 const changeCurrentUploader = (type, config, id) => {
   if (!type) return
   if (id) {
     picgo.saveConfig({
-      [`uploader.${type}.defaultId`]: id
+      [`uploader.${type}.defaultId`]: id,
     })
   }
   if (config) {
     picgo.saveConfig({
-      [`picBed.${type}`]: config
+      [`picBed.${type}`]: config,
     })
   }
   picgo.saveConfig({
     'picBed.current': type,
-    'picBed.uploader': type
+    'picBed.uploader': type,
   })
 }
 
@@ -186,8 +186,8 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
         response,
         body: {
           success: false,
-          message: 'Unauthorized access'
-        }
+          message: 'Unauthorized access',
+        },
       })
     }
 
@@ -209,7 +209,7 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
           needRestore = true
           picgo.saveConfig({
             'picBed.current': picbed,
-            'picBed.uploader': picbed
+            'picBed.uploader': picbed,
           })
         }
         if (currentPicBed[picbed]?._configName) {
@@ -234,16 +234,16 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
           response,
           body: {
             success: true,
-            result: [res]
-          }
+            result: [res],
+          },
         })
       } else {
         handleResponse({
           response,
           body: {
             success: false,
-            message: errorMessage
-          }
+            message: errorMessage,
+          },
         })
       }
     } else {
@@ -259,16 +259,16 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
           response,
           body: {
             success: true,
-            result: res
-          }
+            result: res,
+          },
         })
       } else {
         handleResponse({
           response,
           body: {
             success: false,
-            message: errorMessage
-          }
+            message: errorMessage,
+          },
         })
       }
     }
@@ -276,7 +276,7 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
     if (needRestore) {
       picgo.saveConfig({
         'picBed.current': currentPicBedType,
-        'picBed.uploader': currentPicBedType
+        'picBed.uploader': currentPicBedType,
       })
       if (currentPicBed[picbed]?._configName) {
         changeCurrentUploader(currentPicBedType, currentPicBedConfig, currentPicBedConfigId)
@@ -288,8 +288,8 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
       response,
       body: {
         success: false,
-        message: errorMessage
-      }
+        message: errorMessage,
+      },
     })
   }
 })
@@ -299,8 +299,8 @@ router.any('/heartbeat', async ({ response }) => {
     response,
     body: {
       success: true,
-      result: 'alive'
-    }
+      result: 'alive',
+    },
   })
 })
 
@@ -389,7 +389,7 @@ class Server {
         handleResponse({
           response,
           statusCode: method === 'POST' ? 404 : 404,
-          body: { success: false }
+          body: { success: false },
         })
       } else {
         response.statusCode = 405
@@ -419,8 +419,8 @@ class Server {
               response,
               body: {
                 success: false,
-                message: 'Error processing formData'
-              }
+                message: 'Error processing formData',
+              },
             })
           }
           const list = request.files.map(file => file.path)
@@ -428,7 +428,7 @@ class Server {
             handlerEntry.handler({
               list,
               response,
-              urlparams: urlSP
+              urlparams: urlSP,
             })
           }
         })
@@ -446,7 +446,7 @@ class Server {
               handlerEntry.handler({
                 ...postObj,
                 response,
-                urlparams: urlSP
+                urlparams: urlSP,
               })
             }
           } catch (err) {
@@ -455,8 +455,8 @@ class Server {
               response,
               body: {
                 success: false,
-                message: 'Not sending data in JSON format'
-              }
+                message: 'Not sending data in JSON format',
+              },
             })
           }
         })
@@ -468,7 +468,7 @@ class Server {
       if (handlerEntry.handler) {
         handlerEntry.handler({
           response,
-          urlparams: query ? new URLSearchParams(query) : undefined
+          urlparams: query ? new URLSearchParams(query) : undefined,
         })
       }
 
@@ -493,7 +493,7 @@ class Server {
           await axios.post(ensureHTTPLink(`${probeHost}:${port}/heartbeat`))
           console.log(`[PicList Server] server is already running at ${port}, no need to start again`)
           this.shutdown(true)
-        } catch (e) {
+        } catch (_e) {
           console.log(`[PicList Server] ${port} is busy, trying with port ${port + 1}`)
           this.listen(port + 1)
         }

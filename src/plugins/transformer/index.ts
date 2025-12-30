@@ -7,7 +7,7 @@ const buildInTransformers = () => {
     register(ctx: IPicGo) {
       ctx.helper.transformer.register('path', ImgFromPath)
       ctx.helper.transformer.register('base64', ImgFromBase64)
-    }
+    },
   }
 }
 

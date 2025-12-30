@@ -21,7 +21,7 @@ import type {
   ILogger,
   IPathTransformedImgInfo,
   IPicGo,
-  IPluginNameType
+  IPluginNameType,
 } from '../types'
 
 const mask = 0b111111
@@ -71,7 +71,7 @@ export function renameFileNameWithCustomString(
   oldName: string,
   customFormat: string,
   affixFileName?: string,
-  fileBuffer?: crypto.BinaryLike
+  fileBuffer?: crypto.BinaryLike,
 ): string {
   const now = new Date()
   const year = now.getFullYear().toString()
@@ -90,7 +90,7 @@ export function renameFileNameWithCustomString(
     '{md5-16}': () => getMd5(fileBuffer || filebasename).slice(0, 16),
     '{filename}': () => (affixFileName ? path.basename(affixFileName, path.extname(affixFileName)) : filebasename),
     '{uuid}': () => uuidv4().replace(/-/g, ''),
-    '{timestamp}': () => now.getTime().toString()
+    '{timestamp}': () => now.getTime().toString(),
   }
   if (
     customFormat === undefined ||
@@ -132,7 +132,7 @@ export const isUrlEncode = (url: string): boolean => {
   try {
     // the whole url encode or decode should not use encodeURIComponent or decodeURIComponent
     return url !== decodeURI(url)
-  } catch (e) {
+  } catch (_e) {
     return false
   }
 }
@@ -153,15 +153,15 @@ export const getImageSize = (file: Buffer): IImgSize => {
       real: true,
       width,
       height,
-      extname
+      extname,
     }
-  } catch (e) {
+  } catch (_e) {
     // fallback to 200 * 200
     return {
       real: false,
       width: 200,
       height: 200,
-      extname: '.png'
+      extname: '.png',
     }
   }
 }
@@ -172,12 +172,12 @@ export const getFSFile = async (filePath: string): Promise<IPathTransformedImgIn
       extname: path.extname(filePath),
       fileName: path.basename(filePath),
       buffer: await fs.readFile(filePath),
-      success: true
+      success: true,
     }
   } catch {
     return {
       reason: `read file ${filePath} error`,
-      success: false
+      success: false,
     }
   }
 }
@@ -193,7 +193,7 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
             method: 'get',
             url,
             resolveWithFullResponse: true,
-            responseType: 'arraybuffer'
+            responseType: 'arraybuffer',
           })
           .then(resp => {
             return resp.data as Buffer
@@ -204,7 +204,7 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
         try {
           const urlParams = new URL(url).searchParams
           extname = urlParams.get('wx_fmt') || path.extname(urlPath) || ''
-        } catch (error) {
+        } catch (_e) {
           extname = path.extname(urlPath) || ''
         }
         if (!extname.startsWith('.') && extname) {
@@ -214,14 +214,14 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
           buffer: res,
           fileName: path.basename(urlPath),
           extname,
-          success: true
+          success: true,
         })
       } catch (error: any) {
         clearTimeout(timeoutId)
         resolve({
           success: false,
 
-          reason: `request ${url} error, ${error?.message ?? ''}`
+          reason: `request ${url} error, ${error?.message ?? ''}`,
         })
       }
     })().catch(reject)
@@ -230,7 +230,7 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
     timeoutId = setTimeout(() => {
       resolve({
         success: false,
-        reason: `request ${url} timeout`
+        reason: `request ${url} timeout`,
       })
     }, 30000)
   })
@@ -319,7 +319,7 @@ export const getNormalPluginName = (nameOrPath: string, logger: ILogger | Consol
         const pkg = readJSONSync(packageJSONPath) || {}
         if (!pkg.name?.includes('picgo-plugin-')) {
           logger.warn(
-            `The plugin package.json's name filed is ${(pkg.name as string) || 'empty'}, need to include the prefix: picgo-plugin-`
+            `The plugin package.json's name filed is ${(pkg.name as string) || 'empty'}, need to include the prefix: picgo-plugin-`,
           )
           return ''
         }
@@ -376,7 +376,7 @@ export const isInputConfigValid = (config: any): boolean => {
 export function safeParse<T>(str: string): T | string {
   try {
     return JSON.parse(str)
-  } catch (error) {
+  } catch (_e) {
     return JSON.parse('{}')
   }
 }
@@ -392,7 +392,7 @@ async function text2SVG(
   defaultWatermarkFontPath: string,
   text?: string,
   color?: string,
-  fontFamily?: string
+  fontFamily?: string,
 ): Promise<Buffer> {
   text = !text ? '测试' : text
   fontFamily = !fontFamily ? defaultWatermarkFontPath : fontFamily
@@ -401,8 +401,8 @@ async function text2SVG(
   const options: TextToSVG.GenerationOptions = {
     anchor: 'top',
     attributes: {
-      fill: color
-    }
+      fill: color,
+    },
   }
   const textSVG = text2SVG.getSVG(text, options)
   return Buffer.from(textSVG)
@@ -422,7 +422,7 @@ export async function AddWatermark(
   watermarkColor?: string,
   watermarkImagePath?: string,
   position?: sharp.Gravity,
-  watermarkImageOpacity?: number
+  watermarkImageOpacity?: number,
 ): Promise<Buffer> {
   watermarkScaleRatio =
     !watermarkScaleRatio || watermarkScaleRatio < 0 || watermarkScaleRatio > 1 ? 0.15 : watermarkScaleRatio
@@ -438,15 +438,15 @@ export async function AddWatermark(
     watermarkImagePath,
     imgWidth,
     watermarkDegree,
-    watermarkImageOpacity
+    watermarkImageOpacity,
   )
   return await image
     .composite([
       {
         input: watermark,
         gravity: position || 'southeast',
-        tile: isFullScreenWatermark
-      }
+        tile: isFullScreenWatermark,
+      },
     ])
     .toBuffer()
 }
@@ -461,7 +461,7 @@ async function createWatermark(
   watermarkImagePath?: string,
   imgWidth: number = 200,
   watermarkDegree: number = 0,
-  watermarkImageOpacity: number = 255
+  watermarkImageOpacity: number = 255,
 ): Promise<Buffer> {
   let watermark: any
   if (watermarkType === 'image') {
@@ -474,11 +474,11 @@ async function createWatermark(
           raw: {
             width: 1,
             height: 1,
-            channels: 4
+            channels: 4,
           },
           tile: true,
-          blend: 'dest-in'
-        }
+          blend: 'dest-in',
+        },
       ])
       .toBuffer()
   } else {
@@ -486,7 +486,7 @@ async function createWatermark(
       defaultWatermarkFontPath,
       text,
       watermarkColor,
-      watermarkFontPath || defaultWatermarkFontPath
+      watermarkFontPath || defaultWatermarkFontPath,
     )
   }
   const { width: watermarkWidth, height: watermarkHeight } = await getSize(watermark)
@@ -494,10 +494,10 @@ async function createWatermark(
   const watermarkResizeHeight = Math.floor((watermarkResizeWidth * watermarkHeight) / watermarkWidth)
   return await sharp(watermark)
     .resize(watermarkResizeWidth, watermarkResizeHeight, {
-      fit: 'inside'
+      fit: 'inside',
     })
     .rotate(watermarkDegree, {
-      background: { r: 255, g: 255, b: 255, alpha: 0 }
+      background: { r: 255, g: 255, b: 255, alpha: 0 },
     })
     .toBuffer()
 }
@@ -541,7 +541,7 @@ const availableConvertFormatList = [
   'tiff',
   'tif',
   'v',
-  'webp'
+  'webp',
 ]
 
 /**
@@ -560,14 +560,14 @@ const imageFormatList = [
   'avif',
   'heif',
   'heic',
-  'gif'
+  'gif',
 ]
 
 const validOutputFormat = (format: string): boolean => availableConvertFormatList.includes(format)
 
 export function getTreatedWaterMarkOptions(
   raw: IBuildInWaterMarkOptions | undefined,
-  picBed: string
+  picBed: string,
 ): IBuildInWaterMarkOptionsTreated {
   raw = raw || {}
   const options: IBuildInWaterMarkOptionsTreated = {
@@ -582,14 +582,14 @@ export function getTreatedWaterMarkOptions(
     watermarkImagePath: (raw.watermarkImagePathMap?.[picBed] ?? raw.watermarkImagePath) || '',
     watermarkPosition: (raw.watermarkPositionMap?.[picBed] ?? raw.watermarkPosition) || 'southeast',
     watermarkImageOpacity: forceNumber(raw.watermarkImageOpacityMap?.[picBed] ?? raw.watermarkImageOpacity),
-    picBed
+    picBed,
   }
   return options
 }
 
 export function getTreatedCompressOptions(
   raw: IBuildInCompressOptions | undefined,
-  picBed: string
+  picBed: string,
 ): IBuildInCompressOptionsTreated {
   raw = raw || {}
   const options: IBuildInCompressOptionsTreated = {
@@ -608,7 +608,7 @@ export function getTreatedCompressOptions(
     isFlip: !!(raw.isFlipMap?.[picBed] ?? raw.isFlip),
     isFlop: !!(raw.isFlopMap?.[picBed] ?? raw.isFlop),
     formatConvertObj: (raw.formatConvertObjMap?.[picBed] ?? raw.formatConvertObj) || {},
-    picBed
+    picBed,
   }
   return options
 }
@@ -617,7 +617,7 @@ export async function imageAddWaterMark(
   img: Buffer,
   options: IBuildInWaterMarkOptions,
   defaultWatermarkFontPath: string,
-  logger: ILogger
+  logger: ILogger,
 ): Promise<Buffer> {
   try {
     let image: sharp.Sharp = sharp(img, { animated: true })
@@ -634,9 +634,9 @@ export async function imageAddWaterMark(
         options.watermarkColor,
         options.watermarkImagePath,
         options.watermarkPosition,
-        forceNumber(options.watermarkImageOpacity)
+        forceNumber(options.watermarkImageOpacity),
       ),
-      { animated: true }
+      { animated: true },
     )
     return await image.toBuffer()
   } catch (error: any) {
@@ -663,7 +663,7 @@ function formatOptions(options: IBuildInCompressOptions): IBuildInCompressOption
     isFlop: options.isFlop || false,
     rotateDegree: forceNumber(options.rotateDegree),
     picBed: options.picBed || 'smms',
-    formatConvertObj: formatConvertObj || {}
+    formatConvertObj: formatConvertObj || {},
   }
 }
 
@@ -671,7 +671,7 @@ export async function imageCompress(
   img: Buffer,
   options: IBuildInCompressOptions,
   rawFormat: string,
-  logger: ILogger
+  logger: ILogger,
 ): Promise<Buffer> {
   options = formatOptions(options)
   try {
@@ -691,8 +691,8 @@ export async function imageCompress(
             Math.round((imageWidth * options.reSizePercent!) / 100),
             Math.round((imageHeight * options.reSizePercent!) / 100),
             {
-              fit: 'inside'
-            }
+              fit: 'inside',
+            },
           )
         }
       }
@@ -704,7 +704,7 @@ export async function imageCompress(
         options.reSizeWidth > 0
       ) {
         image = image.resize(options.reSizeWidth, options.reSizeHeight, {
-          fit: 'fill'
+          fit: 'fill',
         })
       } else if (
         typeof options.reSizeHeight === 'number' &&
@@ -717,7 +717,7 @@ export async function imageCompress(
           if (!options.skipReSizeOfSmallImg || (options.skipReSizeOfSmallImg && options.reSizeHeight < imageHeight)) {
             const scaleRatio = options.reSizeHeight / imageHeight
             image = image.resize(Math.round(imageWidth * scaleRatio), options.reSizeHeight, {
-              fit: 'inside'
+              fit: 'inside',
             })
           }
         }
@@ -732,7 +732,7 @@ export async function imageCompress(
           if (!options.skipReSizeOfSmallImg || (options.skipReSizeOfSmallImg && options.reSizeWidth < imageWidth)) {
             const scaleRatio = options.reSizeWidth / imageWidth
             image = image.resize(options.reSizeWidth, Math.round(imageHeight * scaleRatio), {
-              fit: 'inside'
+              fit: 'inside',
             })
           }
         }
@@ -740,7 +740,7 @@ export async function imageCompress(
     }
     if (options.isRotate && options.rotateDegree) {
       image = image.rotate(options.rotateDegree, {
-        background: { r: 255, g: 255, b: 255, alpha: 0 }
+        background: { r: 255, g: 255, b: 255, alpha: 0 },
       })
     }
     if (options.isFlip) {
@@ -754,19 +754,19 @@ export async function imageCompress(
       if (newFormat !== rawFormat) {
         image = image.toFormat(newFormat, {
           quality,
-          mozjpeg: true
+          mozjpeg: true,
         })
       }
     } else {
       if (rawFormat && validOutputFormat(rawFormat)) {
         image = image.toFormat(rawFormat as any, {
           quality,
-          mozjpeg: true
+          mozjpeg: true,
         })
       } else {
         image = image.toFormat('jpg', {
           quality,
-          mozjpeg: true
+          mozjpeg: true,
         })
       }
     }
@@ -804,7 +804,7 @@ export function getConvertedFormat(options: IBuildInCompressOptions | undefined,
 
 export const isNeedAddWatermark = (
   watermarkOptions: IBuildInWaterMarkOptions | undefined,
-  fileExt: string
+  fileExt: string,
 ): boolean => {
   fileExt = normalizeImageExt(fileExt)
   return (
@@ -827,7 +827,7 @@ export const isNeedCompress = (compressOptions: IBuildInCompressOptions | undefi
     isConvert,
     convertFormat,
     isFlip,
-    isFlop
+    isFlop,
   } = formatOptions(compressOptions)
 
   if (validParam(quality) && quality! < 100) return true
@@ -851,6 +851,6 @@ export const removeExif = async (img: Buffer, fileExt: string): Promise<Buffer> 
   fileExt = normalizeImageExt(fileExt)
   if (!imageFormatList.includes(fileExt) || fileExt === 'svg') return img
   return await sharp(img, {
-    animated: true
+    animated: true,
   }).toBuffer()
 }

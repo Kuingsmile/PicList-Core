@@ -6,5 +6,5 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
 }
 
 export default {
-  handle
+  handle,
 }

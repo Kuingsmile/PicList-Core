@@ -24,7 +24,7 @@ class FileNameGenerator {
     'sha1', // sha1
     'sha256', // sha256
     'timestamp', // 当前时间戳, 秒
-    'timestampMS' // 当前时间戳, 毫秒
+    'timestampMS', // 当前时间戳, 毫秒
   ]
 
   constructor(info: IImgInfo) {
@@ -162,7 +162,7 @@ function formatHttpProxyURL(url = ''): string {
   try {
     const { protocol, hostname, port } = new URL(url)
     return `${protocol}//${hostname.replace('127.0.0.1', 'localhost')}:${port}`
-  } catch (e) {
+  } catch (_e) {
     return ''
   }
 }
@@ -170,7 +170,7 @@ function formatHttpProxyURL(url = ''): string {
 export function getProxyAgent(
   proxy: string | undefined,
   sslEnabled: boolean,
-  rejectUnauthorized: boolean
+  rejectUnauthorized: boolean,
 ): HttpProxyAgent | HttpsProxyAgent | undefined {
   const formatedProxy = formatHttpProxyURL(proxy)
   if (!formatedProxy) {
@@ -183,7 +183,7 @@ export function getProxyAgent(
     keepAliveMsecs: 1000,
     scheduling: 'lifo' as 'lifo' | 'fifo' | undefined,
     rejectUnauthorized,
-    proxy: formatedProxy
+    proxy: formatedProxy,
   }
 
   return new Agent(options)

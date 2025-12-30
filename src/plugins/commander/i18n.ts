@@ -16,8 +16,8 @@ const i18n: IPlugin = {
               name: 'i18n',
               choices: list,
               message: 'Choose a language',
-              default: ctx.getConfig('settings.language') || 'zh-CN'
-            }
+              default: ctx.getConfig('settings.language') || 'zh-CN',
+            },
           ]
           const answer = await ctx.cmd.inquirer.prompt<IStringKeyMap<string>>(prompts)
           lang = answer.i18n
@@ -29,7 +29,7 @@ const i18n: IPlugin = {
           ctx.log.success(`Language set to ${lang}`)
         }
       })
-  }
+  },
 }
 
 export default i18n

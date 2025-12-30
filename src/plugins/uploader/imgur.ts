@@ -10,7 +10,7 @@ const postOptions = async (
   ctx: IPicGo,
   options: IImgurConfig,
   fileName: string,
-  imgBase64: string
+  imgBase64: string,
 ): Promise<IOldReqOptions> => {
   const clientId = options.clientId || ''
   const username = options.username || ''
@@ -31,14 +31,14 @@ const postOptions = async (
       Authorization: authorization,
       'content-type': 'multipart/form-data',
       Host: 'api.imgur.com',
-      'User-Agent': 'PicList'
+      'User-Agent': 'PicList',
     },
     formData: {
       image: imgBase64,
       type: 'base64',
       name: fileName,
-      description: 'Uploaded with PicList'
-    }
+      description: 'Uploaded with PicList',
+    },
   }
   if (username && accessToken && album) {
     let initPages = 0
@@ -49,11 +49,11 @@ const postOptions = async (
         method: 'GET',
         url: `https://api.imgur.com/3/account/${username}/albums/${initPages}`,
         headers: {
-          Authorization: authorization
+          Authorization: authorization,
         },
         json: true,
         resolveWithFullResponse: true,
-        timeout: 10000
+        timeout: 10000,
       }
       if (options.proxy) {
         getAlbumHashOptions.proxy = options.proxy
@@ -107,7 +107,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     ctx.emit(IBuildInEvent.NOTIFICATION, {
       title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
       body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS_AND_NETWORK'),
-      text: 'http://docs.imgur.com/api/errno/'
+      text: 'http://docs.imgur.com/api/errno/',
     })
     throw err?.response?.data || err
   }
@@ -129,7 +129,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_MESSAGE_CLIENTID')
       },
       default: userConfig.clientId || '',
-      required: false
+      required: false,
     },
     {
       name: 'username',
@@ -144,7 +144,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_MESSAGE_USERNAME')
       },
       default: userConfig.username || '',
-      required: false
+      required: false,
     },
     {
       name: 'accessToken',
@@ -159,7 +159,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_MESSAGE_ACCESS_TOKEN')
       },
       default: userConfig.accessToken || '',
-      required: false
+      required: false,
     },
     {
       name: 'album',
@@ -174,7 +174,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_MESSAGE_ALBUM')
       },
       default: userConfig.album || '',
-      required: false
+      required: false,
     },
     {
       name: 'proxy',
@@ -189,8 +189,8 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR_MESSAGE_PROXY')
       },
       default: userConfig.proxy || '',
-      required: false
-    }
+      required: false,
+    },
   ]
   return config
 }
@@ -201,6 +201,6 @@ export default function register(ctx: IPicGo): void {
       return ctx.i18n.translate<ILocalesKey>('PICBED_IMGUR')
     },
     handle,
-    config
+    config,
   })
 }

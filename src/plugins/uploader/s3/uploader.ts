@@ -6,7 +6,7 @@ import {
   PutObjectCommand,
   PutObjectCommandOutput,
   S3Client,
-  S3ClientConfig
+  S3ClientConfig,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { NodeHttpHandler, NodeHttpHandlerOptions } from '@smithy/node-http-handler'
@@ -42,11 +42,11 @@ function createS3Client(opts: IAwsS3PListUserConfig): S3Client {
     endpoint: opts.endpoint || undefined,
     credentials: {
       accessKeyId: opts.accessKeyID,
-      secretAccessKey: opts.secretAccessKey
+      secretAccessKey: opts.secretAccessKey,
     },
     tls: sslEnabled,
     forcePathStyle: opts.pathStyleAccess,
-    requestHandler: new NodeHttpHandler(httpHandlerOpts)
+    requestHandler: new NodeHttpHandler(httpHandlerOpts),
   }
 
   return new S3Client(clientOptions)
@@ -75,7 +75,7 @@ async function createUploadTask(opts: ICreateUploadTaskOpts): Promise<IUploadRes
       ACL: opts.acl,
       Body: body,
       ContentType: contentType,
-      ContentEncoding: contentEncoding
+      ContentEncoding: contentEncoding,
     })
 
     const output: PutObjectCommandOutput = await opts.client.send(command)
@@ -96,7 +96,7 @@ async function createUploadTask(opts: ICreateUploadTaskOpts): Promise<IUploadRes
       url,
       imgURL: url,
       versionId: output.VersionId,
-      eTag: output.ETag
+      eTag: output.ETag,
     }
   } catch (err) {
     return Promise.reject(err)
@@ -110,9 +110,9 @@ async function getFileURL(opts: ICreateUploadTaskOpts, eTag: string, versionId: 
       Bucket: opts.bucketName,
       Key: opts.path,
       IfMatch: eTag,
-      VersionId: versionId
+      VersionId: versionId,
     }),
-    { expiresIn: 3600 }
+    { expiresIn: 3600 },
   )
   const urlObject = new url.URL(signedUrl)
   urlObject.search = ''
@@ -121,5 +121,5 @@ async function getFileURL(opts: ICreateUploadTaskOpts, eTag: string, versionId: 
 
 export default {
   createS3Client,
-  createUploadTask
+  createUploadTask,
 }

@@ -8,7 +8,7 @@ const createCommand = (
   description: string,
   alias: string,
   action: actionFunc,
-  options?: { proxy: boolean; registry: boolean }
+  options?: { proxy: boolean; registry: boolean },
 ): void => {
   let program = cmd.program.command(command).description(description).alias(alias)
   if (options?.proxy) {
@@ -35,7 +35,7 @@ const pluginHandler: IPlugin = {
           ctx.log.error(e)
         })
       },
-      { proxy: true, registry: true }
+      { proxy: true, registry: true },
     )
     createCommand(cmd, 'uninstall <plugins...>', 'uninstall picgo plugin', 'rm', (plugins: string[]) => {
       ctx.pluginHandler.uninstall(plugins).catch(e => {
@@ -54,9 +54,9 @@ const pluginHandler: IPlugin = {
           ctx.log.error(e)
         })
       },
-      { proxy: true, registry: true }
+      { proxy: true, registry: true },
     )
-  }
+  },
 }
 
 export default pluginHandler

@@ -26,28 +26,28 @@ const commonOptions = {
   // See https://github.com/rollup/rollup/issues/3684#issuecomment-926558056
   external: [
     ...Object.keys(pkg.dependencies).map(packageName => new RegExp(`^${packageName}(/.*)?`)),
-    ...builtinModules.map(moduleName => new RegExp(`^(node:)?${moduleName}(/.*)?`))
+    ...builtinModules.map(moduleName => new RegExp(`^(node:)?${moduleName}(/.*)?`)),
   ],
   plugins: [
     typescript({
-      tsconfig: './tsconfig.json'
+      tsconfig: './tsconfig.json',
     }),
     copy({
-      targets: [{ src: 'assets', dest: 'dist' }]
+      targets: [{ src: 'assets', dest: 'dist' }],
     }),
     // terser(),
     commonjs(),
     string({
       // Required to be specified
-      include: ['**/*.applescript', '**/*.ps1', '**/*.sh']
+      include: ['**/*.applescript', '**/*.ps1', '**/*.sh'],
     }),
     json(),
     replace({
       'process.env.PICGO_VERSION': JSON.stringify(pkg.version),
-      preventAssignment: true
-    })
+      preventAssignment: true,
+    }),
   ],
-  input
+  input,
 }
 
 const isDev = process.env.NODE_ENV === 'development'
@@ -64,10 +64,10 @@ const nodeEsm = {
       file: 'dist/index.js',
       format: 'esm',
       banner,
-      sourcemap
-    }
+      sourcemap,
+    },
   ],
-  ...commonOptions
+  ...commonOptions,
 }
 
 const bundles = []

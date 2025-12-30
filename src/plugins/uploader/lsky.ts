@@ -38,16 +38,16 @@ const postOptions = (options: ILskyConfig, fileName: string | undefined, image: 
     'Content-Type': 'multipart/form-data',
     'User-Agent': 'PicList',
     Connection: 'keep-alive',
-    token: token || undefined
+    token: token || undefined,
   }
   const v1FormData = {
     image: {
       value: image,
       options: {
-        filename: fileName!
-      }
+        filename: fileName!,
+      },
     },
-    ssl: 'true'
+    ssl: 'true',
   }
 
   const v2Headers = {
@@ -55,7 +55,7 @@ const postOptions = (options: ILskyConfig, fileName: string | undefined, image: 
     'User-Agent': 'PicList',
     Connection: 'keep-alive',
     Accept: 'application/json',
-    Authorization: token || undefined
+    Authorization: token || undefined,
   }
   const strategyId = options.strategyId
   const albumId = options.albumId
@@ -67,13 +67,13 @@ const postOptions = (options: ILskyConfig, fileName: string | undefined, image: 
     file: {
       value: image,
       options: {
-        filename: fileName!
-      }
+        filename: fileName!,
+      },
     },
     ssl: 'true',
     strategy_id: strategyId,
     album_id: albumId,
-    permission
+    permission,
   }
   if (!strategyId) {
     delete v2FormData.strategy_id
@@ -86,14 +86,14 @@ const postOptions = (options: ILskyConfig, fileName: string | undefined, image: 
   }
 
   const requestAgent = new https.Agent({
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
   })
   return {
     method: 'POST',
     url: isV2 ? `${host}/api/v1/upload` : `${host}/api/upload`,
     agent: requestAgent,
     headers: isV2 ? v2Headers : v1Headers,
-    formData: isV2 ? v2FormData : v1FormData
+    formData: isV2 ? v2FormData : v1FormData,
   }
 }
 
@@ -122,7 +122,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     } else {
       ctx.emit(IBuildInEvent.NOTIFICATION, {
         title: 'upload failed',
-        body: body.message
+        body: body.message,
       })
       throw new Error(body.message)
     }
@@ -147,7 +147,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_MESSAGE_VERSION')
       },
       choices: ['V1', 'V2'],
-      required: true
+      required: true,
     },
     {
       name: 'host',
@@ -162,7 +162,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_MESSAGE_HOST')
       },
       default: userConfig.host || '',
-      required: true
+      required: true,
     },
     {
       name: 'token',
@@ -177,7 +177,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_MESSAGE_TOKEN')
       },
       default: userConfig.token,
-      required: true
+      required: true,
     },
     {
       name: 'strategyId',
@@ -192,7 +192,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_MESSAGE_STRATEGY_ID')
-      }
+      },
     },
     {
       name: 'albumId',
@@ -207,7 +207,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_MESSAGE_ALBUM_ID')
-      }
+      },
     },
     {
       name: 'permission',
@@ -216,12 +216,12 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       choices: [
         {
           name: 'private(default)',
-          value: 0
+          value: 0,
         },
         {
           name: 'public',
-          value: 1
-        }
+          value: 1,
+        },
       ],
       required: false,
       get prefix() {
@@ -232,8 +232,8 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       },
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_MESSAGE_PERMISSION')
-      }
-    }
+      },
+    },
   ]
   return config
 }
@@ -244,6 +244,6 @@ export default function register(ctx: IPicGo): void {
       return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_PLIST')
     },
     handle,
-    config
+    config,
   })
 }

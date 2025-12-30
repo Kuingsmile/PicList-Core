@@ -15,7 +15,7 @@ export class Logger implements ILogger {
     [ILogType.success]: 'green',
     [ILogType.info]: 'blue',
     [ILogType.warn]: 'yellow',
-    [ILogType.error]: 'red'
+    [ILogType.error]: 'red',
   }
 
   private readonly ctx: IPicGo
@@ -61,7 +61,7 @@ export class Logger implements ILogger {
       return {
         isLarge: logFileSize > logFileSizeLimit,
         logFileSize,
-        logFileSizeLimit
+        logFileSizeLimit,
       }
     }
     return { isLarge: false }

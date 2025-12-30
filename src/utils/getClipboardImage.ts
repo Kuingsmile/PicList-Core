@@ -30,28 +30,24 @@ const getCurrentPlatform = (): Platform => {
   }
 }
 
-const platform2ScriptContent: {
-  [key in Platform]: string
-} = {
+const platform2ScriptContent: Record<Platform, string> = {
   darwin: macClipboardScript,
   win32: windowsClipboardScript,
   win10: windows10ClipboardScript,
   linux: linuxClipboardScript,
-  wsl: wslClipboardScript
+  wsl: wslClipboardScript,
 }
 
 /**
  * powershell will report error if file does not have a '.ps1' extension,
  * so we should keep the extension name consistent with corresponding shell
  */
-const platform2ScriptFilename: {
-  [key in Platform]: string
-} = {
+const platform2ScriptFilename: Record<Platform, string> = {
   darwin: 'mac.applescript',
   win32: 'windows.ps1',
   win10: 'windows10.ps1',
   linux: 'linux.sh',
-  wsl: 'wsl.sh'
+  wsl: 'wsl.sh',
 }
 
 function createImageFolder(ctx: IPicGo): void {
@@ -88,7 +84,7 @@ const getClipboardImage = async (ctx: IPicGo): Promise<IClipboardImage> => {
         // '-noexit',
         '-file',
         scriptPath,
-        imagePath
+        imagePath,
       ])
     } else {
       execution = spawn('sh', [scriptPath, imagePath])
@@ -99,7 +95,7 @@ const getClipboardImage = async (ctx: IPicGo): Promise<IClipboardImage> => {
         if (data.toString().trim() === 'no xclip or wl-clipboard') {
           ctx.emit(IBuildInEvent.NOTIFICATION, {
             title: 'xclip or wl-clipboard not found',
-            body: 'Please install xclip(for x11) or wl-clipboard(for wayland) before run picgo'
+            body: 'Please install xclip(for x11) or wl-clipboard(for wayland) before run picgo',
           })
           return reject(new Error('Please install xclip(for x11) or wl-clipboard(for wayland) before run picgo'))
         }
@@ -125,7 +121,7 @@ const getClipboardImage = async (ctx: IPicGo): Promise<IClipboardImage> => {
 
       resolve({
         imgPath,
-        shouldKeepAfterUploading
+        shouldKeepAfterUploading,
       })
     })
   })

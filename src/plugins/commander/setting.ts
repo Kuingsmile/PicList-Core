@@ -11,7 +11,7 @@ const BUILDIN_MODULES = {
   compress: { config: compress.config, key: 'BUILDIN_COMPRESS' as ILocalesKey },
   watermark: { config: watermark.config, key: 'BUILDIN_WATERMARK' as ILocalesKey },
   rename: { config: rename.config, key: 'BUILDIN_RENAME' as ILocalesKey },
-  skipProcess: { config: skipProcess.config, key: 'BUILDIN_SKIPPROCESS' as ILocalesKey }
+  skipProcess: { config: skipProcess.config, key: 'BUILDIN_SKIPPROCESS' as ILocalesKey },
 } as const
 
 type BuildinModuleName = keyof typeof BUILDIN_MODULES
@@ -26,11 +26,11 @@ const handleConfig = async (ctx: IPicGo, prompts: IPluginConfig[], module: strin
   if (module === 'uploader') {
     ctx.saveConfig({
       'picBed.current': name,
-      'picBed.uploader': name
+      'picBed.uploader': name,
     })
   } else if (module === 'transformer') {
     ctx.saveConfig({
-      'picBed.transformer': name
+      'picBed.transformer': name,
     })
   }
 }
@@ -39,7 +39,7 @@ const getConfigName = (module: string, name: string): string => {
   const configMap: Record<string, string> = {
     uploader: `picBed.${name}`,
     transformer: `transformer.${name}`,
-    buildin: `buildIn.${name}`
+    buildin: `buildIn.${name}`,
   }
   return configMap[module] || name
 }
@@ -54,7 +54,7 @@ const handleBuildinModule = async (ctx: IPicGo, name?: string): Promise<void> =>
   // Show selection prompt
   const choices = Object.entries(BUILDIN_MODULES).map(([value, { key }]) => ({
     name: ctx.i18n.translate<ILocalesKey>(key),
-    value
+    value,
   }))
 
   const prompts = [
@@ -62,8 +62,8 @@ const handleBuildinModule = async (ctx: IPicGo, name?: string): Promise<void> =>
       type: 'list',
       name: 'buildin',
       choices,
-      message: 'Choose a buildin module'
-    }
+      message: 'Choose a buildin module',
+    },
   ]
 
   const answer = await ctx.cmd.inquirer.prompt<IStringKeyMap<string>>(prompts)
@@ -74,7 +74,7 @@ const handleBuildinModule = async (ctx: IPicGo, name?: string): Promise<void> =>
 const handleUploaderOrTransformer = async (
   ctx: IPicGo,
   module: 'uploader' | 'transformer',
-  name?: string
+  name?: string,
 ): Promise<void> => {
   if (name) {
     const item = ctx.helper[module].get(name)
@@ -91,7 +91,7 @@ const handleUploaderOrTransformer = async (
   // Show selection prompt
   const choices = ctx.helper[module].getIdList().map((item: string) => ({
     name: uploaderTranslators(ctx)[item] || item,
-    value: item
+    value: item,
   }))
 
   const prompts = [
@@ -99,8 +99,8 @@ const handleUploaderOrTransformer = async (
       type: 'list',
       name: module,
       choices,
-      message: `Choose a(n) ${module}`
-    }
+      message: `Choose a(n) ${module}`,
+    },
   ]
 
   const answer = await ctx.cmd.inquirer.prompt<IStringKeyMap<string>>(prompts)
@@ -132,8 +132,8 @@ const handlePlugin = async (ctx: IPicGo, name?: string): Promise<void> => {
       type: 'list',
       name: 'plugin',
       choices: ctx.pluginLoader.getFullList(),
-      message: 'Choose a plugin'
-    }
+      message: 'Choose a plugin',
+    },
   ]
 
   const answer = await ctx.cmd.inquirer.prompt<IStringKeyMap<string>>(prompts)
@@ -186,7 +186,7 @@ const setting = {
           ctx.log.error(e)
         })
       })
-  }
+  },
 }
 
 export default setting

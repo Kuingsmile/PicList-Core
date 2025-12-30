@@ -29,7 +29,7 @@ export class PluginLoader implements IPluginLoader {
         name: 'picgo-plugins',
         description: 'picgo-plugins',
         repository: 'https://github.com/Kuingsmile/PicList-Core',
-        license: 'MIT'
+        license: 'MIT',
       }
       fs.writeFileSync(packagePath, JSON.stringify(pkg), 'utf8')
     }
@@ -39,7 +39,7 @@ export class PluginLoader implements IPluginLoader {
   private resolvePlugin(ctx: IPicGo, name: string): string {
     try {
       return resolve.sync(name, { basedir: ctx.baseDir })
-    } catch (err) {
+    } catch (_e) {
       return path.join(ctx.baseDir, 'node_modules', name)
     }
   }
@@ -85,7 +85,7 @@ export class PluginLoader implements IPluginLoader {
           plugins!.register(this.ctx)
           const plugin = `picgoPlugins[${name}]`
           this.ctx.saveConfig({
-            [plugin]: true
+            [plugin]: true,
           })
         }
       } else {
@@ -104,7 +104,7 @@ export class PluginLoader implements IPluginLoader {
       this.ctx.log.error(e as Error)
       this.ctx.emit(IBuildInEvent.NOTIFICATION, {
         title: `Plugin ${name} Load Error`,
-        body: e
+        body: e,
       })
     }
   }
@@ -134,7 +134,7 @@ export class PluginLoader implements IPluginLoader {
     try {
       // First try to resolve using the resolve library
       pluginPath = this.resolvePlugin(this.ctx, name)
-    } catch (err) {
+    } catch (_e) {
       // Fallback: try to find the entry point manually
       const pluginDir = path.join(this.ctx.baseDir, 'node_modules', name)
       const packageJsonPath = path.join(pluginDir, 'package.json')

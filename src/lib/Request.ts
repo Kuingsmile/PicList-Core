@@ -15,7 +15,7 @@ import type {
   IRequest,
   IRequestConfig,
   IResponse,
-  Undefinable
+  Undefinable,
 } from '../types'
 import { IBusEvent } from '../utils/enum'
 import { eventBus } from '../utils/eventBus'
@@ -23,7 +23,7 @@ import { eventBus } from '../utils/eventBus'
 const httpsAgent = new https.Agent({
   maxVersion: 'TLSv1.2',
   minVersion: 'TLSv1.2',
-  rejectUnauthorized: false
+  rejectUnauthorized: false,
 })
 
 // thanks for https://github.dev/request/request/blob/master/index.js
@@ -44,7 +44,7 @@ function requestInterceptor(options: IOldReqOptions | AxiosRequestConfig): Axios
   } = {
     ...options,
     url: (options.url as string) || '',
-    headers: options.headers || {}
+    headers: options.headers || {},
   }
   // user request config proxy
   if (options.proxy) {
@@ -65,14 +65,14 @@ function requestInterceptor(options: IOldReqOptions | AxiosRequestConfig): Axios
         opt.httpsAgent = httpsOverHttp({
           proxy: {
             host: proxyOptions?.hostname,
-            port: parseInt(proxyOptions?.port, 10)
-          }
+            port: parseInt(proxyOptions?.port, 10),
+          },
         })
       } else {
         opt.proxy = {
           host: proxyOptions.hostname,
           port: parseInt(proxyOptions.port, 10),
-          protocol: 'http'
+          protocol: 'http',
         }
       }
     }
@@ -107,7 +107,7 @@ function responseInterceptor(response: AxiosResponse): IFullResponse {
   return {
     ...response,
     statusCode: response.status,
-    body: response.data
+    body: response.data,
   }
 }
 
@@ -121,8 +121,8 @@ function responseErrorHandler(error: any) {
     response: {
       status: error?.response?.status || 0,
       statusCode: error?.response?.status || 0,
-      body: error?.response?.data || ''
-    }
+      body: error?.response?.data || '',
+    },
   }
   return Promise.reject(errorObj)
 }
@@ -162,9 +162,9 @@ export class Request implements IRequest {
         return {
           host: proxyOptions.hostname,
           port: parseInt(proxyOptions.port || '0', 10),
-          protocol: proxyOptions.protocol
+          protocol: proxyOptions.protocol,
         }
-      } catch (e) {
+      } catch (_e) {
         /* empty */
       }
     }
@@ -178,7 +178,7 @@ export class Request implements IRequest {
       ? IOldReqOptions
       : IRequestConfig<U> extends AxiosRequestConfig
         ? AxiosRequestConfig
-        : never
+        : never,
   >(options: U): Promise<IResponse<T, U>> {
     this.options.proxy = this.handleProxy()
     this.options.headers = options.headers || {}
@@ -188,8 +188,8 @@ export class Request implements IRequest {
       this.options.httpsAgent = httpsOverHttp({
         proxy: {
           host: this.options.proxy.host,
-          port: this.options.proxy.port
-        }
+          port: this.options.proxy.port,
+        },
       })
       this.options.proxy = false
     } else {

@@ -33,7 +33,7 @@ const buildInUploaders = () => {
       tcYunUploader(ctx)
       upYunUploader(ctx)
       webdavplistUploader(ctx)
-    }
+    },
   }
 }
 

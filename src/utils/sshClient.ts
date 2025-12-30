@@ -29,14 +29,14 @@ class SSHClient {
       ? {
           username,
           privateKeyPath: privateKey,
-          passphrase: passphrase || undefined
+          passphrase: passphrase || undefined,
         }
       : { username, password }
     try {
       await this.client.connect({
         host,
         port: Number(port) || 22,
-        ...loginInfo
+        ...loginInfo,
       })
       this.isConnected = true
     } catch (err: any) {

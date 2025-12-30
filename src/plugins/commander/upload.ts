@@ -30,7 +30,7 @@ const upload: IPlugin = {
           ctx.log.error(e)
         })
       })
-  }
+  },
 }
 
 export default upload

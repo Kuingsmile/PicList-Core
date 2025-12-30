@@ -22,7 +22,7 @@ const createWebDAVClient = (config: IWebdavPlistConfig): WebDAVClient => {
     username: config.username,
     password: config.password,
     maxBodyLength: MAX_FILE_SIZE,
-    maxContentLength: MAX_FILE_SIZE
+    maxContentLength: MAX_FILE_SIZE,
   }
 
   if (config.authType === 'digest') {
@@ -44,7 +44,7 @@ const buildImageUrl = (
   webpath: string,
   fileName: string,
   suffix: string,
-  useWebpath: boolean
+  useWebpath: boolean,
 ): string => {
   const pathToUse = useWebpath ? webpath : uploadPath
   const encodedPath = encodePath(`${pathToUse}${fileName}`).replace(/^\/+/g, '')
@@ -62,7 +62,7 @@ const uploadImage = async (
   client: WebDAVClient,
   uploadPath: string,
   fileName: string,
-  imageBuffer: Buffer
+  imageBuffer: Buffer,
 ): Promise<boolean> => {
   const fullUploadDirPath = path.dirname(`${uploadPath}${fileName}`)
   const pathToCreate = fullUploadDirPath === '/' ? '' : fullUploadDirPath
@@ -112,7 +112,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   } catch (err: any) {
     ctx.emit(IBuildInEvent.NOTIFICATION, {
       title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-      body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS')
+      body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS'),
     })
     throw err
   }
@@ -126,41 +126,41 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     createField(ctx, 'webdavplist', 'sslEnabled', 'confirm', !!userConfig.sslEnabled, false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_SSLENABLED')
-      }
+      },
     }),
     createField(ctx, 'webdavplist', 'username', 'input', userConfig.username || '', true, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_USERNAME')
-      }
+      },
     }),
     createField(ctx, 'webdavplist', 'password', 'input', userConfig.password || '', true, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_PASSWORD')
-      }
+      },
     }),
     createField(ctx, 'webdavplist', 'path', 'input', userConfig.path || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_PATH')
-      }
+      },
     }),
     createField(ctx, 'webdavplist', 'webpath', 'input', userConfig.webpath || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_WEBSITE_PATH')
-      }
+      },
     }),
     createField(ctx, 'webdavplist', 'customUrl', 'input', userConfig.customUrl || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_CUSTOMURL')
-      }
+      },
     }),
     createField(ctx, 'webdavplist', 'authType', 'list', userConfig.authType || 'basic', false, undefined, {
-      choices: ['basic', 'digest']
+      choices: ['basic', 'digest'],
     }),
     createField(ctx, 'webdavplist', 'options', 'input', userConfig.options || '', false, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST_MESSAGE_OPTIONS')
-      }
-    })
+      },
+    }),
   ]
 }
 
@@ -170,6 +170,6 @@ export default function register(ctx: IPicGo): void {
       return ctx.i18n.translate<ILocalesKey>('PICBED_WEBDAVPLIST')
     },
     handle,
-    config
+    config,
   })
 }

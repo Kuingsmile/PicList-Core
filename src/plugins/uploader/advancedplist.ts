@@ -10,23 +10,23 @@ const postOptions = (
   method: string,
   headers: Record<string, string>,
   body: Record<string, string>,
-  formDataKey: string
+  formDataKey: string,
 ): IOldReqOptions => ({
   method: method.toUpperCase() as any,
   url: endpoint,
   headers: {
     contentType: 'multipart/form-data',
     'User-Agent': 'PicList',
-    ...headers
+    ...headers,
   },
   formData: {
     [formDataKey]: {
       value: image,
-      options: { filename: fileName }
+      options: { filename: fileName },
     },
-    ...body
+    ...body,
   },
-  json: true
+  json: true,
 })
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
@@ -46,7 +46,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         advancedplistConfig.method || 'POST',
         JSON.parse(advancedplistConfig.headers || '{}'),
         JSON.parse(advancedplistConfig.body || '{}'),
-        advancedplistConfig.formDataKey || 'file'
+        advancedplistConfig.formDataKey || 'file',
       )
 
       let body = (await ctx.request(postConfig)) as any
@@ -78,7 +78,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       } else {
         ctx.emit(IBuildInEvent.NOTIFICATION, {
           title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-          body: body.message
+          body: body.message,
         })
         console.error('AdvancedPlist upload failed:', body)
         throw new Error(body.message)
@@ -96,7 +96,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     type: string,
     defaultValue: any,
     required: boolean = false,
-    extras?: any
+    extras?: any,
   ) => ({
     name,
     type,
@@ -111,7 +111,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     },
     default: userConfig[name as keyof IAdvancedPlistConfig] || defaultValue,
     required,
-    ...extras
+    ...extras,
   })
 
   return [
@@ -122,7 +122,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     createConfigField('body', 'input', '{}'),
     createConfigField('customPrefix', 'input', ''),
     createConfigField('webPath', 'input', ''),
-    createConfigField('resDataPath', 'input', 'data.url')
+    createConfigField('resDataPath', 'input', 'data.url'),
   ]
 }
 
@@ -132,6 +132,6 @@ export default function register(ctx: IPicGo): void {
       return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST')
     },
     handle,
-    config
+    config,
   })
 }

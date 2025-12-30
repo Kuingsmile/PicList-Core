@@ -18,9 +18,9 @@ function postOptions(options: IQiniuConfig, fileName: string, token: string, img
     url: `http://upload${area}.qiniup.com/putb64/-1/key/${base64FileName}`,
     headers: {
       Authorization: `UpToken ${token}`,
-      'Content-Type': mime.getType(fileName) || 'application/octet-stream'
+      'Content-Type': mime.getType(fileName) || 'application/octet-stream',
     },
-    body: imgBase64
+    body: imgBase64,
   }
 }
 
@@ -33,7 +33,7 @@ function getToken(qiniuOptions: any): string {
   const secretKey = qiniuOptions.secretKey
   const mac = new qiniu.auth.digest.Mac(accessKey, secretKey)
   const options = {
-    scope: qiniuOptions.bucket
+    scope: qiniuOptions.bucket,
   }
   const putPolicy = new qiniu.rs.PutPolicy(options)
   return putPolicy.uploadToken(mac)
@@ -61,7 +61,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         } else {
           ctx.emit(IBuildInEvent.NOTIFICATION, {
             title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-            body: body.msg
+            body: body.msg,
           })
           ctx.log.error('qiniu error', body)
           throw new Error('Upload failed')
@@ -76,7 +76,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         const error = err.response.body
         ctx.emit(IBuildInEvent.NOTIFICATION, {
           title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-          body: error.error
+          body: error.error,
         })
       }
     }
@@ -97,7 +97,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_ACCESSKEY')
       },
       default: userConfig.accessKey || '',
-      required: true
+      required: true,
     },
     {
       name: 'secretKey',
@@ -109,7 +109,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_SECRETKEY')
       },
       default: userConfig.secretKey || '',
-      required: true
+      required: true,
     },
     {
       name: 'bucket',
@@ -121,7 +121,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_BUCKET')
       },
       default: userConfig.bucket || '',
-      required: true
+      required: true,
     },
     {
       name: 'url',
@@ -136,7 +136,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_MESSAGE_URL')
       },
       default: userConfig.url || '',
-      required: true
+      required: true,
     },
     {
       name: 'area',
@@ -151,7 +151,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_MESSAGE_AREA')
       },
       default: userConfig.area || '',
-      required: true
+      required: true,
     },
     {
       name: 'options',
@@ -166,7 +166,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_MESSAGE_OPTIONS')
       },
       default: userConfig.options || '',
-      required: false
+      required: false,
     },
     {
       name: 'path',
@@ -181,8 +181,8 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
         return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_MESSAGE_PATH')
       },
       default: userConfig.path || '',
-      required: false
-    }
+      required: false,
+    },
   ]
   return config
 }
@@ -193,6 +193,6 @@ export default function register(ctx: IPicGo): void {
       return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU')
     },
     handle,
-    config
+    config,
   })
 }

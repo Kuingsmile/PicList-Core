@@ -11,14 +11,12 @@ import { EN } from './en'
 import { ILocales, ILocalesKey, ZH_CN } from './zh-CN'
 import { ZH_TW } from './zh-TW'
 
-interface ILocale {
-  [key: string]: any
-}
+type ILocale = Record<string, any>
 
 const languageList: IStringKeyMap<IStringKeyMap<string>> = {
   'zh-CN': ZH_CN,
   'zh-TW': ZH_TW,
-  en: EN
+  en: EN,
 }
 
 class I18nManager implements II18nManager {
@@ -34,7 +32,7 @@ class I18nManager implements II18nManager {
     }
     this.i18n = new I18n({
       adapter: this.objectAdapter,
-      defaultLanguage: language
+      defaultLanguage: language,
     })
     this.loadOutterI18n()
   }
@@ -42,7 +40,7 @@ class I18nManager implements II18nManager {
   private loadOutterI18n(): void {
     const i18nFolder = this.getOutterI18nFolder()
     const files = fs.readdirSync(i18nFolder, {
-      withFileTypes: true
+      withFileTypes: true,
     })
     files.forEach(file => {
       if (file.isFile() && file.name.endsWith('.yml')) {
@@ -73,7 +71,7 @@ class I18nManager implements II18nManager {
   setLanguage(language: string): void {
     this.i18n.setLanguage(language)
     this.ctx.saveConfig({
-      'settings.language': language
+      'settings.language': language,
     })
   }
 

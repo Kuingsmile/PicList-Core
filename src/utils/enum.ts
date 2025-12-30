@@ -2,7 +2,7 @@ export enum ILogType {
   success = 'success',
   info = 'info',
   warn = 'warn',
-  error = 'error'
+  error = 'error',
 }
 
 /**
@@ -18,12 +18,12 @@ export enum IBuildInEvent {
   INSTALL = 'install',
   UNINSTALL = 'uninstall',
   UPDATE = 'update',
-  NOTIFICATION = 'notification'
+  NOTIFICATION = 'notification',
 }
 
 /**
  * these events will be catched only by picgo
  */
 export enum IBusEvent {
-  CONFIG_CHANGE = 'CONFIG_CHANGE'
+  CONFIG_CHANGE = 'CONFIG_CHANGE',
 }
