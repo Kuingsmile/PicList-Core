@@ -97,7 +97,7 @@
     "@aws-sdk/s3-request-presigner": "3.931.0",
     "@piclist/i18n": "^2.0.0",
     "@piclist/store": "^3.0.0",
-    "@smithy/node-http-handler": "4.4.5",
+    "@smithy/node-http-handler": "4.4.7",
     "axios": "^1.13.2",
     "chalk": "^5.4.1",
     "commander": "^8.1.0",
