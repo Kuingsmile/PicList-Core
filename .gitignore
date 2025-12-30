@@ -1,7 +1,12 @@
-node_modules/
-dist/
 .DS_Store
+desktop.ini
+thumbs.db
+
+/node_modules/
+/dist/
+
 yarn-error.log
-temp.js
 package-lock.json
+
+temp.js
 test.jpg
