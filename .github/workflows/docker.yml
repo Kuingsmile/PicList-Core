@@ -5,13 +5,23 @@ on:
     tags:
       - '*'
   workflow_dispatch:
+    inputs:
+      enable_push:
+        description: 'Enable push to Docker Hub'
+        required: true
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        default: 'false'
+
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -27,7 +37,7 @@ jobs:
       with:
         context: .
         file: ./Dockerfile
-        push: true
+        push: ${{ github.event.inputs.enable_push == 'true' }}
         tags: kuingsmile/piclist:latest
         platforms: linux/amd64,linux/arm64
 
