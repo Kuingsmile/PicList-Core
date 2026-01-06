@@ -4,7 +4,6 @@
 
 ![standard](https://img.shields.io/badge/code%20style-standard-green.svg?style=flat-square)
 ![GitHub](https://img.shields.io/github/license/mashape/apistatus.svg?style=flat-square)
-![node](https://img.shields.io/badge/node-%3E%3D16.0.0-blue?style=flat-square)
 
 ![picgo-core](https://cdn.jsdelivr.net/gh/Molunerfinn/test/picgo/picgo-core-fix.jpg)
 

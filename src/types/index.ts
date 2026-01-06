@@ -195,6 +195,7 @@ export interface IImgInfo {
   height?: number
   extname?: string
   imgUrl?: string
+  filePath?: string
   [propName: string]: any
 }
 
