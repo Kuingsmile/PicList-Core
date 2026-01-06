@@ -1,3 +1,16 @@
+##  (2026-01-06)
+
+* :arrow_up: Upgrade(custom): upgrade deps 95477a4
+* :arrow_up: Upgrade(custom): upgrade deps 58be712
+* :bug: Fix(custom): fix an issue where eslint not worked as expected 364ce95
+* :package: Chore(custom): enable conditional push to Docker Hub based on workflow input 0212769
+* :package: Chore(custom): update gitignore file fcb0674
+* :pencil: Docs(custom): update docs b971986
+* Add renovate.json (#22) 484bc1a, closes #22
+* Update dependency @smithy/node-http-handler to v4.4.7 (#23) eb0e239, closes #23
+
+
+
 ##  (2025-11-14)
 
 * :arrow_up: Upgrade(custom): upgrade deps dcb971f
