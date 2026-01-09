@@ -43,9 +43,21 @@ class DB {
     return this.db.read(flush)
   }
 
-  get(key: string = ''): any {
+  getSingle(key = ''): any {
+    if (key === '') {
+      return this.db.read(true)
+    }
     this.read(true)
     return this.db.get(key)
+  }
+
+  get(key: string): any
+  get(key: string[]): any[]
+  get(key: string | string[] = ''): any {
+    if (Array.isArray(key)) {
+      return key.map(k => this.getSingle(k))
+    }
+    return this.getSingle(key)
   }
 
   set(key: string, value: any): void {
@@ -73,6 +85,10 @@ class DB {
     Object.keys(config).forEach((name: string) => {
       this.unset(name, config[name])
     })
+  }
+
+  getConfigPath(): string {
+    return this.ctx.configPath
   }
 }
 
