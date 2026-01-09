@@ -16,6 +16,14 @@ You can refer to the [DeepWiki of PiclList-Core](https://deepwiki.com/Kuingsmile
 
 ## Enhanced Features
 
+- **Multi-configuration support**:
+  - Each uploader supports multiple configurations, compatible with PicList-Desktop config files
+  - List all configurations via `picgo config-list <uploader>`
+  - Switch default configuration via `picgo config-use <uploader> <configName>`
+  - Remove configuration via `picgo config-remove <uploader> <configName>`
+  - Rename configuration via `picgo config-rename <uploader> <oldName> <newName>`
+  - View configuration details via `picgo config-show <uploader> [configName]`
+
 - **Image processing capabilities**:
   - Add watermarks, compress images, and convert formats
   - Configure via `picgo set buildin watermark` and `picgo set buildin compress` CLI commands
@@ -183,25 +191,30 @@ Show help:
 ```bash
 $ picgo -h
 
-  Usage: picgo [options] [command]
+Usage: picgo [options] [command]
 
-  Options:
+Options:
+  -v, --version                                 output the version number
+  -d, --debug                                   debug mode
+  -s, --silent                                  silent mode
+  -c, --config <path>                           set config path
+  -p, --proxy <url>                             set proxy for uploading
+  -h, --help                                    display help for command
 
-    -v, --version                 output the version number
-    -d, --debug                   debug mode
-    -s, --silent                  silent mode
-    -c, --config <path>           set config path
-    -h, --help                    output usage information
-
-  Commands:
-
-    install|add <plugins...>             install picgo plugin
-    uninstall|rm <plugins...>            uninstall picgo plugin
-    update <plugins...>                  update picgo plugin
-    set|config <module> [name]           configure config of picgo modules
-    upload|u [input...]                  upload, go go go
-    use [module]                         use modules of picgo
-    init [options] <template> [project]  create picgo plugin\'s development templates
+Commands:
+  install|add [options] <plugins...>            install picgo plugin
+  uninstall|rm <plugins...>                     uninstall picgo plugin
+  update|up [options] <plugins...>              update picgo plugin
+  config-list <uploader>                        list all configs names for an uploader
+  config-use <uploader> <configName>            set a config as default for an uploader
+  config-remove <uploader> <configName>         remove a config for an uploader
+  config-rename <uploader> <oldName> <newName>  rename a config for an uploader
+  config-show <uploader> [configName]           show details of a config
+  set|config <module> [name] [configName]       configure config of picgo modules, uploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").
+  upload|u [input...]                           upload, go go go
+  use [module]                                  use modules of picgo
+  i18n [lang]                                   change language, zh-CN, zh-TW, en
+  help [command]                                display help for command
 ```
 
 #### Upload a picture from path
@@ -243,7 +256,3 @@ picgo.upload(['/xxx/xxx.jpg'])
 // upload a picture from clipboard
 picgo.upload()
 ```
-
-## Documentation
-
-For more details, you can checkout [documentation of PicGo-Core](https://picgo.github.io/PicGo-Core-Doc/).

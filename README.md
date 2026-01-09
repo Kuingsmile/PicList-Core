@@ -15,6 +15,14 @@ PicList-Core 是一个功能强大的图片上传工具，提供 CLI 和 API 两
 
 ## 增强功能
 
+- **多配置支持**：
+  - 每个图床支持多个配置，兼容桌面版PicList配置文件
+  - 通过 `picgo config-list <uploader>` 列出所有配置
+  - 通过 `picgo config-use <uploader> <configName>` 切换默认配置
+  - 通过 `picgo config-remove <uploader> <configName>` 删除配置
+  - 通过 `picgo config-rename <uploader> <oldName> <newName>` 重命名配置
+  - 通过 `picgo config-show <uploader> [configName]` 查看配置详情
+
 - **图像处理能力**：
   - 添加水印、压缩图片和转换格式
   - 通过 `picgo set buildin watermark` 和 `picgo set buildin compress` CLI 命令进行配置
@@ -182,25 +190,30 @@ $ picgo-server -h
 ```bash
 $ picgo -h
 
-  Usage: picgo [options] [command]
+Usage: picgo [options] [command]
 
-  Options:
+Options:
+  -v, --version                                 output the version number
+  -d, --debug                                   debug mode
+  -s, --silent                                  silent mode
+  -c, --config <path>                           set config path
+  -p, --proxy <url>                             set proxy for uploading
+  -h, --help                                    display help for command
 
-    -v, --version                 输出版本号
-    -d, --debug                   调试模式
-    -s, --silent                  静默模式
-    -c, --config <path>           设置配置路径
-    -h, --help                    输出使用信息
-
-  Commands:
-
-    install|add <plugins...>             安装picgo插件
-    uninstall|rm <plugins...>            卸载picgo插件
-    update <plugins...>                  更新picgo插件
-    set|config <module> [name]           配置picgo模块
-    upload|u [input...]                  上传，开始上传
-    use [module]                         使用picgo模块
-    init [options] <template> [project]  创建picgo插件的开发模板
+Commands:
+  install|add [options] <plugins...>            install picgo plugin
+  uninstall|rm <plugins...>                     uninstall picgo plugin
+  update|up [options] <plugins...>              update picgo plugin
+  config-list <uploader>                        list all configs names for an uploader
+  config-use <uploader> <configName>            set a config as default for an uploader
+  config-remove <uploader> <configName>         remove a config for an uploader
+  config-rename <uploader> <oldName> <newName>  rename a config for an uploader
+  config-show <uploader> [configName]           show details of a config
+  set|config <module> [name] [configName]       configure config of picgo modules, uploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").
+  upload|u [input...]                           upload, go go go
+  use [module]                                  use modules of picgo
+  i18n [lang]                                   change language, zh-CN, zh-TW, en
+  help [command]                                display help for command
 ```
 
 #### 从路径上传图片
@@ -242,7 +255,3 @@ picgo.upload(['/xxx/xxx.jpg'])
 // 从剪贴板上传图片
 picgo.upload()
 ```
-
-## 文档
-
-获取更多详细信息，请查看[PicGo-Core文档](https://picgo.github.io/PicGo-Core-Doc/)。
