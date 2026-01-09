@@ -1,5 +1,6 @@
 import { IPicGo } from '../../types'
 import config from './config'
+import configManager from './configManager'
 import i18n from './i18n'
 import pluginHandler from './pluginHandler'
 import proxy from './proxy'
@@ -10,6 +11,7 @@ import use from './use'
 export default (ctx: IPicGo): void => {
   ctx.cmd.register('pluginHandler', pluginHandler)
   ctx.cmd.register('config', config)
+  ctx.cmd.register('configManager', configManager)
   ctx.cmd.register('setting', setting)
   ctx.cmd.register('upload', upload)
   ctx.cmd.register('use', use)

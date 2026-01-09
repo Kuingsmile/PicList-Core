@@ -16,22 +16,39 @@ const BUILDIN_MODULES = {
 
 type BuildinModuleName = keyof typeof BUILDIN_MODULES
 
-const handleConfig = async (ctx: IPicGo, prompts: IPluginConfig[], module: string, name: string): Promise<void> => {
+const handleConfig = async (
+  ctx: IPicGo,
+  prompts: IPluginConfig[],
+  module: string,
+  name: string,
+  configName?: string,
+): Promise<void> => {
   const answer = await ctx.cmd.inquirer.prompt(prompts)
-  const configName = getConfigName(module, name)
-
-  ctx.saveConfig({ [configName]: answer })
-
-  // Handle additional config for specific modules
+  const configKey = getConfigName(module, name)
   if (module === 'uploader') {
+    const actualConfigName = configName || 'Default'
+    const existingConfig = ctx.configManager.getConfigByName(name, actualConfigName)
+    if (existingConfig) {
+      ctx.configManager.updateUploaderConfig(name, existingConfig._id, answer)
+      ctx.log.success(`Updated config "${actualConfigName}" for ${name}`)
+    } else {
+      const newConfig = ctx.configManager.addUploaderConfig(name, actualConfigName, answer)
+      ctx.log.success(`Created new config "${actualConfigName}" for ${name}`)
+      ctx.configManager.setDefaultConfig(name, newConfig._id)
+    }
+
     ctx.saveConfig({
       'picBed.current': name,
       'picBed.uploader': name,
     })
-  } else if (module === 'transformer') {
-    ctx.saveConfig({
-      'picBed.transformer': name,
-    })
+  } else {
+    ctx.saveConfig({ [configKey]: answer })
+
+    if (module === 'transformer') {
+      ctx.saveConfig({
+        'picBed.transformer': name,
+      })
+    }
   }
 }
 
@@ -75,6 +92,7 @@ const handleUploaderOrTransformer = async (
   ctx: IPicGo,
   module: 'uploader' | 'transformer',
   name?: string,
+  configName?: string,
 ): Promise<void> => {
   if (name) {
     const item = ctx.helper[module].get(name)
@@ -83,7 +101,7 @@ const handleUploaderOrTransformer = async (
       return
     }
     if (item.config) {
-      await handleConfig(ctx, item.config(ctx), module, name)
+      await handleConfig(ctx, item.config(ctx), module, name, configName)
     }
     return
   }
@@ -106,7 +124,7 @@ const handleUploaderOrTransformer = async (
   const answer = await ctx.cmd.inquirer.prompt<IStringKeyMap<string>>(prompts)
   const item = ctx.helper[module].get(answer[module])
   if (item?.config) {
-    await handleConfig(ctx, item.config(ctx), module, answer[module])
+    await handleConfig(ctx, item.config(ctx), module, answer[module], configName)
   }
 }
 
@@ -149,9 +167,11 @@ const setting = {
     cmd.program
       .command('set')
       .alias('config')
-      .arguments('<module> [name]')
-      .description('configure config of picgo modules, uploader|transformer|plugin|buildin')
-      .action((module: string, name: string) => {
+      .arguments('<module> [name] [configName]')
+      .description(
+        'configure config of picgo modules, uploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").',
+      )
+      .action((module: string, name: string, configName?: string) => {
         ;(async () => {
           try {
             // Handle different module types
@@ -161,7 +181,7 @@ const setting = {
                 break
               case 'uploader':
               case 'transformer':
-                await handleUploaderOrTransformer(ctx, module, name)
+                await handleUploaderOrTransformer(ctx, module, name, configName)
                 break
               case 'plugin':
                 await handlePlugin(ctx, name)

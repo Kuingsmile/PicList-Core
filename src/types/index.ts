@@ -2,6 +2,7 @@ import { Command } from 'commander'
 import { Inquirer } from 'inquirer'
 import { FormatEnum, GravityEnum } from 'sharp'
 
+import type { ConfigManager } from '../utils/configManager'
 import { IRequestPromiseOptions } from './oldRequest'
 
 export interface IPicGo extends NodeJS.EventEmitter {
@@ -15,6 +16,7 @@ export interface IPicGo extends NodeJS.EventEmitter {
   processedInput: any[]
   pluginLoader: IPluginLoader
   pluginHandler: IPluginHandler
+  configManager: ConfigManager
   /**
    * @deprecated will be removed in v1.5.0+
    */
@@ -435,6 +437,21 @@ export interface IAwsS3PListUserConfig {
   options?: string
 }
 
+/** Base config item with metadata */
+export interface IConfigItem {
+  _id: string
+  _configName: string
+  _createdAt: number
+  _updatedAt: number
+  [key: string]: any
+}
+
+/** Multi-config structure for uploaders */
+export interface IUploaderConfigList {
+  configList: IConfigItem[]
+  defaultId: string
+}
+
 /** PicGo 配置文件类型定义 */
 export interface IConfig {
   picBed: {
@@ -454,6 +471,8 @@ export interface IConfig {
     proxy?: string
     [others: string]: any
   }
+  /** Multi-config structure for uploaders (new format) */
+  uploader?: Record<string, IUploaderConfigList>
   picgoPlugins: Record<string, boolean>
   debug?: boolean
   silent?: boolean

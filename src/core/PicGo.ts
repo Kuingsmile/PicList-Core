@@ -27,6 +27,7 @@ import {
   IStringKeyMap,
 } from '../types'
 import { isConfigKeyInBlackList, isInputConfigValid } from '../utils/common'
+import { ConfigManager } from '../utils/configManager'
 import DB from '../utils/db'
 import { IBuildInEvent, IBusEvent } from '../utils/enum'
 import { eventBus } from '../utils/eventBus'
@@ -48,6 +49,7 @@ export class PicGo extends EventEmitter implements IPicGo {
   rawInput: any[]
   processedInput: any[]
   pluginHandler: PluginHandler
+  configManager: ConfigManager
   /**
    * @deprecated will be removed in v1.5.0+
    *
@@ -80,6 +82,7 @@ export class PicGo extends EventEmitter implements IPicGo {
     this.log = new Logger(this)
     this.cmd = new Commander(this)
     this.pluginHandler = new PluginHandler(this)
+    this.configManager = new ConfigManager(this)
     this.initConfig()
   }
 
@@ -103,6 +106,7 @@ export class PicGo extends EventEmitter implements IPicGo {
 
   private initConfig(): void {
     this.db = new DB(this)
+    this.configManager = new ConfigManager(this)
     this._config = this.db.read(true) as IConfig
   }
 
