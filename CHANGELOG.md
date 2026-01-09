@@ -1,3 +1,12 @@
+##  (2026-01-09)
+
+* :arrow_up: Upgrade(custom): upgrade to piclist/store 3.0.1 c4aecc8
+* :pencil: Docs(custom): update readme 587d588
+* :sparkles: Feature(custom): db now support multiple config get 47314cc
+* :sparkles: Feature(custom): support multiple uploader config with the same config in PicList desktop 1f145ed
+
+
+
 ##  (2026-01-06)
 
 * :arrow_up: Upgrade(custom): upgrade deps 95477a4
