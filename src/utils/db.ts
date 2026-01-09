@@ -15,8 +15,9 @@ class DB {
     if (!this.db.has('picBed')) {
       try {
         this.db.set('picBed', {
-          uploader: 'smms',
+          //@decprecated
           current: 'smms',
+          uploader: 'smms',
           smms: {
             token: '',
           },
@@ -34,6 +35,8 @@ class DB {
         throw e
       }
     }
+
+    this.read(true)
   }
 
   read(flush?: boolean): IJSON {
