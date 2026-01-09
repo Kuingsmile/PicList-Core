@@ -567,49 +567,86 @@ const imageFormatList = [
 const validOutputFormat = (format: string): boolean => availableConvertFormatList.includes(format)
 
 export function getTreatedWaterMarkOptions(
-  raw: IBuildInWaterMarkOptions | undefined,
+  global: IBuildInWaterMarkOptions | undefined,
+  idSpecificConfig: Partial<IBuildInWaterMarkOptions>,
   picBed: string,
+  id: string,
 ): IBuildInWaterMarkOptionsTreated {
-  raw = raw || {}
+  global = global || {}
   const options: IBuildInWaterMarkOptionsTreated = {
-    isAddWatermark: !!(raw.isAddWatermarkMap?.[picBed] ?? raw.isAddWatermark),
-    watermarkType: (raw.watermarkTypeMap?.[picBed] ?? raw.watermarkType) || 'text',
-    isFullScreenWatermark: !!(raw.isFullScreenWatermarkMap?.[picBed] ?? raw.isFullScreenWatermark),
-    watermarkDegree: forceNumber(raw.watermarkDegreeMap?.[picBed] ?? raw.watermarkDegree),
-    watermarkText: (raw.watermarkTextMap?.[picBed] ?? raw.watermarkText) || '',
-    watermarkFontPath: raw.watermarkFontPath || '',
-    watermarkScaleRatio: forceNumber(raw.watermarkScaleRatioMap?.[picBed] ?? raw.watermarkScaleRatio),
-    watermarkColor: (raw.watermarkColorMap?.[picBed] ?? raw.watermarkColor) || 'rgba(204, 204, 204, 0.45)',
-    watermarkImagePath: (raw.watermarkImagePathMap?.[picBed] ?? raw.watermarkImagePath) || '',
-    watermarkPosition: (raw.watermarkPositionMap?.[picBed] ?? raw.watermarkPosition) || 'southeast',
-    watermarkImageOpacity: forceNumber(raw.watermarkImageOpacityMap?.[picBed] ?? raw.watermarkImageOpacity),
+    isAddWatermark: !!(idSpecificConfig.isAddWatermark ?? global.isAddWatermarkMap?.[picBed] ?? global.isAddWatermark),
+    watermarkType:
+      (idSpecificConfig.watermarkType ?? global.watermarkTypeMap?.[picBed] ?? global.watermarkType) || 'text',
+    isFullScreenWatermark: !!(
+      idSpecificConfig.isFullScreenWatermark ??
+      global.isFullScreenWatermarkMap?.[picBed] ??
+      global.isFullScreenWatermark
+    ),
+    watermarkDegree: forceNumber(
+      idSpecificConfig.watermarkDegree ?? global.watermarkDegreeMap?.[picBed] ?? global.watermarkDegree,
+    ),
+    watermarkText: (idSpecificConfig.watermarkText ?? global.watermarkTextMap?.[picBed] ?? global.watermarkText) || '',
+    watermarkFontPath: (idSpecificConfig.watermarkFontPath ?? global.watermarkFontPath) || '',
+    watermarkScaleRatio: forceNumber(
+      idSpecificConfig.watermarkScaleRatio ?? global.watermarkScaleRatioMap?.[picBed] ?? global.watermarkScaleRatio,
+    ),
+    watermarkColor:
+      (idSpecificConfig.watermarkColor ?? global.watermarkColorMap?.[picBed] ?? global.watermarkColor) ||
+      'rgba(204, 204, 204, 0.45)',
+    watermarkImagePath:
+      (idSpecificConfig.watermarkImagePath ?? global.watermarkImagePathMap?.[picBed] ?? global.watermarkImagePath) ||
+      '',
+    watermarkPosition:
+      (idSpecificConfig.watermarkPosition ?? global.watermarkPositionMap?.[picBed] ?? global.watermarkPosition) ||
+      'southeast',
+    watermarkImageOpacity: forceNumber(
+      idSpecificConfig.watermarkImageOpacity ??
+        global.watermarkImageOpacityMap?.[picBed] ??
+        global.watermarkImageOpacity,
+    ),
     picBed,
+    id,
   }
   return options
 }
 
 export function getTreatedCompressOptions(
-  raw: IBuildInCompressOptions | undefined,
+  global: IBuildInCompressOptions | undefined,
+  idSpecificConfig: Partial<IBuildInCompressOptions>,
   picBed: string,
+  id: string,
 ): IBuildInCompressOptionsTreated {
-  raw = raw || {}
+  global = global || {}
   const options: IBuildInCompressOptionsTreated = {
-    quality: forceNumber(raw.qualityMap?.[picBed] ?? raw.quality),
-    isConvert: !!(raw.isConvertMap?.[picBed] ?? raw.isConvert),
-    convertFormat: (raw.convertFormatMap?.[picBed] ?? raw.convertFormat) || 'jpg',
-    isReSize: !!(raw.isReSizeMap?.[picBed] ?? raw.isReSize),
-    reSizeHeight: forceNumber(raw.reSizeHeightMap?.[picBed] ?? raw.reSizeHeight),
-    reSizeWidth: forceNumber(raw.reSizeWidthMap?.[picBed] ?? raw.reSizeWidth),
-    skipReSizeOfSmallImg: !!(raw.skipReSizeOfSmallImgMap?.[picBed] ?? raw.skipReSizeOfSmallImg),
-    isReSizeByPercent: !!(raw.isReSizeByPercentMap?.[picBed] ?? raw.isReSizeByPercent),
-    reSizePercent: forceNumber(raw.reSizePercentMap?.[picBed] ?? raw.reSizePercent),
-    isRotate: !!(raw.isRotateMap?.[picBed] ?? raw.isRotate),
-    rotateDegree: forceNumber(raw.rotateDegreeMap?.[picBed] ?? raw.rotateDegree),
-    isRemoveExif: !!(raw.isRemoveExifMap?.[picBed] ?? raw.isRemoveExif),
-    isFlip: !!(raw.isFlipMap?.[picBed] ?? raw.isFlip),
-    isFlop: !!(raw.isFlopMap?.[picBed] ?? raw.isFlop),
-    formatConvertObj: (raw.formatConvertObjMap?.[picBed] ?? raw.formatConvertObj) || {},
+    quality: forceNumber(idSpecificConfig.quality ?? global.qualityMap?.[picBed] ?? global.quality),
+    isConvert: !!(idSpecificConfig.isConvert ?? global.isConvertMap?.[picBed] ?? global.isConvert),
+    convertFormat:
+      (idSpecificConfig.convertFormat ?? global.convertFormatMap?.[picBed] ?? global.convertFormat) || 'jpg',
+    isReSize: !!(idSpecificConfig.isReSize ?? global.isReSizeMap?.[picBed] ?? global.isReSize),
+    reSizeHeight: forceNumber(idSpecificConfig.reSizeHeight ?? global.reSizeHeightMap?.[picBed] ?? global.reSizeHeight),
+    reSizeWidth: forceNumber(idSpecificConfig.reSizeWidth ?? global.reSizeWidthMap?.[picBed] ?? global.reSizeWidth),
+    skipReSizeOfSmallImg: !!(
+      idSpecificConfig.skipReSizeOfSmallImg ??
+      global.skipReSizeOfSmallImgMap?.[picBed] ??
+      global.skipReSizeOfSmallImg
+    ),
+    isReSizeByPercent: !!(
+      idSpecificConfig.isReSizeByPercent ??
+      global.isReSizeByPercentMap?.[picBed] ??
+      global.isReSizeByPercent
+    ),
+    reSizePercent: forceNumber(
+      idSpecificConfig.reSizePercent ?? global.reSizePercentMap?.[picBed] ?? global.reSizePercent,
+    ),
+    isRotate: !!(idSpecificConfig.isRotate ?? global.isRotateMap?.[picBed] ?? global.isRotate),
+    rotateDegree: forceNumber(idSpecificConfig.rotateDegree ?? global.rotateDegreeMap?.[picBed] ?? global.rotateDegree),
+    isRemoveExif: !!(idSpecificConfig.isRemoveExif ?? global.isRemoveExifMap?.[picBed] ?? global.isRemoveExif),
+    isFlip: !!(idSpecificConfig.isFlip ?? global.isFlipMap?.[picBed] ?? global.isFlip),
+    isFlop: !!(idSpecificConfig.isFlop ?? global.isFlopMap?.[picBed] ?? global.isFlop),
+    formatConvertObj:
+      (idSpecificConfig.formatConvertObj ?? global.formatConvertObjMap?.[picBed] ?? global.formatConvertObj) || {},
     picBed,
+    id,
   }
   return options
 }

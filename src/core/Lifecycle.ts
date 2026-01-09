@@ -9,6 +9,7 @@ import { cloneDeep } from 'lodash-es'
 
 import {
   IBuildInCompressOptions,
+  IBuildInListItem,
   IBuildInSkipProcessOptions,
   IBuildInWaterMarkOptions,
   IImgInfo,
@@ -16,6 +17,7 @@ import {
   IPathTransformedImgInfo,
   IPicGo,
   IPlugin,
+  IStringKeyMap,
   Undefinable,
 } from '../types'
 import {
@@ -98,43 +100,68 @@ export class Lifecycle extends EventEmitter {
     compressOptions: Undefinable<IBuildInCompressOptions>
     watermarkOptions: Undefinable<IBuildInWaterMarkOptions>
   } {
-    const compressOptions = ctx.getConfig<Undefinable<IBuildInCompressOptions>>('buildIn.compress')
-    const watermarkOptions = ctx.getConfig<Undefinable<IBuildInWaterMarkOptions>>('buildIn.watermark')
+    const compressOptionsGlobal = ctx.getConfig<Undefinable<IBuildInCompressOptions>>('buildIn.compress')
+    const watermarkOptionsGlobal = ctx.getConfig<Undefinable<IBuildInWaterMarkOptions>>('buildIn.watermark')
+    const buildInList = ctx.getConfig<Undefinable<IBuildInListItem[]>>('buildIn.list') || ([] as IBuildInListItem[])
 
-    const type = this.getUploaderType(ctx)
+    const uploaderType = this.getUploaderType(ctx)
+    const idSpecificCompressConfig = buildInList.find(item => item.id === uploaderType.id)?.compress || {}
+    const idSpecificWatermarkConfig = buildInList.find(item => item.id === uploaderType.id)?.watermark || {}
 
-    if (compressOptions) {
-      compressOptions.picBed = type
+    if (compressOptionsGlobal) {
+      compressOptionsGlobal.picBed = uploaderType.picBed
+      compressOptionsGlobal.id = uploaderType.id
       const formatConvertObj =
-        typeof compressOptions.formatConvertObj === 'string'
-          ? safeParse(compressOptions.formatConvertObj)
-          : compressOptions.formatConvertObj
-      compressOptions.formatConvertObj = formatConvertObj
+        typeof compressOptionsGlobal.formatConvertObj === 'string'
+          ? safeParse(compressOptionsGlobal.formatConvertObj)
+          : compressOptionsGlobal.formatConvertObj
+      compressOptionsGlobal.formatConvertObj = formatConvertObj
     }
 
-    if (watermarkOptions) {
-      watermarkOptions.picBed = type
+    if (watermarkOptionsGlobal) {
+      watermarkOptionsGlobal.picBed = uploaderType.picBed
+      watermarkOptionsGlobal.id = uploaderType.id
     }
 
-    const treatedCompressOptions = getTreatedCompressOptions(compressOptions, type)
-    const treatedWatermarkOptions = getTreatedWaterMarkOptions(watermarkOptions, type)
+    const treatedCompressOptions = getTreatedCompressOptions(
+      compressOptionsGlobal,
+      idSpecificCompressConfig,
+      uploaderType.picBed,
+      uploaderType.id,
+    )
+    const treatedWatermarkOptions = getTreatedWaterMarkOptions(
+      watermarkOptionsGlobal,
+      idSpecificWatermarkConfig,
+      uploaderType.picBed,
+      uploaderType.id,
+    )
 
     return { compressOptions: treatedCompressOptions, watermarkOptions: treatedWatermarkOptions }
   }
 
-  private getUploaderType(ctx: IPicGo): string {
-    return (
+  getUploaderType(ctx: IPicGo): {
+    picBed: string
+    id: string
+  } {
+    const picBed =
       ctx.getConfig<Undefinable<string>>('picBed.uploader') ||
       ctx.getConfig<Undefinable<string>>('picBed.current') ||
       DEFAULT_UPLOADER
-    )
+    const picBedConfig = ctx.getConfig<Undefinable<IStringKeyMap<string>>>(`picBed.${picBed}`) || {}
+    const id = picBedConfig._id || ''
+    return { picBed, id }
   }
 
   private getSkipExtensions(ctx: IPicGo): Set<string> {
-    const skipProcess = ctx.getConfig<Undefinable<IBuildInSkipProcessOptions>>('buildIn.skipProcess') || {}
-    const skipProcessExtList = skipProcess.skipProcessExtList
-      ? skipProcess.skipProcessExtList.split(',').map((item: string) => item.trim())
-      : DEFAULT_SKIP_EXTENSIONS
+    const skipProcessGlobal = ctx.getConfig<Undefinable<IBuildInSkipProcessOptions>>('buildIn.skipProcess') || {}
+    const buildInList = ctx.getConfig<Undefinable<IBuildInListItem[]>>('buildIn.list') || ([] as IBuildInListItem[])
+    const uploaderType = this.getUploaderType(ctx)
+    const idSpecificSkipProcessConfig = buildInList.find(item => item.id === uploaderType.id)?.skipProcess || {}
+    const skipProcessExtList = idSpecificSkipProcessConfig.skipProcessExtList
+      ? idSpecificSkipProcessConfig.skipProcessExtList.split(',').map((item: string) => item.trim())
+      : skipProcessGlobal.skipProcessExtList
+        ? skipProcessGlobal.skipProcessExtList.split(',').map((item: string) => item.trim())
+        : DEFAULT_SKIP_EXTENSIONS
 
     return new Set(
       skipProcessExtList.map((item: string) => {
@@ -412,7 +439,14 @@ export class Lifecycle extends EventEmitter {
 
   // Rename functionality
   private async buildInRename(ctx: IPicGo): Promise<IPicGo> {
-    const renameConfig = ctx.getConfig<any>('buildIn.rename') || {}
+    const uploaderType = this.getUploaderType(ctx)
+    const globalRenameConfig = ctx.getConfig<any>('buildIn.rename') || {}
+    const buildInList = ctx.getConfig<Undefinable<IBuildInListItem[]>>('buildIn.list') || ([] as IBuildInListItem[])
+    const idSpecificRenameConfig = buildInList.find(item => item.id === uploaderType.id)?.rename || {}
+    const renameConfig = {
+      ...globalRenameConfig,
+      ...idSpecificRenameConfig,
+    }
     if (!renameConfig.enable) return ctx
 
     const format = renameConfig.format || '{filename}'
@@ -467,17 +501,19 @@ export class Lifecycle extends EventEmitter {
   }
 
   private async doUpload(ctx: IPicGo): Promise<IPicGo> {
-    const type = this.getUploaderType(ctx)
-    let uploader = ctx.helper.uploader.get(type)
-    let currentUploader = type
+    const uploaderType = this.getUploaderType(ctx)
+    let uploader = ctx.helper.uploader.get(uploaderType.picBed)
+    let currentUploader = uploaderType.picBed
 
     if (!uploader) {
-      ctx.log.warn(`Can't find uploader - ${type}, switch to default uploader - ${DEFAULT_UPLOADER}`)
+      ctx.log.warn(`Can't find uploader - ${currentUploader}, switch to default uploader - ${DEFAULT_UPLOADER}`)
       currentUploader = DEFAULT_UPLOADER
       uploader = ctx.helper.uploader.get(DEFAULT_UPLOADER)
     }
 
-    ctx.log.info(`Uploading... Current uploader is [${currentUploader}]`)
+    ctx.log.info(
+      `Uploading... Current uploader is [${currentUploader}] with config id [${uploaderType.id || 'default'}]`,
+    )
     await uploader?.handle(ctx)
 
     for (const outputImg of ctx.output) {

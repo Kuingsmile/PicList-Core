@@ -22,6 +22,7 @@ const handleConfig = async (
   module: string,
   name: string,
   configName?: string,
+  uploaderName?: string,
 ): Promise<void> => {
   const answer = await ctx.cmd.inquirer.prompt(prompts)
   const configKey = getConfigName(module, name)
@@ -41,6 +42,39 @@ const handleConfig = async (
       'picBed.current': name,
       'picBed.uploader': name,
     })
+  } else if (module === 'buildin') {
+    if (uploaderName) {
+      const uploader = ctx.getConfig<any>(`uploader.${uploaderName}`) || {}
+      if (!uploader.configList || uploader.configList.length === 0) {
+        ctx.log.error(`No config found for uploader ${uploaderName}`)
+        return
+      }
+      const idOfConfigName = uploader.configList.find(
+        (item: any) => item._configName === (configName || 'Default'),
+      )?._id
+      if (!idOfConfigName) {
+        ctx.log.error(`No config named "${configName || 'Default'}" found for uploader ${uploaderName}`)
+        return
+      }
+      const buildInList = ctx.getConfig<any[]>('buildIn.list') || []
+      const existingEntryIndex = buildInList.findIndex(item => item.id === idOfConfigName)
+      if (existingEntryIndex !== -1) {
+        buildInList[existingEntryIndex] = {
+          ...buildInList[existingEntryIndex],
+          [name]: answer,
+        }
+      } else {
+        buildInList.push({
+          id: idOfConfigName,
+          [name]: answer,
+        })
+      }
+      ctx.saveConfig({
+        'buildIn.list': buildInList,
+      })
+    } else {
+      ctx.saveConfig({ [configKey]: answer })
+    }
   } else {
     ctx.saveConfig({ [configKey]: answer })
 
@@ -61,10 +95,21 @@ const getConfigName = (module: string, name: string): string => {
   return configMap[module] || name
 }
 
-const handleBuildinModule = async (ctx: IPicGo, name?: string): Promise<void> => {
+const handleBuildinModule = async (
+  ctx: IPicGo,
+  name?: string,
+  configName?: string,
+  uploaderName?: string,
+): Promise<void> => {
   if (name && name in BUILDIN_MODULES) {
     const module = BUILDIN_MODULES[name as BuildinModuleName]
-    await handleConfig(ctx, module.config(ctx), 'buildin', name)
+    await handleConfig(ctx, module.config(ctx), 'buildin', name, configName, uploaderName)
+    return
+  }
+
+  if (name && !(name in BUILDIN_MODULES)) {
+    ctx.log.error(`No buildin module named ${name}`)
+    ctx.log.warn('Available buildin modules are: compress|watermark|rename|skipProcess')
     return
   }
 
@@ -85,7 +130,7 @@ const handleBuildinModule = async (ctx: IPicGo, name?: string): Promise<void> =>
 
   const answer = await ctx.cmd.inquirer.prompt<IStringKeyMap<string>>(prompts)
   const selectedModule = BUILDIN_MODULES[answer.buildin as BuildinModuleName]
-  await handleConfig(ctx, selectedModule.config(ctx), 'buildin', answer.buildin)
+  await handleConfig(ctx, selectedModule.config(ctx), 'buildin', answer.buildin, configName, uploaderName)
 }
 
 const handleUploaderOrTransformer = async (
@@ -167,17 +212,17 @@ const setting = {
     cmd.program
       .command('set')
       .alias('config')
-      .arguments('<module> [name] [configName]')
+      .arguments('<module> [name] [configName] [uploaderName]')
       .description(
-        'configure config of picgo modules, uploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").',
+        'configure config of picgo modules, uploader|transformer|plugin|buildin. For uploader and buildin, configName is optional (defaults to "Default"). For buildin module, uploaderName is the uploader name to which the buildin module config will be linked.',
       )
-      .action((module: string, name: string, configName?: string) => {
+      .action((module: string, name: string, configName?: string, uploaderName?: string) => {
         ;(async () => {
           try {
             // Handle different module types
             switch (module) {
               case 'buildin':
-                await handleBuildinModule(ctx, name)
+                await handleBuildinModule(ctx, name, configName, uploaderName)
                 break
               case 'uploader':
               case 'transformer':
@@ -192,7 +237,7 @@ const setting = {
                 return
             }
 
-            ctx.log.success('Configure config successfully!')
+            ctx.log.success('Configure config done')
             if (module === 'plugin') {
               ctx.log.info("If you want to use this config, please run 'picgo use plugins'")
             }

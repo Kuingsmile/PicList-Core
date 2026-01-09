@@ -765,3 +765,18 @@ export interface IBuildInCompressOptionsTreated {
 export interface IBuildInSkipProcessOptions {
   skipProcessExtList?: string
 }
+
+export interface IBuildInListItem {
+  id: string
+  compress?: Partial<IBuildInCompressOptionsTreated>
+  watermark?: Partial<IBuildInWaterMarkOptionsTreated>
+  skipProcess?: IBuildInSkipProcessOptions
+  rename?: {
+    enable?: boolean
+    format?: string
+  }
+  // settings.autoRename
+  autoRename?: boolean
+  // settings.rename
+  manualRename?: boolean
+}
