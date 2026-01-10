@@ -1,5 +1,11 @@
 ##  (2026-01-10)
 
+* :package: Chore(custom): downgrade sharp ace6ee0
+
+
+
+##  (2026-01-10)
+
 * :sparkles: Feature(custom): support picbed specific compress/watermark/rename/autorename/manualrenam 74e8a6f
 
 
