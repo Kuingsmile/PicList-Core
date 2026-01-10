@@ -1,5 +1,11 @@
 ##  (2026-01-10)
 
+* :bug: Fix(custom): specific sharp to 0.34.4 dee8fac
+
+
+
+##  (2026-01-10)
+
 * :package: Chore(custom): downgrade sharp ace6ee0
 
 
