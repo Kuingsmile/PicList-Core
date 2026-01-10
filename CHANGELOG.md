@@ -1,3 +1,9 @@
+##  (2026-01-10)
+
+* :sparkles: Feature(custom): support picbed specific compress/watermark/rename/autorename/manualrenam 74e8a6f
+
+
+
 ##  (2026-01-09)
 
 * :arrow_up: Upgrade(custom): upgrade to piclist/store 3.0.1 c4aecc8
