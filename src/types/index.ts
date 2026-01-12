@@ -34,7 +34,7 @@ export interface IPicGo extends NodeJS.EventEmitter {
   setConfig: (config: IStringKeyMap<any>) => void
   unsetConfig: (key: string, propName: string) => void
   upload: (input?: any[]) => Promise<IImgInfo[] | Error>
-  uploadReturnCtx: (input?: any[]) => Promise<IPicGo>
+  uploadReturnCtx: (input?: any[]) => Promise<IUploadResultWithBackup>
 }
 
 // plugin config
@@ -779,4 +779,9 @@ export interface IBuildInListItem {
   autoRename?: boolean
   // settings.rename
   manualRename?: boolean
+}
+
+export interface IUploadResultWithBackup {
+  output: IImgInfo[]
+  backupOutput: IImgInfo[]
 }

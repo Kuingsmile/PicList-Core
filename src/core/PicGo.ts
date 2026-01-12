@@ -3,7 +3,7 @@ import { homedir } from 'node:os'
 import path from 'node:path'
 
 import { ensureFileSync, pathExistsSync, remove } from 'fs-extra/esm'
-import { get, set, unset } from 'lodash-es'
+import { cloneDeep, get, set, unset } from 'lodash-es'
 
 import { I18nManager } from '../i18n'
 import { Commander } from '../lib/Commander'
@@ -25,6 +25,7 @@ import {
   IPluginLoader,
   IRequest,
   IStringKeyMap,
+  IUploadResultWithBackup,
 } from '../types'
 import { isConfigKeyInBlackList, isInputConfigValid } from '../utils/common'
 import { ConfigManager } from '../utils/configManager'
@@ -244,15 +245,59 @@ export class PicGo extends EventEmitter implements IPicGo {
     }
   }
 
-  async uploadReturnCtx(input?: any[], skipProcess = false): Promise<IPicGo> {
+  changeCurrentUploader(type: string, config: IStringKeyMap<any>): void {
+    this.saveConfig({
+      [`picBed.${type}`]: config,
+      'picBed.uploader': type,
+      'picBed.current': type,
+    })
+  }
+
+  async uploadReturnCtx(input?: any[]): Promise<IUploadResultWithBackup> {
+    const ctxResult: IUploadResultWithBackup = { output: [], backupOutput: [] }
     if (this.configPath === '') {
       this.log.error('No config file found, please check your config file path')
-      return this
+      return ctxResult
     }
+    const rawInput = cloneDeep(input || [])
+    let enableSecondUploader = this.getConfig<boolean>('settings.enableSecondUploader') || false
+    const secondaryUploaderType = this.getConfig<string>('picBed.secondUploader') || ''
+    const secondUploaderConfig = this.getConfig<IStringKeyMap<any>>('picBed.secondUploaderConfig') || {}
+    if (!secondUploaderConfig || Object.keys(secondUploaderConfig).length === 0) {
+      enableSecondUploader = false
+    }
+    const currentUploader = this.lifecycle.getUploaderType(this)
+    if (!currentUploader.config || Object.keys(currentUploader.config).length === 0) {
+      this.log.error('Current uploader config is empty, please check your settings')
+      return ctxResult
+    }
+    if (secondUploaderConfig._id === currentUploader.id) {
+      this.log.info('The second uploader config is the same as the first uploader, skipping second upload.')
+      enableSecondUploader = false
+    }
+    let initialUploadType = ''
+    let imgPath: string = ''
+    let getClipboardResult: { imgPath: string; shouldKeepAfterUploading: boolean } = {
+      imgPath: '',
+      shouldKeepAfterUploading: false,
+    }
+    let shouldKeepAfterUploading: boolean = false
+    let ctxP: IPicGo
 
-    if (input === undefined || input.length === 0) {
+    // upload the default picbed first
+    if (!(input === undefined || input.length === 0)) {
+      initialUploadType = 'file'
+      ctxP = await this.lifecycle.start(input, false)
+      ctxResult.output = ctxP.output
+    } else {
+      initialUploadType = 'clipboard'
       try {
-        const { imgPath, shouldKeepAfterUploading } = await getClipboardImage(this)
+        getClipboardResult = await getClipboardImage(this)
+        imgPath = getClipboardResult.imgPath
+        shouldKeepAfterUploading = getClipboardResult.shouldKeepAfterUploading
+        if (enableSecondUploader) {
+          shouldKeepAfterUploading = true
+        }
         const cleanup = (): void => {
           if (!shouldKeepAfterUploading) {
             remove(imgPath).catch(e => {
@@ -265,14 +310,49 @@ export class PicGo extends EventEmitter implements IPicGo {
         } else {
           this.once(IBuildInEvent.FAILED, cleanup)
           this.once(IBuildInEvent.FINISHED, cleanup)
-          return await this.lifecycle.start([imgPath], skipProcess)
+          ctxP = await this.lifecycle.start([imgPath], false)
+          ctxResult.output = ctxP.output
         }
       } catch (e) {
         this.emit(IBuildInEvent.FAILED, e)
         throw e
       }
-    } else {
-      return await this.lifecycle.start(input, skipProcess)
     }
+    if (!enableSecondUploader) return ctxResult
+    // upload the second picbed
+    const secondPicBedMode = this.getConfig<string>('settings.secondPicBedMode')
+    let ctxOofSecond: IPicGo
+    if (!secondUploaderConfig || Object.keys(secondUploaderConfig).length === 0) {
+      this.log.error('Second uploader config is empty, please check your settings')
+      return ctxResult
+    }
+    this.changeCurrentUploader(secondaryUploaderType, secondUploaderConfig)
+    try {
+      if (secondPicBedMode === 'seperate') {
+        if (initialUploadType === 'clipboard') {
+          const cleanupForSecond = (): void => {
+            if (!getClipboardResult.shouldKeepAfterUploading) {
+              remove(imgPath).catch(e => {
+                this.log.error(e)
+              })
+            }
+          }
+          this.once(IBuildInEvent.FAILED, cleanupForSecond)
+          this.once(IBuildInEvent.FINISHED, cleanupForSecond)
+        }
+        ctxOofSecond = await this.lifecycle.start(
+          initialUploadType === 'file' ? rawInput : [getClipboardResult.imgPath],
+          false,
+        )
+      } else {
+        ctxOofSecond = await this.lifecycle.start(ctxP.processedInput, true)
+      }
+      ctxResult.backupOutput = ctxOofSecond.output
+    } catch (e: any) {
+      this.log.error('Failed to upload to second uploader:', e)
+    } finally {
+      this.changeCurrentUploader(currentUploader.picBed, currentUploader.config || {})
+    }
+    return ctxResult
   }
 }

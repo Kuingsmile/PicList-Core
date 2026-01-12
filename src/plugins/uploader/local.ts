@@ -28,8 +28,11 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'local')
         const fileImgTempPath = path.join(imgTempPath, img.fileName)
         const fileUploadPath = path.join(uploadPath, img.fileName)
-        ensureDirSync(path.dirname(fileUploadPath))
-        ensureDirSync(path.dirname(fileImgTempPath))
+        try {
+          // simply ensure the directory exists, ignore errors
+          ensureDirSync(path.dirname(fileUploadPath))
+          ensureDirSync(path.dirname(fileImgTempPath))
+        } catch (_e) {}
         fs.writeFileSync(fileUploadPath, image)
         fs.copyFileSync(fileUploadPath, fileImgTempPath)
         delete img.base64Image

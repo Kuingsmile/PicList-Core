@@ -142,6 +142,7 @@ export class Lifecycle extends EventEmitter {
   getUploaderType(ctx: IPicGo): {
     picBed: string
     id: string
+    config?: IStringKeyMap<any>
   } {
     const picBed =
       ctx.getConfig<Undefinable<string>>('picBed.uploader') ||
@@ -149,7 +150,7 @@ export class Lifecycle extends EventEmitter {
       DEFAULT_UPLOADER
     const picBedConfig = ctx.getConfig<Undefinable<IStringKeyMap<string>>>(`picBed.${picBed}`) || {}
     const id = picBedConfig._id || ''
-    return { picBed, id }
+    return { picBed, id, config: picBedConfig }
   }
 
   private getSkipExtensions(ctx: IPicGo): Set<string> {
@@ -192,6 +193,7 @@ export class Lifecycle extends EventEmitter {
   private initializeContext(ctx: IPicGo, input: any[]): void {
     ctx.input = input
     ctx.output = [] as IImgInfo[]
+    ctx.processedInput = [] as any[]
     ctx.rawInputPath = [] as string[]
     ctx.rawInput = cloneDeep(input)
   }
@@ -504,7 +506,6 @@ export class Lifecycle extends EventEmitter {
     const uploaderType = this.getUploaderType(ctx)
     let uploader = ctx.helper.uploader.get(uploaderType.picBed)
     let currentUploader = uploaderType.picBed
-
     if (!uploader) {
       ctx.log.warn(`Can't find uploader - ${currentUploader}, switch to default uploader - ${DEFAULT_UPLOADER}`)
       currentUploader = DEFAULT_UPLOADER
