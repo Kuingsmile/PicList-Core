@@ -1,3 +1,10 @@
+##  (2026-01-12)
+
+* :sparkles: Feature(custom): support secondary picbed upload in cli 1083185, closes #26
+* :sparkles: Feature(custom): support secondary upload for server 2fd6a6f
+
+
+
 ##  (2026-01-10)
 
 * :bug: Fix(custom): specific sharp to 0.34.4 dee8fac
