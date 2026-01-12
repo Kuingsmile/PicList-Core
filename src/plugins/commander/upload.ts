@@ -25,7 +25,7 @@ const upload: IPlugin = {
               }
               return exist
             })
-          await ctx.upload(inputList)
+          await ctx.uploadReturnCtx(inputList)
         })().catch(e => {
           ctx.log.error(e)
         })
