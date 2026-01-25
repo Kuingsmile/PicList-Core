@@ -254,7 +254,7 @@ export class PicGo extends EventEmitter implements IPicGo {
   }
 
   async uploadReturnCtx(input?: any[]): Promise<IUploadResultWithBackup> {
-    const ctxResult: IUploadResultWithBackup = { output: [], backupOutput: [] }
+    const ctxResult: IUploadResultWithBackup = { output: [], backupOutput: [], ctx: this }
     if (this.configPath === '') {
       this.log.error('No config file found, please check your config file path')
       return ctxResult

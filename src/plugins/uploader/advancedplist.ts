@@ -1,19 +1,24 @@
+import path from 'node:path'
+
+import fs from 'fs-extra'
+
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IAdvancedPlistConfig, IOldReqOptions, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { runScript } from '../../utils/runScripts'
 import { buildInUploaderNames } from './utils'
 
 const postOptions = (
   image: Buffer,
   fileName: string,
-  endpoint: string,
+  endpoint: string | undefined,
   method: string,
   headers: Record<string, string>,
   body: Record<string, string>,
   formDataKey: string,
 ): IOldReqOptions => ({
   method: method.toUpperCase() as any,
-  url: endpoint,
+  url: endpoint || '',
   headers: {
     contentType: 'multipart/form-data',
     'User-Agent': 'PicList',
@@ -32,7 +37,25 @@ const postOptions = (
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const advancedplistConfig = ctx.getConfig<IAdvancedPlistConfig>('picBed.advancedplist')
   if (!advancedplistConfig) throw new Error('Can not find advancedplist config')
-
+  if (advancedplistConfig.uploadScriptName) {
+    try {
+      // Run custom upload script
+      const scriptName = advancedplistConfig.uploadScriptName
+      const scriptPath = path.join(
+        ctx.baseDir,
+        'scripts',
+        'uploader',
+        'advancedplist',
+        `${scriptName.endsWith('.js') ? scriptName : scriptName + '.js'}`,
+      )
+      const scriptContent = await fs.readFile(scriptPath, 'utf-8')
+      ctx = await runScript(ctx, scriptContent)
+      return ctx
+    } catch (err: any) {
+      ctx.log.error('AdvancedPlist upload script error:', err)
+      throw new Error(`AdvancedPlist upload script error: ${err}`)
+    }
+  }
   const imgList = ctx.output
   for (const img of imgList) {
     if (img.fileName && img.buffer) {
@@ -63,7 +86,6 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           break
         }
       }
-
       if (imageUrl && typeof imageUrl === 'string') {
         delete img.base64Image
         delete img.buffer
@@ -115,7 +137,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   })
 
   return [
-    createConfigField('endpoint', 'input', '', true),
+    createConfigField('endpoint', 'input', '', false),
     createConfigField('method', 'list', 'POST', false, { choices: ['POST', 'PUT', 'GET'] }),
     createConfigField('formDataKey', 'input', 'file'),
     createConfigField('headers', 'input', '{}'),
@@ -123,6 +145,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     createConfigField('customPrefix', 'input', ''),
     createConfigField('webPath', 'input', ''),
     createConfigField('resDataPath', 'input', 'data.url'),
+    createConfigField('uploadScriptName', 'input', ''),
   ]
 }
 

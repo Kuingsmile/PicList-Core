@@ -225,7 +225,7 @@ export interface ISmmsConfig {
 
 /** 内置高级自定义图床 */
 export interface IAdvancedPlistConfig {
-  endpoint: string
+  endpoint?: string
   method?: string
   formDataKey?: string
   headers?: string
@@ -233,6 +233,7 @@ export interface IAdvancedPlistConfig {
   resDataPath?: string
   customPrefix?: string
   webPath?: string
+  uploadScriptName?: string
 }
 
 /** 内置alist 图床配置项 */
@@ -784,4 +785,18 @@ export interface IBuildInListItem {
 export interface IUploadResultWithBackup {
   output: IImgInfo[]
   backupOutput: IImgInfo[]
+  ctx?: IPicGo
 }
+
+export type IScriptLifecycle =
+  | 'onSoftwareOpen'
+  | 'onSoftwareClose'
+  | 'preProcess'
+  | 'beforeTransform'
+  | 'transform'
+  | 'beforeUpload'
+  | 'upload'
+  | 'afterUpload'
+  | 'onUploadSuccess'
+  | 'onUploadFailure'
+  | 'onGalleryRemove'

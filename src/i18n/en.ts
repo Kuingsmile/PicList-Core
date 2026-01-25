@@ -33,6 +33,8 @@ export const EN: ILocales = {
   PICBED_ADVANCEDPLIST_MESSAGE_WEBPATH: 'Used to generate URL path',
   PICBED_ADVANCEDPLIST_RESDATAPATH: 'Set Response Data Path',
   PICBED_ADVANCEDPLIST_MESSAGE_RESDATAPATH: 'e.g. data.url',
+  PICBED_ADVANCEDPLIST_UPLOADSCRIPTNAME: 'Set Upload Script Name',
+  PICBED_ADVANCEDPLIST_MESSAGE_UPLOADSCRIPTNAME: 'Please enter the upload script name stored in PicList scripts',
   // local
   PICBED_LOCAL: 'Local',
   PICBED_LOCAL_PATH: 'Set Path',
