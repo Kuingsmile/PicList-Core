@@ -1,3 +1,9 @@
+##  (2026-01-25)
+
+* :bug: Fix(custom): fix config migrate issue d79dee0, closes #40
+
+
+
 ##  (2026-01-12)
 
 * :sparkles: Feature(custom): support secondary picbed upload in cli 1083185, closes #26
