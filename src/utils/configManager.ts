@@ -46,6 +46,9 @@ export class ConfigManager {
         configList: [],
         defaultId: '',
       }
+      this.ctx.saveConfig({
+        uploader: config.uploader,
+      })
     }
   }
 
@@ -199,8 +202,8 @@ export class ConfigManager {
   getConfigByName(uploaderName: string, configName: string): IConfigItem | null {
     this.migrateToMultiConfig(uploaderName)
 
-    const uploaderData = this.ctx.getConfig<IUploaderConfigList>(`uploader.${uploaderName}`)
-    return uploaderData.configList.find(item => item._configName === configName) || null
+    const uploaderData = this.ctx.getConfig<IUploaderConfigList>(`uploader.${uploaderName}`) || {}
+    return uploaderData?.configList?.find(item => item._configName === configName) || null
   }
 
   renameConfig(uploaderName: string, configId: string, newName: string): boolean {
