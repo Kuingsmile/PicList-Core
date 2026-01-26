@@ -254,7 +254,7 @@ export class PicGo extends EventEmitter implements IPicGo {
   }
 
   async uploadReturnCtx(input?: any[]): Promise<IUploadResultWithBackup> {
-    const ctxResult: IUploadResultWithBackup = { output: [], backupOutput: [], ctx: this }
+    const ctxResult: IUploadResultWithBackup = { ctx: this, backupCtx: undefined }
     if (this.configPath === '') {
       this.log.error('No config file found, please check your config file path')
       return ctxResult
@@ -288,7 +288,7 @@ export class PicGo extends EventEmitter implements IPicGo {
     if (!(input === undefined || input.length === 0)) {
       initialUploadType = 'file'
       ctxP = await this.lifecycle.start(input, false)
-      ctxResult.output = ctxP.output
+      ctxResult.ctx = ctxP
     } else {
       initialUploadType = 'clipboard'
       try {
@@ -311,7 +311,7 @@ export class PicGo extends EventEmitter implements IPicGo {
           this.once(IBuildInEvent.FAILED, cleanup)
           this.once(IBuildInEvent.FINISHED, cleanup)
           ctxP = await this.lifecycle.start([imgPath], false)
-          ctxResult.output = ctxP.output
+          ctxResult.ctx = ctxP
         }
       } catch (e) {
         this.emit(IBuildInEvent.FAILED, e)
@@ -347,7 +347,7 @@ export class PicGo extends EventEmitter implements IPicGo {
       } else {
         ctxOofSecond = await this.lifecycle.start(ctxP.processedInput, true)
       }
-      ctxResult.backupOutput = ctxOofSecond.output
+      ctxResult.backupCtx = ctxOofSecond
     } catch (e: any) {
       this.log.error('Failed to upload to second uploader:', e)
     } finally {

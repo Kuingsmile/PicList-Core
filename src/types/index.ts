@@ -783,9 +783,8 @@ export interface IBuildInListItem {
 }
 
 export interface IUploadResultWithBackup {
-  output: IImgInfo[]
-  backupOutput: IImgInfo[]
   ctx?: IPicGo
+  backupCtx?: IPicGo
 }
 
 export type IScriptLifecycle =

@@ -39,7 +39,6 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   if (!advancedplistConfig) throw new Error('Can not find advancedplist config')
   if (advancedplistConfig.uploadScriptName) {
     try {
-      // Run custom upload script
       const scriptName = advancedplistConfig.uploadScriptName
       const scriptPath = path.join(
         ctx.baseDir,
@@ -49,7 +48,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         `${scriptName.endsWith('.js') ? scriptName : scriptName + '.js'}`,
       )
       const scriptContent = await fs.readFile(scriptPath, 'utf-8')
-      ctx = await runScript(ctx, scriptContent)
+      ctx = await runScript(ctx, scriptContent, {})
       return ctx
     } catch (err: any) {
       ctx.log.error('AdvancedPlist upload script error:', err)
@@ -137,6 +136,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   })
 
   return [
+    createConfigField('uploadScriptName', 'input', ''),
     createConfigField('endpoint', 'input', '', false),
     createConfigField('method', 'list', 'POST', false, { choices: ['POST', 'PUT', 'GET'] }),
     createConfigField('formDataKey', 'input', 'file'),
@@ -145,7 +145,6 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     createConfigField('customPrefix', 'input', ''),
     createConfigField('webPath', 'input', ''),
     createConfigField('resDataPath', 'input', 'data.url'),
-    createConfigField('uploadScriptName', 'input', ''),
   ]
 }
 

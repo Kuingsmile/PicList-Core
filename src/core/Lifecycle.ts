@@ -37,6 +37,7 @@ import {
 } from '../utils/common'
 import { createContext } from '../utils/createContext'
 import { IBuildInEvent } from '../utils/enum'
+import { ScriptHandler } from '../utils/runScripts'
 
 // Constants
 const MESSAGES = {
@@ -199,24 +200,35 @@ export class Lifecycle extends EventEmitter {
   }
 
   private async handleSkipProcess(ctx: IPicGo): Promise<IPicGo> {
-    ctx.log.info('Skip process.')
+    const handler = new ScriptHandler(ctx)
+    await handler.refreshCache()
     ctx.output = ctx.input
     await this.doUpload(ctx)
+    await handler.runStage('upload')
     ctx.input = ctx.rawInput
     await this.afterUpload(ctx)
+    await handler.runStage('afterUpload')
     return ctx
   }
 
   private async executeLifecycle(ctx: IPicGo): Promise<IPicGo> {
+    const handler = new ScriptHandler(ctx)
+    await handler.refreshCache()
     await this.preprocess(ctx)
+    await handler.runStage('preProcess')
     await this.beforeTransform(ctx)
+    await handler.runStage('beforeTransform')
     await this.doTransform(ctx)
+    await handler.runStage('transform')
     await this.buildInRename(ctx)
     await this.beforeUpload(ctx)
+    await handler.runStage('beforeUpload')
     ctx.processedInput = cloneDeep(ctx.output)
     await this.doUpload(ctx)
+    await handler.runStage('upload')
     ctx.input = ctx.rawInput
     await this.afterUpload(ctx)
+    await handler.runStage('afterUpload')
     return ctx
   }
 
@@ -239,7 +251,7 @@ export class Lifecycle extends EventEmitter {
 
     ctx.emit(IBuildInEvent.UPLOAD_PROGRESS, PROGRESS.START)
     ctx.emit(IBuildInEvent.BEFORE_TRANSFORM, ctx)
-    ctx.log.info('Before transform')
+    ctx.log.info('Pre-processing images, please wait...')
 
     if (compressOptions || watermarkOptions) {
       const tempFilePath = path.join(ctx.baseDir, 'piclistTemp')
