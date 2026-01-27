@@ -1,3 +1,11 @@
+##  (2026-01-27)
+
+* :sparkles: Feature(custom): support lifecycle scripts e5610a9
+* :sparkles: Feature(custom): support upload with custom script Kuingsmile/PicList#462 bda456e, closes Kuingsmile/PicList#462
+* :sparkles: Feature(custom): update picgo-server 0d4390f
+
+
+
 ##  (2026-01-25)
 
 * :bug: Fix(custom): fix config migrate issue d79dee0, closes #40
