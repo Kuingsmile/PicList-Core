@@ -227,7 +227,7 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
       // upload with clipboard
       console.log('[PicList Server] upload clipboard file')
       const result = await picgo.uploadReturnCtx()
-      const res = result.output[0].imgUrl
+      const res = result.ctx?.output[0].imgUrl
       console.log('[PicList Server] upload result:', res)
       if (res) {
         handleResponse({
@@ -250,7 +250,7 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
       console.log('[PicList Server] upload files in list')
       //  upload with files
       const result = await picgo.uploadReturnCtx(list)
-      const res = result.output.map(item => {
+      const res = result.ctx?.output.map(item => {
         return item.imgUrl
       })
       console.log('[PicList Server] upload result\n', res.join('\n'))
