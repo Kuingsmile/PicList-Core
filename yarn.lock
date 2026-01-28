@@ -3448,6 +3448,11 @@ dot-prop@^5.1.0:
   dependencies:
     is-obj "^2.0.0"
 
+dotenv@^17.2.3:
+  version "17.2.3"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-17.2.3.tgz#ad995d6997f639b11065f419a22fabf567cdb9a2"
+  integrity sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==
+
 dpdm@^3.14.0:
   version "3.14.0"
   resolved "https://registry.npmmirror.com/dpdm/-/dpdm-3.14.0.tgz#12a60a2d88b23981c91239b86e7462a5c203e5e9"

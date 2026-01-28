@@ -4,9 +4,22 @@ import path from 'node:path'
 import vm from 'node:vm'
 
 import axios from 'axios'
+import dotenv from 'dotenv'
 import fs from 'fs-extra'
 
 import { IPicGo } from '../types'
+
+function getFreshEnv(envPath: string): Record<string, string> {
+  if (fs.existsSync(envPath)) {
+    const buf = fs.readFileSync(envPath)
+    const config = dotenv.parse(buf)
+    for (const k in config) {
+      process.env[k] = config[k]
+    }
+    return config
+  }
+  return {}
+}
 
 interface ScriptObject {
   path: string
@@ -81,6 +94,7 @@ export class ScriptHandler {
   }
 
   private createSandbox(extra: Record<string, any>) {
+    const env = getFreshEnv(path.join(this.ctx.baseDir, '.env'))
     return {
       ctx: this.ctx,
       extra,
@@ -102,6 +116,7 @@ export class ScriptHandler {
       clearInterval,
       base64Decode: (str: string) => Buffer.from(str, 'base64').toString('utf-8'),
       base64Encode: (data: any) => (Buffer.isBuffer(data) ? data : Buffer.from(String(data))).toString('base64'),
+      env,
     }
   }
 }
