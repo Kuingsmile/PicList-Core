@@ -1,3 +1,9 @@
+##  (2026-02-02)
+
+* :sparkles: Feature(custom): support read .env in script system 1d809ba
+
+
+
 ##  (2026-01-27)
 
 * :sparkles: Feature(custom): support lifecycle scripts e5610a9
