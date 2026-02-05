@@ -5,6 +5,7 @@ import { fileURLToPath, URL } from 'node:url'
 import fs from 'fs-extra'
 import { readJSONSync } from 'fs-extra/esm'
 import { imageSize } from 'image-size'
+import mime from 'mime'
 import sharp from 'sharp'
 import TextToSVG from 'text-to-svg'
 import { v4 as uuidv4 } from 'uuid'
@@ -183,13 +184,48 @@ export const getFSFile = async (filePath: string): Promise<IPathTransformedImgIn
   }
 }
 
+function getImageExtensionFromMime(contentType: string): string {
+  if (!contentType) return ''
+  const pureMime = contentType.toLocaleLowerCase().split(';')[0].trim()
+  if (!pureMime.startsWith('image/')) return ''
+  const ext = mime.getExtension(pureMime)
+  return ext ? `.${ext}` : ''
+}
+
+export function getImageTypeByMagicNumber(buffer: Buffer | Uint8Array): string {
+  if (!buffer || buffer.length < 4) return ''
+
+  const getHex = (start: number, end: number) =>
+    Array.from(buffer.subarray(start, end))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+      .toUpperCase()
+
+  const hex4 = getHex(0, 4)
+  const hex3 = getHex(0, 3)
+  const hex2 = getHex(0, 2)
+
+  if (hex3 === 'FFD8FF') return '.jpg'
+  if (hex4 === '89504E47') return '.png'
+  if (hex4 === '47494638') return '.gif'
+  if (hex2 === '424D') return '.bmp'
+
+  if (hex4 === '52494646') {
+    const webpHeader = getHex(8, 12)
+    if (webpHeader === '57454250') {
+      return '.webp'
+    }
+  }
+  return ''
+}
+
 export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransformedImgInfo> => {
   url = handleUrlEncode(url)
   let timeoutId: NodeJS.Timeout
   const requestFn = new Promise<IPathTransformedImgInfo>((resolve, reject) => {
     ;(async () => {
       try {
-        const res = await ctx
+        const { res, headers } = await ctx
           .request({
             method: 'get',
             url,
@@ -197,7 +233,7 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
             responseType: 'arraybuffer',
           })
           .then(resp => {
-            return resp.data as Buffer
+            return { res: resp.data as Buffer, headers: resp.headers }
           })
         clearTimeout(timeoutId)
         const urlPath = new URL(url).pathname
@@ -207,6 +243,13 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
           extname = urlParams.get('wx_fmt') || path.extname(urlPath) || ''
         } catch (_e) {
           extname = path.extname(urlPath) || ''
+        }
+        const contentType = headers['content-type'] || headers['Content-Type'] || ''
+        if (!extname && contentType) {
+          extname = getImageExtensionFromMime(contentType)
+        }
+        if (!extname) {
+          extname = getImageTypeByMagicNumber(res)
         }
         if (!extname.startsWith('.') && extname) {
           extname = `.${extname}`
