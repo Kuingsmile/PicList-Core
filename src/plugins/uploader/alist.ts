@@ -116,45 +116,42 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
 
   const imgList = ctx.output
   for (const img of imgList) {
-    if (img.fileName && img.buffer) {
-      let image = img.buffer
-      if (!image && img.base64Image) {
-        image = Buffer.from(img.base64Image, 'base64')
-      }
-      const fullUploadPath = `${uploadPath}${img.fileName}`
-      const postConfig = postOptions(url, token, img.fileName, fullUploadPath, image)
-      const uploadRes = (await ctx.request(postConfig)) as unknown as IFullResponse
-      handleResError(ctx, uploadRes)
+    if (!img.fileName) continue
+    const image = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : undefined)
+    if (!image) continue
+    const fullUploadPath = `${uploadPath}${img.fileName}`
+    const postConfig = postOptions(url, token, img.fileName, fullUploadPath, image)
+    const uploadRes = (await ctx.request(postConfig)) as unknown as IFullResponse
+    handleResError(ctx, uploadRes)
 
-      const refreshRes = (await ctx.request(
-        createApiRequest(`${url}/api/fs/list`, token, {
-          password: '',
-          page: 1,
-          per_page: 1,
-          refresh: true,
-          path: path.dirname(fullUploadPath),
-        }),
-      )) as unknown as IFullResponse
-      handleResError(ctx, refreshRes)
+    const refreshRes = (await ctx.request(
+      createApiRequest(`${url}/api/fs/list`, token, {
+        password: '',
+        page: 1,
+        per_page: 1,
+        refresh: true,
+        path: path.dirname(fullUploadPath),
+      }),
+    )) as unknown as IFullResponse
+    handleResError(ctx, refreshRes)
 
-      const getInfoRes = (await ctx.request(
-        createApiRequest(`${url}/api/fs/get`, token, {
-          password: '',
-          path: fullUploadPath,
-          page: 1,
-          per_page: 1,
-          refresh: true,
-        }),
-      )) as unknown as IFullResponse
-      handleResError(ctx, getInfoRes)
+    const getInfoRes = (await ctx.request(
+      createApiRequest(`${url}/api/fs/get`, token, {
+        password: '',
+        path: fullUploadPath,
+        page: 1,
+        per_page: 1,
+        refresh: true,
+      }),
+    )) as unknown as IFullResponse
+    handleResError(ctx, getInfoRes)
 
-      const sign = getInfoRes.body.data.sign
-      const encodedPath = encodePath(`${webPath || uploadPath}${img.fileName}`)
-      img.imgUrl = `${customUrl || url}${customUrl && customUrl !== url ? '' : '/d'}${encodedPath}`
-      img.imgUrl += (!customUrl || customUrl === url) && sign ? `?sign=${sign}` : ''
-      delete img.base64Image
-      delete img.buffer
-    }
+    const sign = getInfoRes.body.data.sign
+    const encodedPath = encodePath(`${webPath || uploadPath}${img.fileName}`)
+    img.imgUrl = `${customUrl || url}${customUrl && customUrl !== url ? '' : '/d'}${encodedPath}`
+    img.imgUrl += (!customUrl || customUrl === url) && sign ? `?sign=${sign}` : ''
+    delete img.base64Image
+    delete img.buffer
   }
   return ctx
 }

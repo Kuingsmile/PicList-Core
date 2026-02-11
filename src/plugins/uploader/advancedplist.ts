@@ -57,53 +57,52 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   }
   const imgList = ctx.output
   for (const img of imgList) {
-    if (img.fileName && img.buffer) {
-      const image = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : null)
-      if (!image) continue
+    if (!img.fileName) continue
+    const image = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : null)
+    if (!image) continue
 
-      const postConfig = postOptions(
-        image,
-        img.fileName,
-        advancedplistConfig.endpoint,
-        advancedplistConfig.method || 'POST',
-        JSON.parse(advancedplistConfig.headers || '{}'),
-        JSON.parse(advancedplistConfig.body || '{}'),
-        advancedplistConfig.formDataKey || 'file',
-      )
+    const postConfig = postOptions(
+      image,
+      img.fileName,
+      advancedplistConfig.endpoint,
+      advancedplistConfig.method || 'POST',
+      JSON.parse(advancedplistConfig.headers || '{}'),
+      JSON.parse(advancedplistConfig.body || '{}'),
+      advancedplistConfig.formDataKey || 'file',
+    )
 
-      let body = (await ctx.request(postConfig)) as any
-      body = typeof body === 'string' ? JSON.parse(body) : body
+    let body = (await ctx.request(postConfig)) as any
+    body = typeof body === 'string' ? JSON.parse(body) : body
 
-      // Extract image URL from response using resDataPath
-      let imageUrl = body
-      const resDataPath = advancedplistConfig.resDataPath || 'data.url'
-      for (const key of resDataPath.split('.')) {
-        if (imageUrl && typeof imageUrl === 'object' && key in imageUrl) {
-          imageUrl = imageUrl[key]
-        } else {
-          imageUrl = undefined
-          break
-        }
-      }
-      if (imageUrl && typeof imageUrl === 'string') {
-        delete img.base64Image
-        delete img.buffer
-        if (advancedplistConfig.webPath) {
-          const fileName = imageUrl.split('/').pop() || imageUrl
-          const webPath = advancedplistConfig.webPath.endsWith('/')
-            ? advancedplistConfig.webPath
-            : advancedplistConfig.webPath + '/'
-          imageUrl = webPath + fileName
-        }
-        img.imgUrl = advancedplistConfig.customPrefix ? advancedplistConfig.customPrefix + imageUrl : imageUrl
+    // Extract image URL from response using resDataPath
+    let imageUrl = body
+    const resDataPath = advancedplistConfig.resDataPath || 'data.url'
+    for (const key of resDataPath.split('.')) {
+      if (imageUrl && typeof imageUrl === 'object' && key in imageUrl) {
+        imageUrl = imageUrl[key]
       } else {
-        ctx.emit(IBuildInEvent.NOTIFICATION, {
-          title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-          body: body.message,
-        })
-        console.error('AdvancedPlist upload failed:', body)
-        throw new Error(body.message)
+        imageUrl = undefined
+        break
       }
+    }
+    if (imageUrl && typeof imageUrl === 'string') {
+      delete img.base64Image
+      delete img.buffer
+      if (advancedplistConfig.webPath) {
+        const fileName = imageUrl.split('/').pop() || imageUrl
+        const webPath = advancedplistConfig.webPath.endsWith('/')
+          ? advancedplistConfig.webPath
+          : advancedplistConfig.webPath + '/'
+        imageUrl = webPath + fileName
+      }
+      img.imgUrl = advancedplistConfig.customPrefix ? advancedplistConfig.customPrefix + imageUrl : imageUrl
+    } else {
+      ctx.emit(IBuildInEvent.NOTIFICATION, {
+        title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
+        body: body.message,
+      })
+      console.error('AdvancedPlist upload failed:', body)
+      throw new Error(body.message)
     }
   }
   return ctx

@@ -49,22 +49,22 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     const { path, bucket, area, options: urlOptions = '' } = aliYunOptions
 
     for (const img of imgList) {
-      if (img.fileName && img.buffer) {
-        const signature = generateSignature(aliYunOptions, img.fileName)
-        const image = img.buffer || Buffer.from(img.base64Image!, 'base64')
-        const options = postOptions(aliYunOptions, img.fileName, signature, image)
-        const body = await ctx.request(options)
+      if (!img.fileName) continue
+      const image = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : null)
+      if (!image) continue
+      const signature = generateSignature(aliYunOptions, img.fileName)
+      const options = postOptions(aliYunOptions, img.fileName, signature, image)
+      const body = await ctx.request(options)
 
-        if (body.statusCode === 200) {
-          delete img.base64Image
-          delete img.buffer
-          const encodedPath = encodePath(`${webPath || path}${img.fileName}`)
-          img.imgUrl = customUrl
-            ? `${customUrl}/${encodedPath}${urlOptions}`
-            : `https://${bucket}.${area}.aliyuncs.com/${encodedPath}${urlOptions}`
-        } else {
-          throw new Error('Upload failed')
-        }
+      if (body.statusCode === 200) {
+        delete img.base64Image
+        delete img.buffer
+        const encodedPath = encodePath(`${webPath || path}${img.fileName}`)
+        img.imgUrl = customUrl
+          ? `${customUrl}/${encodedPath}${urlOptions}`
+          : `https://${bucket}.${area}.aliyuncs.com/${encodedPath}${urlOptions}`
+      } else {
+        throw new Error('Upload failed')
       }
     }
     return ctx

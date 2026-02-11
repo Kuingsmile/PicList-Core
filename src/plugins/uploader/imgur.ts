@@ -87,19 +87,19 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   try {
     const imgList = ctx.output
     for (const img of imgList) {
-      if (img.fileName && img.buffer) {
-        const base64Image = img.base64Image || Buffer.from(img.buffer).toString('base64')
-        const options = await postOptions(ctx, imgurOptions, img.fileName, base64Image)
-        const res: string = await ctx.request(options)
-        const body = typeof res === 'string' ? JSON.parse(res) : res
-        if (body.success) {
-          delete img.base64Image
-          delete img.buffer
-          img.imgUrl = body.data.link
-          img.hash = body.data.deletehash
-        } else {
-          throw new Error('Server error, please try again')
-        }
+      if (!img.fileName) continue
+      const base64Image = img.base64Image || (img.buffer ? Buffer.from(img.buffer).toString('base64') : null)
+      if (!base64Image) continue
+      const options = await postOptions(ctx, imgurOptions, img.fileName, base64Image)
+      const res: string = await ctx.request(options)
+      const body = typeof res === 'string' ? JSON.parse(res) : res
+      if (body.success) {
+        delete img.base64Image
+        delete img.buffer
+        img.imgUrl = body.data.link
+        img.hash = body.data.deletehash
+      } else {
+        throw new Error('Server error, please try again')
       }
     }
     return ctx

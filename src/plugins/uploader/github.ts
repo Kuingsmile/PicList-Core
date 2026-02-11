@@ -49,45 +49,45 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   try {
     const imgList = ctx.output
     for (const img of imgList) {
-      if (img.fileName && img.buffer) {
-        const base64Image = img.base64Image || Buffer.from(img.buffer).toString('base64')
-        const data = {
-          message: 'Upload by PicList',
-          branch: githubOptions.branch,
-          content: base64Image,
-          path: uploadPath + encodeURI(img.fileName),
-        }
-        const postConfig = postOptions(img.fileName, githubOptions, data)
-        try {
-          const body: {
-            content: {
-              download_url: string
-              sha: string
-            }
-          } = await ctx.request(postConfig)
-          if (body) {
-            delete img.base64Image
-            delete img.buffer
-            img.imgUrl = githubOptions.customUrl
-              ? `${githubOptions.customUrl}/${encodePath(`${webPath || uploadPath}${img.fileName}`)}`
-              : body.content.download_url
-            img.hash = body.content.sha
-          } else {
-            throw new Error('Server error, please try again')
+      if (!img.fileName) continue
+      const base64Image = img.base64Image || (img.buffer ? Buffer.from(img.buffer).toString('base64') : null)
+      if (!base64Image) continue
+      const data = {
+        message: 'Upload by PicList',
+        branch: githubOptions.branch,
+        content: base64Image,
+        path: uploadPath + encodeURI(img.fileName),
+      }
+      const postConfig = postOptions(img.fileName, githubOptions, data)
+      try {
+        const body: {
+          content: {
+            download_url: string
+            sha: string
           }
-        } catch (err: any) {
-          if (err.statusCode !== 422) throw err
+        } = await ctx.request(postConfig)
+        if (body) {
           delete img.base64Image
           delete img.buffer
-          const res = (await ctx.request(getOptions(img.fileName, githubOptions))) as any
-          if (Object.keys(res).length) {
-            img.hash = res.sha
-            img.imgUrl = githubOptions.customUrl
-              ? `${githubOptions.customUrl}/${encodePath(`${webPath || uploadPath}${img.fileName}`)}`
-              : res.download_url
-          } else {
-            throw err
-          }
+          img.imgUrl = githubOptions.customUrl
+            ? `${githubOptions.customUrl}/${encodePath(`${webPath || uploadPath}${img.fileName}`)}`
+            : body.content.download_url
+          img.hash = body.content.sha
+        } else {
+          throw new Error('Server error, please try again')
+        }
+      } catch (err: any) {
+        if (err.statusCode !== 422) throw err
+        delete img.base64Image
+        delete img.buffer
+        const res = (await ctx.request(getOptions(img.fileName, githubOptions))) as any
+        if (Object.keys(res).length) {
+          img.hash = res.sha
+          img.imgUrl = githubOptions.customUrl
+            ? `${githubOptions.customUrl}/${encodePath(`${webPath || uploadPath}${img.fileName}`)}`
+            : res.download_url
+        } else {
+          throw err
         }
       }
     }

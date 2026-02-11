@@ -42,33 +42,30 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   try {
     const imgList = ctx.output
     for (const img of imgList) {
-      if (img.fileName && img.buffer) {
-        let image = img.buffer
-        if (!image && img.base64Image) {
-          image = Buffer.from(img.base64Image, 'base64')
-        }
-        const options = postOptions(piclistOptions, img.fileName, image)
+      if (!img.fileName) continue
+      const image = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : undefined)
+      if (!image) continue
+      const options = postOptions(piclistOptions, img.fileName, image)
 
-        const res = await ctx
-          .request(options)
-          .then((res: any) => res)
-          .catch((err: Error) => {
-            return {
-              statusCode: 400,
-              body: {
-                msg: ctx.i18n.translate<ILocalesKey>('AUTH_FAILED'),
-                err,
-              },
-            }
-          })
-        if (res.statusCode === 200 && res.body?.success) {
-          delete img.base64Image
-          delete img.buffer
-          img.imgUrl = res.body.result[0]
-          img.fullResult = res.body.fullResult ? res.body.fullResult[0] : ''
-        } else {
-          throw new Error(res.body.message)
-        }
+      const res = await ctx
+        .request(options)
+        .then((res: any) => res)
+        .catch((err: Error) => {
+          return {
+            statusCode: 400,
+            body: {
+              msg: ctx.i18n.translate<ILocalesKey>('AUTH_FAILED'),
+              err,
+            },
+          }
+        })
+      if (res.statusCode === 200 && res.body?.success) {
+        delete img.base64Image
+        delete img.buffer
+        img.imgUrl = res.body.result[0]
+        img.fullResult = res.body.fullResult ? res.body.fullResult[0] : ''
+      } else {
+        throw new Error(res.body.message)
       }
     }
     return ctx

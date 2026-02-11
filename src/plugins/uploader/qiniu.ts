@@ -47,25 +47,25 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   try {
     const imgList = ctx.output
     for (const img of imgList) {
-      if (img.fileName && img.buffer) {
-        const base64Image = img.base64Image || Buffer.from(img.buffer).toString('base64')
-        const options = postOptions(qiniuOptions, img.fileName, getToken(qiniuOptions), base64Image)
-        const res = await ctx.request(options)
-        const body = JSON.parse(res)
-        if (body?.key) {
-          delete img.base64Image
-          delete img.buffer
-          const baseUrl = qiniuOptions.url
-          const urlOptions = qiniuOptions.options || ''
-          img.imgUrl = `${baseUrl}/${body.key as string}${urlOptions}`
-        } else {
-          ctx.emit(IBuildInEvent.NOTIFICATION, {
-            title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-            body: body.msg,
-          })
-          ctx.log.error('qiniu error', body)
-          throw new Error('Upload failed')
-        }
+      if (!img.fileName) continue
+      const base64Image = img.base64Image || (img.buffer ? Buffer.from(img.buffer).toString('base64') : null)
+      if (!base64Image) continue
+      const options = postOptions(qiniuOptions, img.fileName, getToken(qiniuOptions), base64Image)
+      const res = await ctx.request(options)
+      const body = JSON.parse(res)
+      if (body?.key) {
+        delete img.base64Image
+        delete img.buffer
+        const baseUrl = qiniuOptions.url
+        const urlOptions = qiniuOptions.options || ''
+        img.imgUrl = `${baseUrl}/${body.key as string}${urlOptions}`
+      } else {
+        ctx.emit(IBuildInEvent.NOTIFICATION, {
+          title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
+          body: body.msg,
+        })
+        ctx.log.error('qiniu error', body)
+        throw new Error('Upload failed')
       }
     }
     return ctx
