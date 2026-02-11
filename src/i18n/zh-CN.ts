@@ -7,7 +7,7 @@ export const ZH_CN = {
   AUTH_FAILED: '认证失败',
 
   // smms
-  PICBED_SMMS: 'SM.MS',
+  PICBED_SMMS: 'SM.MS(S.EE)',
   PICBED_SMMS_TOKEN: '设定Token',
   PICBED_SMMS_MESSAGE_TOKEN: '请填写Token',
   PICBED_SMMS_BACKUPDOMAIN: '备用上传域名',

@@ -1,14 +1,14 @@
-import axios from 'axios'
-
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IOldReqOptions, IPicGo, IPluginConfig, ISmmsConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { buildInUploaderNames, createField } from './utils'
 
 const postOptions = (fileName: string, image: Buffer, apiToken: string, domain = ''): IOldReqOptions => {
+  const seeDomain = domain || 's.ee'
+  const url = `https://${seeDomain}${seeDomain === 's.ee' ? '/api/v1/file/upload' : '/api/v2/upload'}`
   return {
     method: 'POST',
-    url: `https://${domain}/api/v2/upload`,
+    url,
     headers: {
       contentType: 'multipart/form-data',
       'User-Agent': 'PicList',
@@ -29,8 +29,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   if (!smmsConfig?.token?.trim()) {
     throw new Error('SM.MS token is required!')
   }
-  const domain = (smmsConfig.backupDomain || 'sm.ms').replace(/^https?:\/\//, '').replace(/\/$/, '')
-
+  const domain = smmsConfig.backupDomain?.trim()
   const imgList = ctx.output
   for (const img of imgList) {
     if (!img.fileName) continue
@@ -42,20 +41,9 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     const res: string = await ctx.request(postConfig)
     const body = JSON.parse(res)
 
-    if (body.code === 'success') {
+    if (body.code === 200 || body.message === 'success') {
       img.imgUrl = body.data.url
       img.hash = body.data.hash
-    } else if (body.code === 'image_repeated' && typeof body.images === 'string') {
-      img.imgUrl = body.images
-      try {
-        const uploadHistory = await axios.get(`https://${domain}/api/v2/upload_history`, {
-          headers: { Authorization: smmsConfig.token },
-        })
-        const matchedImage = uploadHistory.data?.data?.find((image: any) => image.url === body.images)
-        if (matchedImage) img.hash = matchedImage.hash
-      } catch {
-        // Ignore hash lookup errors
-      }
     } else {
       const errorMsg = body.message || 'Upload failed'
       ctx.emit(IBuildInEvent.NOTIFICATION, {

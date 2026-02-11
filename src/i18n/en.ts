@@ -9,7 +9,7 @@ export const EN: ILocales = {
   AUTH_FAILED: 'Authentication failed',
 
   // smms
-  PICBED_SMMS: 'SM.MS',
+  PICBED_SMMS: 'SM.MS(S.EE)',
   PICBED_SMMS_TOKEN: 'Set Token',
   PICBED_SMMS_MESSAGE_TOKEN: 'Please enter the token',
   PICBED_SMMS_BACKUPDOMAIN: 'Set Backup Upload Domain',

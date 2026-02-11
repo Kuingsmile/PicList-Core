@@ -9,7 +9,7 @@ export const ZH_TW: ILocales = {
   AUTH_FAILED: '認證失敗',
 
   // smms
-  PICBED_SMMS: 'SM.MS',
+  PICBED_SMMS: 'SM.MS(S.EE)',
   PICBED_SMMS_TOKEN: '設定Token',
   PICBED_SMMS_MESSAGE_TOKEN: '請輸入Token',
   PICBED_SMMS_BACKUPDOMAIN: '備用上傳網址',
