@@ -1,3 +1,14 @@
+##  (2026-02-11)
+
+* :bug: Fix(custom): bind methods and init rawinputpath 80bc2ce
+* :bug: Fix(custom): fix an issue compress will have no effect when watermark is setted 39973b2
+* :bug: Fix(custom): fix upload issue when buffer is empty but base64image is not check c4b853a
+* :sparkles: Feature(custom): get url image extension from content type and magic number 36b2235, closes Kuingsmile/piclist#475
+* :sparkles: Feature(custom): migrate to s.ee 751a5c6
+* :sparkles: Feature(custom): optimize aliyun date  header 8240d3e
+
+
+
 ##  (2026-02-02)
 
 * :sparkles: Feature(custom): support read .env in script system 1d809ba
