@@ -275,11 +275,16 @@ export class Lifecycle extends EventEmitter {
     watermarkOptions: Undefinable<IBuildInWaterMarkOptions>,
     skipExtensions: Set<string>,
   ): Promise<void> {
-    await Promise.allSettled(
+    const res = await Promise.allSettled(
       ctx.input.map(async (item: string, index: number) => {
         await this.processImage(item, index, ctx, tempFilePath, compressOptions, watermarkOptions, skipExtensions)
       }),
     )
+    for (const item of res) {
+      if (item.status === 'rejected') {
+        ctx.log.error('Error processing image:', item.reason)
+      }
+    }
   }
 
   private async processImage(
@@ -354,7 +359,7 @@ export class Lifecycle extends EventEmitter {
 
     // Apply watermark
     if (isNeedAddWatermark(watermarkOptions, extension) && !shouldSkipExtension) {
-      transformedBuffer = await this.addWatermark(fileBuffer, watermarkOptions!, ctx)
+      transformedBuffer = await this.addWatermark(transformedBuffer ?? fileBuffer, watermarkOptions!, ctx)
     }
 
     // Remove EXIF if needed
