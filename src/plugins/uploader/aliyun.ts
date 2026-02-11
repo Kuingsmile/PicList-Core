@@ -10,8 +10,7 @@ import { buildInUploaderNames, createField, encodePath, formatPathHelper } from 
 const getCurrentUTCDate = (): string => new Date().toUTCString()
 
 // generate OSS signature
-const generateSignature = (options: IAliyunConfig, fileName: string): string => {
-  const date = getCurrentUTCDate()
+const generateSignature = (options: IAliyunConfig, fileName: string, date: string): string => {
   const mimeType = mime.getType(fileName) || 'application/octet-stream'
   const signString = `PUT\n\n${mimeType}\n${date}\n/${options.bucket}/${options.path}${fileName}`
   const signature = crypto.createHmac('sha1', options.accessKeySecret).update(signString).digest('base64')
@@ -23,13 +22,14 @@ const postOptions = (
   fileName: string,
   signature: string,
   image: Buffer,
+  date: string,
 ): IOldReqOptionsWithFullResponse => ({
   method: 'PUT',
   url: `https://${options.bucket}.${options.area}.aliyuncs.com/${encodePath(`${options.path}${fileName}`)}`,
   headers: {
     Host: `${options.bucket}.${options.area}.aliyuncs.com`,
     Authorization: signature,
-    Date: getCurrentUTCDate(),
+    Date: date,
     'Content-Type': mime.getType(fileName) || 'application/octet-stream',
   },
   body: image,
@@ -52,8 +52,9 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       if (!img.fileName) continue
       const image = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : null)
       if (!image) continue
-      const signature = generateSignature(aliYunOptions, img.fileName)
-      const options = postOptions(aliYunOptions, img.fileName, signature, image)
+      const date = getCurrentUTCDate()
+      const signature = generateSignature(aliYunOptions, img.fileName, date)
+      const options = postOptions(aliYunOptions, img.fileName, signature, image, date)
       const body = await ctx.request(options)
 
       if (body.statusCode === 200) {
