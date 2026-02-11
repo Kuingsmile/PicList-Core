@@ -264,7 +264,7 @@ export class Lifecycle extends EventEmitter {
 
   private initializeRawInputPaths(ctx: IPicGo): void {
     for (const item of ctx.input) {
-      ctx.rawInputPath!.push(item)
+      ctx.rawInputPath.push(item)
     }
   }
 
@@ -301,7 +301,7 @@ export class Lifecycle extends EventEmitter {
 
     if (itemIsUrl && (!info.success || !info.buffer)) return
 
-    ctx.rawInputPath![index] = item
+    ctx.rawInputPath[index] = item
     const extension = itemIsUrl ? info.extname || '' : path.extname(item)
     const shouldSkipExtension = skipExtensions.has(extension.toLowerCase())
 
@@ -443,7 +443,7 @@ export class Lifecycle extends EventEmitter {
       ? path.join(tempFilePath, `${this.getFileBaseName(info)}${newExt}`)
       : path.join(tempFilePath, `${path.basename(item, extension)}${newExt}`)
 
-    ctx.rawInputPath![index] = path.join(
+    ctx.rawInputPath[index] = path.join(
       path.dirname(item),
       itemIsUrl ? path.basename(tempFile) : `${path.basename(item, extension)}${newExt}`,
     )
@@ -473,7 +473,7 @@ export class Lifecycle extends EventEmitter {
       let fileName = item.fileName
       if (format) {
         fileName = renameFileNameWithCustomString(
-          ctx.rawInputPath![index],
+          ctx.rawInputPath[index],
           format,
           undefined,
           item.base64Image ? item.base64Image : item.buffer,

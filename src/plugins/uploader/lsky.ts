@@ -59,7 +59,7 @@ const postOptions = (options: ILskyConfig, fileName: string | undefined, image: 
   }
   const strategyId = options.strategyId
   const albumId = options.albumId
-  let permission: any = options.permission.value
+  let permission: any = options.permission?.value
   if (permission === undefined) {
     permission = options.permission
   }

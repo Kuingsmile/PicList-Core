@@ -25,7 +25,7 @@ export interface IPicGo extends NodeJS.EventEmitter {
   VERSION: string
   GUI_VERSION?: string
   request: IRequest['request']
-  rawInputPath?: string[]
+  rawInputPath: string[]
   i18n: II18nManager
 
   getConfig: <T>(name?: string) => T
@@ -35,6 +35,7 @@ export interface IPicGo extends NodeJS.EventEmitter {
   unsetConfig: (key: string, propName: string) => void
   upload: (input?: any[]) => Promise<IImgInfo[] | Error>
   uploadReturnCtx: (input?: any[]) => Promise<IUploadResultWithBackup>
+  changeCurrentUploader: (type: string, config: IStringKeyMap<any>) => void
 }
 
 // plugin config

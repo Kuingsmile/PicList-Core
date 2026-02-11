@@ -13,6 +13,7 @@ export const createContext = (ctx: IPicGo): IPicGo => {
     output: [],
     input: [],
     rawInput: [],
+    rawInputPath: [],
     processedInput: [],
     pluginLoader: ctx.pluginLoader,
     pluginHandler: ctx.pluginHandler,
@@ -45,5 +46,6 @@ export const createContext = (ctx: IPicGo): IPicGo => {
     prependListener: ctx.prependListener.bind(ctx),
     prependOnceListener: ctx.prependOnceListener.bind(ctx),
     eventNames: ctx.eventNames.bind(ctx),
+    changeCurrentUploader: ctx.changeCurrentUploader.bind(ctx),
   }
 }

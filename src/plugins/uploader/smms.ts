@@ -41,7 +41,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     const res: string = await ctx.request(postConfig)
     const body = JSON.parse(res)
 
-    if (body.code === 200 || body.message === 'success') {
+    if (body.code === 200 || body.message === 'success' || body.code === 'success') {
       img.imgUrl = body.data.url
       img.hash = body.data.hash
     } else {

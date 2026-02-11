@@ -48,6 +48,7 @@ export class PicGo extends EventEmitter implements IPicGo {
   output: IImgInfo[]
   input: any[]
   rawInput: any[]
+  rawInputPath: string[]
   processedInput: any[]
   pluginHandler: PluginHandler
   configManager: ConfigManager
@@ -71,6 +72,7 @@ export class PicGo extends EventEmitter implements IPicGo {
     this.input = []
     this.rawInput = []
     this.processedInput = []
+    this.rawInputPath = []
     this.output = []
     this.helper = {
       transformer: new LifecyclePlugins('transformer'),
