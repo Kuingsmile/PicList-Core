@@ -40,7 +40,7 @@ class SSHClient {
       })
       this.isConnected = true
     } catch (err: any) {
-      throw new Error(err)
+      throw new Error(err, { cause: err })
     }
   }
 
@@ -57,7 +57,7 @@ class SSHClient {
         await this.exec(`chmod ${fileMode} "${remote}"`)
       }
     } catch (err: any) {
-      throw new Error(err)
+      throw new Error(err, { cause: err })
     }
   }
 

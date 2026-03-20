@@ -43,12 +43,12 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       }
       img.hash = path.join(uploadPath, img.fileName)
       img.galleryPath = `http://localhost:36699/local/${encodePath(img.fileName).replace(/^\//, '')}`
-    } catch (_e: any) {
+    } catch (e: any) {
       ctx.emit(IBuildInEvent.NOTIFICATION, {
         title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
         body: 'failed to upload image',
       })
-      throw new Error('failed to upload image')
+      throw new Error(`Failed to upload image: ${e}`, { cause: e })
     }
   }
   return ctx

@@ -52,7 +52,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       return ctx
     } catch (err: any) {
       ctx.log.error('AdvancedPlist upload script error:', err)
-      throw new Error(`AdvancedPlist upload script error: ${err}`)
+      throw new Error(`AdvancedPlist upload script error: ${err}`, { cause: err })
     }
   }
   const imgList = ctx.output

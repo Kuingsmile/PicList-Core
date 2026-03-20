@@ -134,7 +134,7 @@ export class PluginLoader implements IPluginLoader {
     try {
       // First try to resolve using the resolve library
       pluginPath = this.resolvePlugin(this.ctx, name)
-    } catch (_e) {
+    } catch (e) {
       // Fallback: try to find the entry point manually
       const pluginDir = path.join(this.ctx.baseDir, 'node_modules', name)
       const packageJsonPath = path.join(pluginDir, 'package.json')
@@ -144,7 +144,7 @@ export class PluginLoader implements IPluginLoader {
           const packageJson = readJSONSync(packageJsonPath)
           const main = packageJson.main || packageJson.module || 'index.js'
           pluginPath = path.join(pluginDir, main)
-        } catch {
+        } catch (error) {
           // If package.json is malformed, try common entry points
           const possibleEntries = ['index.js', 'src/index.js', 'dist/index.js', 'lib/index.js']
           pluginPath = ''
@@ -156,11 +156,11 @@ export class PluginLoader implements IPluginLoader {
             }
           }
           if (!pluginPath) {
-            throw new Error(`Cannot find entry point for plugin: ${name}`)
+            throw new Error(`Cannot find entry point for plugin: ${name}`, { cause: error })
           }
         }
       } else {
-        throw new Error(`Plugin package.json not found: ${name}`)
+        throw new Error(`Plugin package.json not found: ${name}`, { cause: e })
       }
     }
 

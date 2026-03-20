@@ -277,7 +277,7 @@ export class PicGo extends EventEmitter implements IPicGo {
       this.log.info('The second uploader config is the same as the first uploader, skipping second upload.')
       enableSecondUploader = false
     }
-    let initialUploadType = ''
+    let initialUploadType: 'file' | 'clipboard'
     let imgPath: string = ''
     let getClipboardResult: { imgPath: string; shouldKeepAfterUploading: boolean } = {
       imgPath: '',
