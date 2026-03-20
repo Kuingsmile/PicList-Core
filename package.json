@@ -39,7 +39,10 @@
     "publish:npm": "cross-env NODE_ENV=production rimraf ./dist && rollup -c rollup.config.js && npm publish",
     "release": "bump-version",
     "server": "node ./bin/picgo-server",
-    "start": "node ./bin/picgo"
+    "start": "node ./bin/picgo",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest"
   },
   "commitlint": {
     "extends": [
@@ -110,6 +113,7 @@
     "@types/resolve": "^1.20.6",
     "@types/text-to-svg": "^3.1.4",
     "@types/tunnel": "^0.0.7",
+    "@vitest/coverage-v8": "^4.1.0",
     "cross-env": "^10.1.0",
     "dpdm": "^4.0.1",
     "eslint": "^10.0.3",
@@ -127,7 +131,8 @@
     "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-string": "^3.0.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.57.1"
+    "typescript-eslint": "^8.57.1",
+    "vitest": "^4.1.0"
   },
   "engines": {
     "node": ">=20.0.0"
