@@ -12,7 +12,7 @@ import { string } from 'rollup-plugin-string'
 const pkg = JSON.parse(readFileSync('./package.json', 'utf8'))
 
 const version = process.env.VERSION || pkg.version
-const sourcemap = 'inline'
+const sourcemap = true
 const banner = `/*
  * piclist@${version}, https://github.com/Kuingsmile/PicList-Core
  * (c) 2022-${new Date().getFullYear()} Kuingsmile
@@ -53,7 +53,13 @@ const commonOptions = {
 const isDev = process.env.NODE_ENV === 'development'
 
 if (!isDev) {
-  commonOptions.plugins.push(terser())
+  commonOptions.plugins.push(
+    terser({
+      format: {
+        comments: /piclist@/i,
+      },
+    }),
+  )
 }
 
 /** @type import('rollup').RollupOptions */
@@ -70,8 +76,4 @@ const nodeEsm = {
   ...commonOptions,
 }
 
-const bundles = []
-
-bundles.push(nodeEsm)
-
-export default bundles
+export default [nodeEsm]
