@@ -1,18 +1,17 @@
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IOldReqOptions, IPicGo, IPluginConfig, ISmmsConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField } from './utils'
 
-const postOptions = (fileName: string, image: Buffer, apiToken: string, domain = ''): IOldReqOptions => {
-  const seeDomain = domain || 's.ee'
-  const url = `https://${seeDomain}${seeDomain === 's.ee' ? '/api/v1/file/upload' : '/api/v2/upload'}`
+const postOptions = (fileName: string, image: Buffer, apiToken: string): IOldReqOptions => {
   return {
     method: 'POST',
-    url,
+    url: 'https://s.ee/api/v1/file/upload',
     headers: {
       contentType: 'multipart/form-data',
       'User-Agent': 'PicList',
-      Authorization: apiToken,
+      Authorization: apiToken.trim(),
     },
     formData: {
       smfile: {
@@ -25,19 +24,14 @@ const postOptions = (fileName: string, image: Buffer, apiToken: string, domain =
 }
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
-  const smmsConfig = ctx.getConfig<ISmmsConfig>('picBed.smms')
-  if (!smmsConfig?.token?.trim()) {
-    throw new Error('SM.MS token is required!')
-  }
-  const domain = smmsConfig.backupDomain?.trim()
-  const imgList = ctx.output
-  for (const img of imgList) {
+  const smmsConfig = getAndCheckConfig<ISmmsConfig>(ctx, 'picBed.smms', ['token'])
+  const imageOutputList = ctx.output
+  for (const img of imageOutputList) {
     if (!img.fileName) continue
-
-    const imageBuffer = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : undefined)
+    const imageBuffer = getImageBuffer(img)
     if (!imageBuffer) continue
 
-    const postConfig = postOptions(img.fileName, imageBuffer, smmsConfig.token, domain)
+    const postConfig = postOptions(img.fileName, imageBuffer, smmsConfig.token)
     const res: string = await ctx.request(postConfig)
     const body = JSON.parse(res)
 
@@ -65,11 +59,6 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     createField(ctx, 'SMMS', 'token', 'input', userConfig.token || '', true, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_SMMS_MESSAGE_TOKEN')
-      },
-    }),
-    createField(ctx, 'SMMS', 'backupDomain', 'input', userConfig.backupDomain || '', false, undefined, {
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_SMMS_MESSAGE_BACKUP_DOMAIN')
       },
     }),
   ]

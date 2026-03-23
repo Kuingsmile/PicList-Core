@@ -5,6 +5,7 @@ import axios from 'axios'
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IAlistConfig, IFullResponse, IOldReqOptions, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
 interface IAlistTokenStore {
@@ -117,10 +118,11 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const imgList = ctx.output
   for (const img of imgList) {
     if (!img.fileName) continue
-    const image = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : undefined)
-    if (!image) continue
+    const imageBuffer = getImageBuffer(img)
+    if (!imageBuffer) continue
+
     const fullUploadPath = `${uploadPath}${img.fileName}`
-    const postConfig = postOptions(url, token, img.fileName, fullUploadPath, image)
+    const postConfig = postOptions(url, token, img.fileName, fullUploadPath, imageBuffer)
     const uploadRes = (await ctx.request(postConfig)) as unknown as IFullResponse
     handleResError(ctx, uploadRes)
 

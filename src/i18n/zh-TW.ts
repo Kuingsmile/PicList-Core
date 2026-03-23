@@ -13,7 +13,6 @@ export const ZH_TW: ILocales = {
   PICBED_SMMS_TOKEN: '設定Token',
   PICBED_SMMS_MESSAGE_TOKEN: '請輸入Token',
   PICBED_SMMS_BACKUPDOMAIN: '備用上傳網址',
-  PICBED_SMMS_MESSAGE_BACKUP_DOMAIN: '例如 smms.app',
 
   //advancedplist
   PICBED_ADVANCEDPLIST: '高級自定義',
