@@ -22,6 +22,7 @@ import {
 } from '../types'
 import {
   getConvertedFormat,
+  getImageTypeByMagicNumber,
   getTreatedCompressOptions,
   getTreatedWaterMarkOptions,
   getURLFile,
@@ -302,7 +303,19 @@ export class Lifecycle extends EventEmitter {
     if (itemIsUrl && (!info.success || !info.buffer)) return
 
     ctx.rawInputPath[index] = item
-    const extension = itemIsUrl ? info.extname || '' : path.extname(item)
+    let extension: string
+    if (itemIsUrl) {
+      extension = info.extname || ''
+    } else {
+      const extFromPath = path.extname(item)
+      if (extFromPath) {
+        extension = extFromPath
+      } else {
+        const buffer = fs.readFileSync(item)
+        const imgType = getImageTypeByMagicNumber(buffer)
+        extension = imgType ? imgType : extFromPath
+      }
+    }
     const shouldSkipExtension = skipExtensions.has(extension.toLowerCase())
 
     const fileBuffer: Buffer = itemIsUrl ? info.buffer! : fs.readFileSync(item)
