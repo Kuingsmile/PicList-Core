@@ -6,6 +6,7 @@ import https from 'node:https'
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { ILskyConfig, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames } from './utils'
 
 export interface IMGTYPE {
@@ -98,16 +99,13 @@ const postOptions = (options: ILskyConfig, fileName: string | undefined, image: 
 }
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
-  const lskyOptions = ctx.getConfig<ILskyConfig>('picBed.lskyplist')
-  if (!lskyOptions) throw new Error("Can't find lsky uploader config")
+  const lskyOptions = getAndCheckConfig<ILskyConfig>(ctx, 'picBed.lskyplist', [])
+  for (const img of ctx.output) {
+    if (!img.fileName) continue
+    const imageBuffer = getImageBuffer(img)
+    if (!imageBuffer) continue
 
-  const imgList = ctx.output
-  for (const img of imgList) {
-    let image = img.buffer!
-    if (!image && img.base64Image) {
-      image = Buffer.from(img.base64Image, 'base64')
-    }
-    const postConfig = postOptions(lskyOptions, img.fileName, image)
+    const postConfig = postOptions(lskyOptions, img.fileName, imageBuffer)
     let body = (await ctx.request(postConfig)) as any
     body = typeof body === 'string' ? JSON.parse(body) : body
     const isV2 = lskyOptions.version === 'V2'

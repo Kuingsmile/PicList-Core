@@ -6,6 +6,7 @@ import { ILocalesKey } from '../../i18n/zh-CN'
 import { IAdvancedPlistConfig, IOldReqOptions, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { runScript } from '../../utils/runScripts'
+import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames } from './utils'
 
 const postOptions = (
@@ -35,8 +36,7 @@ const postOptions = (
 })
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
-  const advancedplistConfig = ctx.getConfig<IAdvancedPlistConfig>('picBed.advancedplist')
-  if (!advancedplistConfig) throw new Error('Can not find advancedplist config')
+  const advancedplistConfig = getAndCheckConfig<IAdvancedPlistConfig>(ctx, 'picBed.advancedplist', [])
   if (advancedplistConfig.uploadScriptName) {
     try {
       const scriptName = advancedplistConfig.uploadScriptName
@@ -55,10 +55,9 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       throw new Error(`AdvancedPlist upload script error: ${err}`, { cause: err })
     }
   }
-  const imgList = ctx.output
-  for (const img of imgList) {
+  for (const img of ctx.output) {
     if (!img.fileName) continue
-    const image = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : null)
+    const image = getImageBuffer(img)
     if (!image) continue
 
     const postConfig = postOptions(

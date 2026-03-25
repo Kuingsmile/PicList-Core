@@ -6,23 +6,21 @@ import { ensureDirSync } from 'fs-extra/esm'
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { ILocalConfig, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
-  const localConfig = ctx.getConfig<ILocalConfig>('picBed.local')
-  if (!localConfig) throw new Error('Can not find local config!')
+  const localConfig = getAndCheckConfig<ILocalConfig>(ctx, 'picBed.local', [])
 
   const uploadPath = localConfig.path || ''
   const customUrl = (localConfig.customUrl || '').replace(/\/$/, '')
   const webPath = formatPathHelper({
     path: localConfig.webPath?.replace(/\\/g, '/'),
   })
-  const imgList = ctx.output
-  for (const img of imgList) {
+  for (const img of ctx.output) {
     if (!img.fileName) continue
-
-    const image = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : undefined)
-    if (!image) continue
+    const imageBuffer = getImageBuffer(img)
+    if (!imageBuffer) continue
     try {
       const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'local')
       const fileImgTempPath = path.join(imgTempPath, img.fileName)
@@ -32,7 +30,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         ensureDirSync(path.dirname(fileUploadPath))
         ensureDirSync(path.dirname(fileImgTempPath))
       } catch (_e) {}
-      fs.writeFileSync(fileUploadPath, image)
+      fs.writeFileSync(fileUploadPath, imageBuffer)
       fs.copyFileSync(fileUploadPath, fileImgTempPath)
       delete img.base64Image
       delete img.buffer

@@ -27,8 +27,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       }
     }
     const client = uploader.createS3Client(userConfig)
-    const imgList = ctx.output
-    for (const img of imgList) {
+    for (const img of ctx.output) {
       const task = await uploader.createUploadTask({
         client,
         bucketName: userConfig.bucketName,
@@ -38,12 +37,11 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         urlPrefix,
         options: userConfig.options || '',
       })
-      delete img.buffer
-      delete img.base64Image
       img.imgUrl = task.imgURL
       img.url = task.url
+      delete img.buffer
+      delete img.base64Image
     }
-
     return ctx
   } catch (err: any) {
     ctx.emit(IBuildInEvent.NOTIFICATION, {

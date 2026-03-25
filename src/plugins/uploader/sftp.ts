@@ -6,13 +6,11 @@ import { ILocalesKey } from '../../i18n/zh-CN'
 import { IPicGo, IPluginConfig, ISftpPlistConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import SSHClient from '../../utils/sshClient'
+import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
-  const sftpplistConfig = ctx.getConfig<ISftpPlistConfig>('picBed.sftpplist')
-  if (!sftpplistConfig) {
-    throw new Error('Can not find sftpplist config!')
-  }
+  const sftpplistConfig = getAndCheckConfig<ISftpPlistConfig>(ctx, 'picBed.sftpplist', [])
   sftpplistConfig.port = Number(sftpplistConfig.port) || 22
   if (sftpplistConfig.port < 0 || sftpplistConfig.port > 65535) {
     sftpplistConfig.port = 22
@@ -26,10 +24,9 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     rootToEmpty: false,
   })
   try {
-    const imgList = ctx.output
-    for (const img of imgList) {
+    for (const img of ctx.output) {
       if (!img.fileName) continue
-      const image = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : undefined)
+      const image = getImageBuffer(img)
       if (!image) continue
       const uploadTempPath = path.join(ctx.baseDir, 'uploadTemp')
       const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'sftpplist')

@@ -60,7 +60,7 @@ function formatHelper(num: number): string {
   return num.toString().length === 1 ? `0${num}` : num.toString()
 }
 
-function getMd5(input: crypto.BinaryLike): string {
+export function getMd5(input: crypto.BinaryLike): string {
   return crypto.createHash('md5').update(input).digest('hex')
 }
 
@@ -264,7 +264,6 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
         clearTimeout(timeoutId)
         resolve({
           success: false,
-
           reason: `request ${url} error, ${error?.message ?? ''}`,
         })
       }

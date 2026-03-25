@@ -4,19 +4,18 @@ import mime from 'mime'
 
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IOldReqOptionsWithFullResponse, IPicGo, IPluginConfig, IUpyunConfig } from '../../types'
-import { safeParse } from '../../utils/common'
+import { getMd5, safeParse } from '../../utils/common'
 import { IBuildInEvent } from '../../utils/enum'
+import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
 const DEFAULT_ENDPOINT = 'https://v0.api.upyun.com'
 const DEFAULT_EXPIRE_TIME = 1800 // 30 minutes
 const SUCCESS_STATUS_CODE = 200
 
-const md5 = (content: string): string => crypto.createHash('md5').update(content).digest('hex')
-
 const generateSignature = (options: IUpyunConfig, fileName: string): string => {
   const { path = '', operator, password, bucket } = options
-  const md5Password = md5(password)
+  const md5Password = getMd5(password)
   const date = new Date().toUTCString()
   const uri = `/${bucket}/${encodePath(`${path}${fileName}`)}`
   const value = `PUT&${uri}&${date}`
@@ -58,16 +57,15 @@ const getAntiLeechParam = (
   const uri = `/${options.path || ''}${fileName}`.replace(/%2F/g, '/').replace(/^\/+/g, '/')
   const now = Math.round(Date.now() / 1000)
   const expire = expireTime ? now + parseInt(expireTime.toString(), 10) : now + DEFAULT_EXPIRE_TIME
-  const sign = md5(`${antiLeechToken}&${expire}&${uri}`)
+  const sign = getMd5(`${antiLeechToken}&${expire}&${uri}`)
   const urlProtectionToken = `${sign.substring(12, 20)}${expire}`
   return `_upt=${urlProtectionToken}`
 }
 
 // Process upload for a single image
 const processImage = async (ctx: IPicGo, img: any, upyunOptions: IUpyunConfig, path: string): Promise<void> => {
-  if (!img.fileName || !img.buffer) return
-
-  const image = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : null)
+  if (!img.fileName) return
+  const image = getImageBuffer(img)
   if (!image) return
 
   const signature = generateSignature(upyunOptions, img.fileName)
@@ -93,15 +91,13 @@ const addAntiLeechToken = (url: string, options: IUpyunConfig, fileName: string)
 }
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
-  const upyunOptions = ctx.getConfig<IUpyunConfig>('picBed.upyun')
-  if (!upyunOptions) throw new Error("Can't find UpYun config")
+  const upyunOptions = getAndCheckConfig<IUpyunConfig>(ctx, 'picBed.upyun', ['bucket', 'operator', 'password', 'url'])
 
   try {
-    const imgList = ctx.output
     const path = formatPathHelper({ path: upyunOptions.path })
     upyunOptions.path = path
 
-    for (const img of imgList) {
+    for (const img of ctx.output) {
       await processImage(ctx, img, upyunOptions, path)
     }
 
@@ -137,7 +133,6 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
 
   return [
     createField(ctx, 'upyun', 'bucket', 'input', userConfig.bucket || '', true),
-
     createField(ctx, 'upyun', 'operator', 'input', userConfig.operator || '', true, undefined, {
       get message() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_OPERATOR')

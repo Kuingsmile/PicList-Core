@@ -7,6 +7,7 @@ import { AuthType, createClient, WebDAVClient, WebDAVClientOptions } from 'webda
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IPicGo, IPluginConfig, IWebdavPlistConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024 * 1024 // 4GB
@@ -30,12 +31,6 @@ const createWebDAVClient = (config: IWebdavPlistConfig): WebDAVClient => {
   }
 
   return createClient(config.host, clientOptions)
-}
-
-const getImageBuffer = (img: any): Buffer => {
-  if (img.buffer) return img.buffer
-  if (img.base64Image) return Buffer.from(img.base64Image, 'base64')
-  throw new Error('No image data found')
 }
 
 const buildImageUrl = (
@@ -76,38 +71,31 @@ const uploadImage = async (
 }
 
 const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
-  const config = ctx.getConfig<IWebdavPlistConfig>('picBed.webdavplist')
-  if (!config) throw new Error("Can't find webdavplist config")
+  const webdavOptions = getAndCheckConfig<IWebdavPlistConfig>(ctx, 'picBed.webdavplist', [])
 
-  config.host = normalizeHostUrl(config.host, config.sslEnabled)
-  config.path = formatPathHelper({ path: config.path, rootToEmpty: false })
+  webdavOptions.host = normalizeHostUrl(webdavOptions.host, webdavOptions.sslEnabled)
+  webdavOptions.path = formatPathHelper({ path: webdavOptions.path, rootToEmpty: false })
 
-  const webpath = formatPathHelper({ path: config.webpath, rootToEmpty: false })
-  const suffix = config.options || ''
+  const webpath = formatPathHelper({ path: webdavOptions.webpath, rootToEmpty: false })
+  const suffix = webdavOptions.options || ''
 
   try {
-    const client = createWebDAVClient(config)
-    const baseUrl = config.customUrl || config.host
+    const client = createWebDAVClient(webdavOptions)
+    const baseUrl = webdavOptions.customUrl || webdavOptions.host
 
     for (const img of ctx.output) {
       if (!img.fileName) continue
-
       const imageBuffer = getImageBuffer(img)
-      const uploadResult = await uploadImage(client, config.path, img.fileName, imageBuffer)
+      if (!imageBuffer) continue
 
-      if (!uploadResult) {
-        throw new Error('Upload failed')
-      }
-
+      const uploadResult = await uploadImage(client, webdavOptions.path, img.fileName, imageBuffer)
+      if (!uploadResult) throw new Error('Upload failed')
       saveImageToTemp(ctx, img.fileName, imageBuffer)
-
       delete img.base64Image
       delete img.buffer
-
-      img.imgUrl = buildImageUrl(baseUrl, config.path, webpath, img.fileName, suffix, !!config.webpath)
+      img.imgUrl = buildImageUrl(baseUrl, webdavOptions.path, webpath, img.fileName, suffix, !!webdavOptions.webpath)
       img.galleryPath = `http://localhost:${GALLERY_PORT}/webdavplist/${encodeURIComponent(img.fileName)}`
     }
-
     return ctx
   } catch (err: any) {
     ctx.emit(IBuildInEvent.NOTIFICATION, {

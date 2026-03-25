@@ -85,8 +85,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const imgurOptions = ctx.getConfig<IImgurConfig>('picBed.imgur')
   if (!imgurOptions) throw new Error("Can't find imgur config")
   try {
-    const imgList = ctx.output
-    for (const img of imgList) {
+    for (const img of ctx.output) {
       if (!img.fileName) continue
       const base64Image = img.base64Image || (img.buffer ? Buffer.from(img.buffer).toString('base64') : null)
       if (!base64Image) continue

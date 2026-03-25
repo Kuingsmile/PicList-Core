@@ -4,6 +4,7 @@ import qiniu from 'qiniu'
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IOldReqOptions, IPicGo, IPluginConfig, IQiniuConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { getAndCheckConfig } from './helper'
 import { buildInUploaderNames } from './utils'
 
 function postOptions(options: IQiniuConfig, fileName: string, token: string, imgBase64: string): IOldReqOptions {
@@ -40,13 +41,9 @@ function getToken(qiniuOptions: any): string {
 }
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
-  const qiniuOptions = ctx.getConfig<IQiniuConfig>('picBed.qiniu')
-  if (!qiniuOptions) {
-    throw new Error("Can't find qiniu config")
-  }
+  const qiniuOptions = getAndCheckConfig<IQiniuConfig>(ctx, 'picBed.qiniu', [])
   try {
-    const imgList = ctx.output
-    for (const img of imgList) {
+    for (const img of ctx.output) {
       if (!img.fileName) continue
       const base64Image = img.base64Image || (img.buffer ? Buffer.from(img.buffer).toString('base64') : null)
       if (!base64Image) continue

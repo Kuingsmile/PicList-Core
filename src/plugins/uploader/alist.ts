@@ -3,15 +3,10 @@ import path from 'node:path'
 import axios from 'axios'
 
 import { ILocalesKey } from '../../i18n/zh-CN'
-import { IAlistConfig, IFullResponse, IOldReqOptions, IPicGo, IPluginConfig } from '../../types'
+import { IAlistConfig, IAlistTokenStore, IFullResponse, IOldReqOptions, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
-import { getImageBuffer } from './helper'
+import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
-
-interface IAlistTokenStore {
-  token: string
-  refreshedAt: number
-}
 
 const getAlistToken = async (ctx: IPicGo, url: string, username: string, password: string): Promise<string> => {
   const tokenStore = ctx.getConfig<IAlistTokenStore>('picgo-plugin-buildin-alistplist')
@@ -105,8 +100,7 @@ const extractConfig = (config: IAlistConfig) => {
 }
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
-  const alistConfig = ctx.getConfig<IAlistConfig>('picBed.alistplist')
-  if (!alistConfig) throw new Error('Can not find alist config!')
+  const alistConfig = getAndCheckConfig<IAlistConfig>(ctx, 'picBed.alistplist', [])
 
   const { url, username, password, uploadPath, webPath, customUrl } = extractConfig(alistConfig)
   let { token } = extractConfig(alistConfig)
@@ -115,8 +109,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   }
   if (!url || !(token || (username && password))) throw new Error('Please check your alist config!')
 
-  const imgList = ctx.output
-  for (const img of imgList) {
+  for (const img of ctx.output) {
     if (!img.fileName) continue
     const imageBuffer = getImageBuffer(img)
     if (!imageBuffer) continue

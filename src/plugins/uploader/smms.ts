@@ -25,8 +25,7 @@ const postOptions = (fileName: string, image: Buffer, apiToken: string): IOldReq
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const smmsConfig = getAndCheckConfig<ISmmsConfig>(ctx, 'picBed.smms', ['token'])
-  const imageOutputList = ctx.output
-  for (const img of imageOutputList) {
+  for (const img of ctx.output) {
     if (!img.fileName) continue
     const imageBuffer = getImageBuffer(img)
     if (!imageBuffer) continue
@@ -34,11 +33,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     const postConfig = postOptions(img.fileName, imageBuffer, smmsConfig.token)
     const res: string = await ctx.request(postConfig)
     const body = JSON.parse(res)
-
-    if (body.code === 200 || body.message === 'success' || body.code === 'success') {
-      img.imgUrl = body.data.url
-      img.hash = body.data.hash
-    } else {
+    if (body.code !== 200 && body.message !== 'success') {
       const errorMsg = body.message || 'Upload failed'
       ctx.emit(IBuildInEvent.NOTIFICATION, {
         title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
@@ -46,7 +41,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       })
       throw new Error(errorMsg)
     }
-
+    img.imgUrl = body.data.url
+    img.hash = body.data.hash
     delete img.base64Image
     delete img.buffer
   }

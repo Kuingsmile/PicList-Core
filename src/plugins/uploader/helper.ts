@@ -16,7 +16,6 @@ export function getAndCheckConfig<T extends Record<string, any>>(
     throw new Error(`Can not find ${picBedKey} config!`)
   }
   for (const key of requiredKeys) {
-    console.log(`Checking config key: ${key}, value: ${config[key]}`)
     if (!(key in config) || (typeof config[key] === 'string' && !config[key]?.trim())) {
       throw new Error(`Missing required config option: ${key}`)
     }

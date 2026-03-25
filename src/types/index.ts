@@ -800,3 +800,8 @@ export type IScriptLifecycle =
   | 'onUploadSuccess'
   | 'onUploadFailure'
   | 'onGalleryRemove'
+
+export interface IAlistTokenStore {
+  token: string
+  refreshedAt: number
+}

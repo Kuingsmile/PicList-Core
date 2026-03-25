@@ -3,6 +3,7 @@ import mime from 'mime'
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IGithubConfig, IOldReqOptionsWithJSON, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { getAndCheckConfig } from './helper'
 import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
 
 function buildGithubApiUrl(repo: string, path: string, fileName: string, extra: string = ''): string {
@@ -39,16 +40,14 @@ const getOptions = (fileName: string, options: IGithubConfig): IOldReqOptionsWit
 }
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
-  const githubOptions = ctx.getConfig<IGithubConfig>('picBed.github')
-  if (!githubOptions) throw new Error("Can't find github config")
+  const githubOptions = getAndCheckConfig<IGithubConfig>(ctx, 'picBed.github', ['token'])
 
   const uploadPath = formatPathHelper({ path: githubOptions.path })
   const webPath = formatPathHelper({ path: githubOptions.webPath || '' })
   githubOptions.path = uploadPath
   githubOptions.customUrl = (githubOptions.customUrl || '').replace(/\/$/, '')
   try {
-    const imgList = ctx.output
-    for (const img of imgList) {
+    for (const img of ctx.output) {
       if (!img.fileName) continue
       const base64Image = img.base64Image || (img.buffer ? Buffer.from(img.buffer).toString('base64') : null)
       if (!base64Image) continue
@@ -66,29 +65,24 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
             sha: string
           }
         } = await ctx.request(postConfig)
-        if (body) {
-          delete img.base64Image
-          delete img.buffer
-          img.imgUrl = githubOptions.customUrl
-            ? `${githubOptions.customUrl}/${encodePath(`${webPath || uploadPath}${img.fileName}`)}`
-            : body.content.download_url
-          img.hash = body.content.sha
-        } else {
-          throw new Error('Server error, please try again')
-        }
+        if (!body) throw new Error('Server error, please try again')
+        img.imgUrl = githubOptions.customUrl
+          ? `${githubOptions.customUrl}/${encodePath(`${webPath || uploadPath}${img.fileName}`)}`
+          : body.content.download_url
+        img.hash = body.content.sha
+        delete img.base64Image
+        delete img.buffer
       } catch (err: any) {
         if (err.statusCode !== 422) throw err
         delete img.base64Image
         delete img.buffer
         const res = (await ctx.request(getOptions(img.fileName, githubOptions))) as any
-        if (Object.keys(res).length) {
-          img.hash = res.sha
-          img.imgUrl = githubOptions.customUrl
-            ? `${githubOptions.customUrl}/${encodePath(`${webPath || uploadPath}${img.fileName}`)}`
-            : res.download_url
-        } else {
-          throw err
-        }
+        if (!Object.keys(res).length)
+          throw new Error('Upload failed and the image does not exist in the repo', { cause: err })
+        img.hash = res.sha
+        img.imgUrl = githubOptions.customUrl
+          ? `${githubOptions.customUrl}/${encodePath(`${webPath || uploadPath}${img.fileName}`)}`
+          : res.download_url
       }
     }
     return ctx

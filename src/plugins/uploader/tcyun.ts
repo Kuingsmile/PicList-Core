@@ -5,6 +5,7 @@ import mime from 'mime'
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IOldReqOptionsWithFullResponse, IPicGo, IPluginConfig, ITcyunConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
 export interface ISignature {
@@ -87,41 +88,34 @@ const postOptions = (
 }
 
 const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
-  const tcYunOptions = ctx.getConfig<ITcyunConfig>('picBed.tcyun')
-  if (!tcYunOptions) throw new Error("Can't find tencent COS config")
+  const tcYunOptions = getAndCheckConfig<ITcyunConfig>(ctx, 'picBed.tcyun', [])
 
   try {
-    const imgList = ctx.output
     const customUrl = (tcYunOptions.customUrl || '').replace(/\/$/, '')
     const path = formatPathHelper({ path: tcYunOptions.path })
     const webPath = formatPathHelper({ path: tcYunOptions.webPath })
     tcYunOptions.path = path
     const useV4 = !tcYunOptions.version || tcYunOptions.version === 'v4'
 
-    for (const img of imgList) {
-      if (!img.fileName || !img.buffer) continue
+    for (const img of ctx.output) {
+      if (!img.fileName) continue
+      const imageBuffer = getImageBuffer(img)
+      if (!imageBuffer) continue
 
       const signature = generateSignature(tcYunOptions, img.fileName)
-      const image = img.buffer || Buffer.from(img.base64Image!, 'base64')
-      const options = postOptions(tcYunOptions, img.fileName, signature, image, ctx.GUI_VERSION || ctx.VERSION)
-
+      const options = postOptions(tcYunOptions, img.fileName, signature, imageBuffer, ctx.GUI_VERSION || ctx.VERSION)
       const res = await ctx.request(options).catch((err: Error) => ({
         statusCode: 400,
         body: { msg: ctx.i18n.translate<ILocalesKey>('AUTH_FAILED'), err },
       }))
-
       const body = useV4 && typeof res === 'string' ? JSON.parse(res) : res
-
       if (body.statusCode === 400) {
         throw body?.body?.err || new Error(body?.body?.msg || body?.body?.message)
       }
-
       const optionUrl = tcYunOptions.options || ''
       const slim = !!tcYunOptions.slim
-
       delete img.base64Image
       delete img.buffer
-
       if (useV4 && body.message === 'SUCCESS') {
         img.imgUrl = customUrl
           ? `${customUrl}/${encodePath(`${webPath || path}${img.fileName}`)}${optionUrl}`

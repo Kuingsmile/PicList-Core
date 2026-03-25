@@ -5,6 +5,7 @@ import mime from 'mime'
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IAliyunConfig, IOldReqOptionsWithFullResponse, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
 const getCurrentUTCDate = (): string => new Date().toUTCString()
@@ -37,36 +38,31 @@ const postOptions = (
 })
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
-  const aliYunOptions = ctx.getConfig<IAliyunConfig>('picBed.aliyun')
-  if (!aliYunOptions) throw new Error("Can't find aliYun OSS config")
+  const aliYunOptions = getAndCheckConfig<IAliyunConfig>(ctx, 'picBed.aliyun', ['accessKeyId', 'accessKeySecret'])
 
   aliYunOptions.path = formatPathHelper({ path: aliYunOptions.path })
   const webPath = formatPathHelper({ path: aliYunOptions.webPath })
-
+  const customUrl = (aliYunOptions.customUrl || '').replace(/\/$/, '')
+  const { path, bucket, area, options: urlOptions = '' } = aliYunOptions
   try {
-    const { output: imgList } = ctx
-    const customUrl = (aliYunOptions.customUrl || '').replace(/\/$/, '')
-    const { path, bucket, area, options: urlOptions = '' } = aliYunOptions
-
-    for (const img of imgList) {
+    for (const img of ctx.output) {
       if (!img.fileName) continue
-      const image = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : null)
+      const image = getImageBuffer(img)
       if (!image) continue
+
       const date = getCurrentUTCDate()
       const signature = generateSignature(aliYunOptions, img.fileName, date)
       const options = postOptions(aliYunOptions, img.fileName, signature, image, date)
       const body = await ctx.request(options)
-
-      if (body.statusCode === 200) {
-        delete img.base64Image
-        delete img.buffer
-        const encodedPath = encodePath(`${webPath || path}${img.fileName}`)
-        img.imgUrl = customUrl
-          ? `${customUrl}/${encodedPath}${urlOptions}`
-          : `https://${bucket}.${area}.aliyuncs.com/${encodedPath}${urlOptions}`
-      } else {
+      if (body.statusCode !== 200) {
         throw new Error('Upload failed')
       }
+      const encodedPath = encodePath(`${webPath || path}${img.fileName}`)
+      img.imgUrl = customUrl
+        ? `${customUrl}/${encodedPath}${urlOptions}`
+        : `https://${bucket}.${area}.aliyuncs.com/${encodedPath}${urlOptions}`
+      delete img.base64Image
+      delete img.buffer
     }
     return ctx
   } catch (err: any) {

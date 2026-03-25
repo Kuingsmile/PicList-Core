@@ -3,6 +3,7 @@ import mime from 'mime'
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IOldReqOptionsWithFullResponse, IPicGo, IPicListConfig, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames } from './utils'
 
 const postOptions = (options: IPicListConfig, fileName: string, image: Buffer): IOldReqOptionsWithFullResponse => {
@@ -35,15 +36,12 @@ const postOptions = (options: IPicListConfig, fileName: string, image: Buffer): 
 }
 
 const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
-  const piclistOptions = ctx.getConfig<IPicListConfig>('picBed.piclist')
-  if (!piclistOptions) {
-    throw new Error("Can't find PicList config")
-  }
+  const piclistOptions = getAndCheckConfig<IPicListConfig>(ctx, 'picBed.piclist', [])
+
   try {
-    const imgList = ctx.output
-    for (const img of imgList) {
+    for (const img of ctx.output) {
       if (!img.fileName) continue
-      const image = img.buffer || (img.base64Image ? Buffer.from(img.base64Image, 'base64') : undefined)
+      const image = getImageBuffer(img)
       if (!image) continue
       const options = postOptions(piclistOptions, img.fileName, image)
 
