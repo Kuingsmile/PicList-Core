@@ -1,3 +1,16 @@
+##  (2026-03-25)
+
+* :arrow_up: Upgrade(custom): upgrade deps ae80c05
+* :arrow_up: Upgrade(custom): upgrade deps and fix lint error 10ca33f
+* :hammer: Refactor(custom): refactor uploader a2bfbd0
+* :package: Chore(custom): optimize rollup config, banner and sourcemap 9c883dd
+* :package: Chore(custom): update .npmignore to include additional files and directories da96b6a
+* :sparkles: Feature(custom): add unit test 817fa85
+* :sparkles: Feature(custom): optimize ext check for local file ba34593, closes #45
+* :sparkles: Feature(custom): remove backup domain setting when migrate to s.ee 41a5ecb
+
+
+
 ##  (2026-02-11)
 
 * :bug: Fix(custom): bind methods and init rawinputpath 80bc2ce
