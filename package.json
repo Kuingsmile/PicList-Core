@@ -106,7 +106,7 @@
     "@types/cross-spawn": "^6.0.6",
     "@types/fs-extra": "^11.0.4",
     "@types/heic-convert": "^2.1.0",
-    "@types/inquirer": "^0.0.42",
+    "@types/inquirer": "^9.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/lodash-es": "^4.17.12",
     "@types/node": "25.5.0",
