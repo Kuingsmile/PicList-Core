@@ -2352,10 +2352,10 @@
   resolved "https://registry.yarnpkg.com/@types/heic-convert/-/heic-convert-2.1.0.tgz#d19c7c655abb46321d7a0bc24387d47ac1d1661b"
   integrity sha512-Cf5Sdc2Gm2pfZ0uN1zjj35wcf3mF1lJCMIzws5OdJynrdMJRTIRUGa5LegbVg0hatzOPkH2uAf2JRjPYgl9apg==
 
-"@types/inquirer@^0.0.42":
-  version "0.0.42"
-  resolved "https://registry.npmjs.org/@types/inquirer/-/inquirer-0.0.42.tgz"
-  integrity sha512-flMaNWU2g9NrtZ4bIV+7SEY2W7OdWNNhmJ0rE1lWVxGrkp3TfFGMcFCxRIBmGWigI8e6n+2HqLjizTTfgcpHLg==
+"@types/inquirer@^0.0.44":
+  version "0.0.44"
+  resolved "https://registry.yarnpkg.com/@types/inquirer/-/inquirer-0.0.44.tgz#60ce954581cfdf44ad3899ec4cdc5fbe3fef1694"
+  integrity sha512-ugbhy1yBtCz5iTWYF+AGRS/UcMcWicdyHhxl9VaeFYc3ueg0CCssthQLB3rIcIOeGtfG6WPEvHdLu/IjKYfefg==
   dependencies:
     "@types/rx" "*"
     "@types/through" "*"
