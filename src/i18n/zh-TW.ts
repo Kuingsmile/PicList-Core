@@ -248,7 +248,7 @@ export const ZH_TW: ILocales = {
   PICBED_AWSS3PLIST_DISABLEBUCKETPREFIXTOURL: '開啟 `pathStyleAccess` 時，是否要禁用最終生成URL中添加 bucket 前綴',
   PICBED_AWSS3PLIST_MESSAGE_ACCESSKEYID: '例如: AKIAxxxxxxxxxxxxx',
   PICBED_AWSS3PLIST_MESSAGE_SECRET_ACCESSKEY: '例如: xxxxxxxxxx',
-  PICBED_AWSS3PLIST_MESSAGE_BUCKET: '例如: test/{fullName}',
+  PICBED_AWSS3PLIST_MESSAGE_BUCKET: '例如: test',
   PICBED_AWSS3PLIST_MESSAGE_REGION: '例如: us-east-1',
   PICBED_AWSS3PLIST_MESSAGE_UPLOADPATH: '例如: test/',
   PICBED_AWSS3PLIST_MESSAGE_ENDPOINT: '例如: https://s3.us-east-1.amazonaws.com',

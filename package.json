@@ -61,13 +61,13 @@
     "baseline-browser-mapping": "^2.9.13"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1016.0",
-    "@aws-sdk/lib-storage": "3.1016.0",
-    "@aws-sdk/s3-request-presigner": "3.1016.0",
+    "@aws-sdk/client-s3": "3.1039.0",
+    "@aws-sdk/lib-storage": "3.1039.0",
+    "@aws-sdk/s3-request-presigner": "3.1039.0",
     "@piclist/i18n": "^2.0.0",
     "@piclist/store": "^3.0.1",
-    "@smithy/node-http-handler": "4.5.0",
-    "axios": "^1.13.6",
+    "@smithy/node-http-handler": "4.6.1",
+    "axios": "^1.15.2",
     "chalk": "^5.6.2",
     "commander": "^8.1.0",
     "cross-spawn": "^7.0.6",

@@ -97,7 +97,8 @@ export function renameFileNameWithCustomString(
     customFormat === undefined ||
     (!Object.keys(conversionMap).some(item => customFormat.includes(item)) &&
       !customFormat.includes('localFolder:') &&
-      !customFormat.includes('str-'))
+      !customFormat.includes('str-') &&
+      !/{sha256-\d+}/.test(customFormat))
   ) {
     return oldName
   }
@@ -246,7 +247,7 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
         }
         const contentType = headers['content-type'] || headers['Content-Type'] || ''
         if (!extname && contentType) {
-          extname = getImageExtensionFromMime(contentType)
+          extname = getImageExtensionFromMime(String(contentType))
         }
         if (!extname) {
           extname = getImageTypeByMagicNumber(res)

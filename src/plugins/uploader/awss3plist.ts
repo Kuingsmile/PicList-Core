@@ -4,8 +4,7 @@ import { ILocalesKey } from '../../i18n/zh-CN'
 import { IAwsS3PListUserConfig, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import uploader from './s3/uploader'
-import { formatPath } from './s3/utils'
-import { buildInUploaderNames } from './utils'
+import { buildInUploaderNames, formatPathHelper } from './utils'
 
 function formatDisableBucketPrefixToURL(disableBucketPrefixToURL: string | boolean | undefined): boolean {
   if (typeof disableBucketPrefixToURL === 'string') {
@@ -15,27 +14,29 @@ function formatDisableBucketPrefixToURL(disableBucketPrefixToURL: string | boole
 }
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
-  const userConfig: IAwsS3PListUserConfig = ctx.getConfig('picBed.aws-s3-plist')
-  if (!userConfig) throw new Error("Can't find aws s3 uploader config")
+  const awsS3Options: IAwsS3PListUserConfig = ctx.getConfig('picBed.aws-s3-plist')
+  if (!awsS3Options) throw new Error("Can't find aws s3 uploader config")
   try {
-    const disableBucketPrefixToURL = formatDisableBucketPrefixToURL(userConfig.disableBucketPrefixToURL)
-    let urlPrefix = userConfig.urlPrefix
+    const disableBucketPrefixToURL = formatDisableBucketPrefixToURL(awsS3Options.disableBucketPrefixToURL)
+    let urlPrefix = awsS3Options.urlPrefix
     if (urlPrefix) {
       urlPrefix = urlPrefix.replace(/\/?$/, '')
-      if (userConfig.pathStyleAccess && !disableBucketPrefixToURL) {
-        urlPrefix += '/' + userConfig.bucketName
+      if (awsS3Options.pathStyleAccess && !disableBucketPrefixToURL) {
+        urlPrefix += '/' + awsS3Options.bucketName
       }
     }
-    const client = uploader.createS3Client(userConfig)
+    awsS3Options.uploadPath = formatPathHelper({ path: awsS3Options.uploadPath })
+    const client = uploader.createS3Client(awsS3Options)
     for (const img of ctx.output) {
+      if (!img.fileName) continue
       const task = await uploader.createUploadTask({
         client,
-        bucketName: userConfig.bucketName,
-        path: formatPath(img, userConfig.uploadPath),
+        bucketName: awsS3Options.bucketName,
+        path: `${awsS3Options.uploadPath}${img.fileName}`,
         item: img,
-        acl: (userConfig.acl || 'public-read') as ObjectCannedACL,
+        acl: (awsS3Options.acl || 'public-read') as ObjectCannedACL,
         urlPrefix,
-        options: userConfig.options || '',
+        options: awsS3Options.options || '',
       })
       img.imgUrl = task.imgURL
       img.url = task.url
@@ -58,7 +59,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     accessKeyID: '',
     secretAccessKey: '',
     bucketName: '',
-    uploadPath: '{year}/{month}/{md5}.{extName}',
+    uploadPath: '',
     pathStyleAccess: false,
     rejectUnauthorized: false,
     acl: 'public-read',
@@ -115,7 +116,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       name: 'uploadPath',
       type: 'input',
       default: userConfig.uploadPath,
-      required: true,
+      required: false,
       get prefix() {
         return ctx.i18n.translate<ILocalesKey>('PICBED_AWSS3PLIST_UPLOADPATH')
       },
