@@ -68,6 +68,10 @@ function getSha256(input: crypto.BinaryLike): string {
   return crypto.createHash('sha256').update(input).digest('hex')
 }
 
+function getSha1(input: crypto.BinaryLike): string {
+  return crypto.createHash('sha1').update(input).digest('hex')
+}
+
 export function renameFileNameWithCustomString(
   oldName: string,
   customFormat: string,
@@ -87,10 +91,12 @@ export function renameFileNameWithCustomString(
     '{s}': () => formatHelper(now.getSeconds()),
     '{ms}': () => now.getMilliseconds().toString().padStart(3, '0'),
     '{md5}': () => getMd5(fileBuffer || filebasename),
+    '{sha1}': () => getSha1(fileBuffer || filebasename),
     '{sha256}': () => getSha256(fileBuffer || filebasename),
     '{md5-16}': () => getMd5(fileBuffer || filebasename).slice(0, 16),
     '{filename}': () => (affixFileName ? path.basename(affixFileName, path.extname(affixFileName)) : filebasename),
     '{uuid}': () => uuidv4().replace(/-/g, ''),
+    '{timestampS}': () => Math.floor(now.getTime() / 1000).toString(),
     '{timestamp}': () => now.getTime().toString(),
   }
   if (
@@ -98,7 +104,8 @@ export function renameFileNameWithCustomString(
     (!Object.keys(conversionMap).some(item => customFormat.includes(item)) &&
       !customFormat.includes('localFolder:') &&
       !customFormat.includes('str-') &&
-      !/{sha256-\d+}/.test(customFormat))
+      !/{sha256-\d+}/.test(customFormat) &&
+      !/{sha1-\d+}/.test(customFormat))
   ) {
     return oldName
   }
@@ -109,6 +116,7 @@ export function renameFileNameWithCustomString(
     }, customFormat) + ext
   const strRegex = /{str-(\d+)}/gi
   const sha256Regex = /{sha256-(\d+)}/gi
+  const sha1Regex = /{sha1-(\d+)}/gi
   newName = newName.replace(strRegex, (_, group1) => {
     const length = parseInt(group1, 10)
     return randomStringGenerator(length)
@@ -116,6 +124,10 @@ export function renameFileNameWithCustomString(
   newName = newName.replace(sha256Regex, (_, group1) => {
     const length = parseInt(group1, 10)
     return getSha256(fileBuffer || filebasename).slice(0, length)
+  })
+  newName = newName.replace(sha1Regex, (_, group1) => {
+    const length = parseInt(group1, 10)
+    return getSha1(fileBuffer || filebasename).slice(0, length)
   })
   newName = newName.replace(/{(localFolder:?(\d+)?)}/gi, (_result, key, count) => {
     count = Math.max(1, count || 0)
