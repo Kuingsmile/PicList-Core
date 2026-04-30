@@ -79,7 +79,7 @@
     "heic-convert": "^2.1.0",
     "hpagent": "1.2.0",
     "image-size": "^2.0.2",
-    "inquirer": "^6.0.0",
+    "inquirer": "^13.0.0",
     "is-wsl": "^3.1.0",
     "js-yaml": "^4.1.1",
     "lodash-es": "^4.17.23",
