@@ -724,6 +724,8 @@ export interface IBuildInCompressOptions {
   reSizeWidthMap?: Record<string, number>
   reSizeHeight?: number
   reSizeHeightMap?: Record<string, number>
+  longEdgeAsHeight?: boolean
+  longEdgeAsHeightMap?: Record<string, boolean>
   skipReSizeOfSmallImg?: boolean
   skipReSizeOfSmallImgMap?: Record<string, boolean>
   isReSizeByPercent?: boolean
@@ -755,6 +757,7 @@ export interface IBuildInCompressOptionsTreated {
   skipReSizeOfSmallImg?: boolean
   isReSizeByPercent?: boolean
   reSizePercent?: number
+  longEdgeAsHeight?: boolean
   isRotate?: boolean
   rotateDegree?: number
   isRemoveExif?: boolean

@@ -693,6 +693,11 @@ export function getTreatedCompressOptions(
     reSizePercent: forceNumber(
       idSpecificConfig.reSizePercent ?? global.reSizePercentMap?.[picBed] ?? global.reSizePercent,
     ),
+    longEdgeAsHeight: !!(
+      idSpecificConfig.longEdgeAsHeight ??
+      global.longEdgeAsHeightMap?.[picBed] ??
+      global.longEdgeAsHeight
+    ),
     isRotate: !!(idSpecificConfig.isRotate ?? global.isRotateMap?.[picBed] ?? global.isRotate),
     rotateDegree: forceNumber(idSpecificConfig.rotateDegree ?? global.rotateDegreeMap?.[picBed] ?? global.rotateDegree),
     isRemoveExif: !!(idSpecificConfig.isRemoveExif ?? global.isRemoveExifMap?.[picBed] ?? global.isRemoveExif),
@@ -750,6 +755,7 @@ function formatOptions(options: IBuildInCompressOptions): IBuildInCompressOption
     reSizeWidth: forceNumber(options.reSizeWidth),
     skipReSizeOfSmallImg: options.skipReSizeOfSmallImg || false,
     isReSizeByPercent: options.isReSizeByPercent || false,
+    longEdgeAsHeight: options.longEdgeAsHeight || false,
     reSizePercent: forceNumber(options.reSizePercent),
     isRotate: options.isRotate || false,
     isFlip: options.isFlip || false,
@@ -804,12 +810,19 @@ export async function imageCompress(
         options.reSizeHeight > 0 &&
         (typeof options.reSizeWidth !== 'number' || options.reSizeWidth === 0)
       ) {
-        const imageWidth = await image.metadata().then(metadata => metadata.width)
-        const imageHeight = await image.metadata().then(metadata => metadata.height)
-        if (imageWidth && imageHeight) {
-          if (!options.skipReSizeOfSmallImg || (options.skipReSizeOfSmallImg && options.reSizeHeight < imageHeight)) {
-            const scaleRatio = options.reSizeHeight / imageHeight
-            image = image.resize(Math.round(imageWidth * scaleRatio), options.reSizeHeight, {
+        const rawImageWidth = await image.metadata().then(metadata => metadata.width)
+        const rawImageHeight = await image.metadata().then(metadata => metadata.height)
+        if (rawImageWidth && rawImageHeight) {
+          if (
+            !options.skipReSizeOfSmallImg ||
+            (options.skipReSizeOfSmallImg &&
+              options.reSizeHeight <
+                (options.longEdgeAsHeight && rawImageWidth > rawImageHeight ? rawImageWidth : rawImageHeight))
+          ) {
+            const scaleRatio =
+              options.reSizeHeight /
+              (options.longEdgeAsHeight && rawImageWidth > rawImageHeight ? rawImageWidth : rawImageHeight)
+            image = image.resize(Math.round(rawImageWidth * scaleRatio), Math.round(rawImageHeight * scaleRatio), {
               fit: 'inside',
             })
           }

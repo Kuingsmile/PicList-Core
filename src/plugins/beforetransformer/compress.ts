@@ -34,6 +34,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     createField(ctx, 'compress', 'isReSize', 'confirm', userConfig.isReSize || false, false, 'BUILDIN'),
     createField(ctx, 'compress', 'reSizeWidth', 'input', userConfig.reSizeWidth || 500, false, 'BUILDIN'),
     createField(ctx, 'compress', 'reSizeHeight', 'input', userConfig.reSizeHeight || 500, false, 'BUILDIN'),
+    createField(ctx, 'compress', 'longEdgeAsHeight', 'confirm', userConfig.longEdgeAsHeight || false, false, 'BUILDIN'),
     createField(
       ctx,
       'compress',
