@@ -63,6 +63,11 @@ if (argv.host) {
   defaultHost = String(argv.host)
 }
 
+if (argv.v || argv.version) {
+  console.log(`picgo-server version: 1.0.0`)
+  process.exit(0)
+}
+
 let configPath = argv.c || argv.config || ''
 if (configPath !== true && configPath !== '') {
   configPath = configPath.replace(/^~/, os.homedir())

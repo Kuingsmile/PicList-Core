@@ -393,18 +393,17 @@ export const handleUnixStylePath = (pathStr: string): string => {
 export const removePluginVersion = (nameOrPath: string, scope: boolean = false): string => {
   if (!nameOrPath.includes('@')) {
     return nameOrPath
+  }
+  let reg = /(.+\/)?(picgo-plugin-[\w-]+)(@.+)*/
+  if (scope) {
+    reg = /(.+\/)?(^@[^/]+\/picgo-plugin-\w+)(@.+)*/
+  }
+  const matchArr = nameOrPath.match(reg)
+  if (!matchArr) {
+    console.warn('can not remove plugin version')
+    return nameOrPath
   } else {
-    let reg = /(.+\/)?(picgo-plugin-\w+)(@.+)*/
-    if (scope) {
-      reg = /(.+\/)?(^@[^/]+\/picgo-plugin-\w+)(@.+)*/
-    }
-    const matchArr = nameOrPath.match(reg)
-    if (!matchArr) {
-      console.warn('can not remove plugin version')
-      return nameOrPath
-    } else {
-      return matchArr[2]
-    }
+    return matchArr[2]
   }
 }
 
@@ -948,7 +947,7 @@ export const isNeedCompress = (compressOptions: IBuildInCompressOptions | undefi
   if (isFlip || isFlop) return true
   if (isConvert) {
     const newFormat = convertFormat || 'jpg'
-    return fileExt !== newFormat
+    return normalizeImageExt(fileExt) !== normalizeImageExt(newFormat)
   }
   return false
 }

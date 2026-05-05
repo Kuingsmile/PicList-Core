@@ -9,7 +9,7 @@ RUN yarn config set network-timeout 300000 && \
     #apk add g++ make py3-pip && \
     #yarn global add node-gyp && \
     yarn global add piclist && \
-    yarn cache clean \
+    yarn cache clean && \
     rm -rf /var/cache/apk/* /tmp/*
 
 EXPOSE 36677
