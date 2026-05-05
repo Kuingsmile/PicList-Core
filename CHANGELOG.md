@@ -1,3 +1,14 @@
+##  (2026-05-05)
+
+* :arrow_up: Upgrade(custom): upgrade deps and ts to 6.0 a6a841b
+* :bug: Fix(custom): fix docker build issue and file convert issue 7399e90
+* :sparkles: Feature(custom): add longEdgeAsHeight setting for resize 831b4e7, closes Kuingsmile/piclist#506
+* :sparkles: Feature(custom): change s3 upload path logic, fix sha256-n rename bug 5e3287c
+* :sparkles: Feature(custom): support sha1 and timestamp in seconds for advanced rename 2934ea2
+* :sparkles: Feature(custom): update linux clipboard script cee04d4
+
+
+
 ##  (2026-03-25)
 
 * :arrow_up: Upgrade(custom): upgrade deps ae80c05
