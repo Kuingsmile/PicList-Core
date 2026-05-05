@@ -50,7 +50,7 @@
   },
   "eslint.validate": ["javascript", "javascriptreact", "vue", "typescript", "typescriptreact", "json", "jsonc"],
   "editor.tabSize": 2,
-  "typescript.tsdk": "node_modules/typescript/lib",
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
   "css.validate": false,
   "scss.validate": false,
   "less.validate": false
