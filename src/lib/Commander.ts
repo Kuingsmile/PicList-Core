@@ -1,8 +1,8 @@
 import { Command } from 'commander'
-import inquirer, { Inquirer } from 'inquirer'
 
 import commanders from '../plugins/commander'
 import { ICommander, IPicGo, IPlugin } from '../types'
+import { createInquirerAdapter, IInquirerAdapter } from '../utils/inquirerShim'
 import { getCurrentPluginName } from './LifecyclePlugins'
 
 export class Commander implements ICommander {
@@ -13,11 +13,11 @@ export class Commander implements ICommander {
   private readonly ctx: IPicGo
 
   program: Command
-  inquirer: Inquirer
+  inquirer: IInquirerAdapter
 
   constructor(ctx: IPicGo) {
     this.program = new Command()
-    this.inquirer = inquirer
+    this.inquirer = createInquirerAdapter()
     this.ctx = ctx
   }
 
@@ -38,12 +38,7 @@ export class Commander implements ICommander {
           silent: true,
         })
       })
-      .on('command:*', () => {
-        this.ctx.log.error(
-          `Invalid command: ${this.program.args.join(' ')}\nSee --help for a list of available commands.`,
-        )
-        process.exit(1)
-      })
+      .showSuggestionAfterError()
 
     // built-in commands
     commanders(this.ctx)

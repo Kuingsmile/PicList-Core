@@ -1,8 +1,8 @@
 import { Command } from 'commander'
-import { Inquirer } from 'inquirer'
 import { FormatEnum, GravityEnum } from 'sharp'
 
 import type { ConfigManager } from '../utils/configManager'
+import type { IInquirerAdapter } from '../utils/inquirerShim'
 import { IRequestPromiseOptions } from './oldRequest'
 
 export interface IPicGo extends NodeJS.EventEmitter {
@@ -71,7 +71,7 @@ export interface IHelper {
 
 export interface ICommander extends ILifecyclePlugins {
   program: Command
-  inquirer: Inquirer
+  inquirer: IInquirerAdapter
 }
 
 export interface IPluginLoader {
@@ -509,6 +509,7 @@ export interface IPluginProcessResult {
 }
 
 export interface IPluginHandler {
+  getList: () => Promise<string[]>
   install: (
     plugins: string[],
     options: IPluginHandlerOptions,

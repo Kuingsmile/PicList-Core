@@ -6,7 +6,7 @@ const configCmd = {
     cmd.program
       .command('config-list')
       .description('list all configs names for an uploader')
-      .arguments('<uploader>')
+      .argument('<uploader>')
       .action((uploader: string) => {
         try {
           const configs = ctx.configManager.getAllUploaderConfigs(uploader)
@@ -31,7 +31,8 @@ const configCmd = {
     cmd.program
       .command('config-use')
       .description('set a config as default for an uploader')
-      .arguments('<uploader> <configName>')
+      .argument('<uploader>')
+      .argument('<configName>')
       .action((uploader: string, configName: string) => {
         try {
           const config = ctx.configManager.getConfigByName(uploader, configName)
@@ -56,7 +57,8 @@ const configCmd = {
     cmd.program
       .command('config-remove')
       .description('remove a config for an uploader')
-      .arguments('<uploader> <configName>')
+      .argument('<uploader>')
+      .argument('<configName>')
       .action((uploader: string, configName: string) => {
         ;(async () => {
           try {
@@ -101,7 +103,9 @@ const configCmd = {
     cmd.program
       .command('config-rename')
       .description('rename a config for an uploader')
-      .arguments('<uploader> <oldName> <newName>')
+      .argument('<uploader>')
+      .argument('<oldName>')
+      .argument('<newName>')
       .action((uploader: string, oldName: string, newName: string) => {
         try {
           const config = ctx.configManager.getConfigByName(uploader, oldName)
@@ -126,7 +130,8 @@ const configCmd = {
     cmd.program
       .command('config-show')
       .description('show details of a config')
-      .arguments('<uploader> [configName]')
+      .argument('<uploader>')
+      .argument('[configName]')
       .action((uploader: string, configName: string | undefined) => {
         try {
           if (!configName) {

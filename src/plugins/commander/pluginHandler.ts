@@ -23,6 +23,23 @@ const createCommand = (
 const pluginHandler: IPlugin = {
   handle: (ctx: IPicGo) => {
     const cmd = ctx.cmd
+    createCommand(cmd, 'list', 'list installed plugins', 'ls', () => {
+      ctx.pluginHandler
+        .getList()
+        .then(plugins => {
+          if (plugins.length === 0) {
+            ctx.log.info('No plugins installed')
+          } else {
+            ctx.log.info('Installed plugins:')
+            plugins.forEach(plugin => {
+              ctx.log.info(`- ${plugin}`)
+            })
+          }
+        })
+        .catch(e => {
+          ctx.log.error(e)
+        })
+    })
     createCommand(
       cmd,
       'install <plugins...>',

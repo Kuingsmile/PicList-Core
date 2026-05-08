@@ -21,6 +21,10 @@ export class PluginHandler implements IPluginHandler {
     this.ctx = ctx
   }
 
+  async getList(): Promise<string[]> {
+    return this.ctx.pluginLoader.getList()
+  }
+
   async install(
     plugins: string[],
     options: IPluginHandlerOptions = {},

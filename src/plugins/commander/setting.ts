@@ -212,7 +212,10 @@ const setting = {
     cmd.program
       .command('set')
       .alias('config')
-      .arguments('<module> [name] [configName] [uploaderName]')
+      .argument('<module>')
+      .argument('[name]')
+      .argument('[configName]')
+      .argument('[uploaderName]')
       .description(
         'configure config of picgo modules, uploader|transformer|plugin|buildin. For uploader and buildin, configName is optional (defaults to "Default"). For buildin module, uploaderName is the uploader name to which the buildin module config will be linked.',
       )

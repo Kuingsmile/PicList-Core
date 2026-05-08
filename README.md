@@ -44,7 +44,7 @@ PicList-Core 是一个功能强大的图片上传工具，提供 CLI 和 API 两
 
 ## 安装
 
-PicList 需要 Node.js >= 20
+PicList 需要 Node.js >= 22
 
 ### 前置条件
 
@@ -201,6 +201,7 @@ Options:
   -h, --help                                    display help for command
 
 Commands:
+  list|ls                                       list installed plugins
   install|add [options] <plugins...>            install picgo plugin
   uninstall|rm <plugins...>                     uninstall picgo plugin
   update|up [options] <plugins...>              update picgo plugin

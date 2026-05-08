@@ -45,7 +45,7 @@ You can refer to the [DeepWiki of PiclList-Core](https://deepwiki.com/Kuingsmile
 
 ## Installation
 
-PicList requires Node.js >= 20
+PicList requires Node.js >= 22
 
 ### Prerequisites
 
@@ -202,6 +202,7 @@ Options:
   -h, --help                                    display help for command
 
 Commands:
+  list|ls                                       list installed plugins
   install|add [options] <plugins...>            install picgo plugin
   uninstall|rm <plugins...>                     uninstall picgo plugin
   update|up [options] <plugins...>              update picgo plugin

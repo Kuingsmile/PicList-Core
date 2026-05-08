@@ -10,7 +10,7 @@ const upload: IPlugin = {
     ctx.cmd.program
       .command('upload')
       .description('upload, go go go')
-      .arguments('[input...]')
+      .argument('[input...]')
       .alias('u')
       .action((input: string[]) => {
         ;(async () => {

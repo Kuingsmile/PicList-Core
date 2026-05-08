@@ -6,7 +6,7 @@ const use: IPlugin = {
     const cmd = ctx.cmd
     cmd.program
       .command('use')
-      .arguments('[module]')
+      .argument('[module]')
       .description('use modules of picgo')
       .action((module: string) => {
         ;(async () => {
