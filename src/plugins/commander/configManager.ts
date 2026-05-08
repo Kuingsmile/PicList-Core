@@ -150,11 +150,7 @@ const configCmd = {
               Object.keys(config).forEach(key => {
                 if (!key.startsWith('_')) {
                   const value = config[key]
-                  const displayValue =
-                    typeof value === 'string' &&
-                    (key.includes('password') || key.includes('token') || key.includes('key'))
-                      ? '***'
-                      : JSON.stringify(value)
+                  const displayValue = JSON.stringify(value)
                   ctx.log.info(`  ${key}: ${displayValue}`)
                 }
               })
@@ -176,10 +172,7 @@ const configCmd = {
           Object.keys(config).forEach(key => {
             if (!key.startsWith('_')) {
               const value = config[key]
-              const displayValue =
-                typeof value === 'string' && (key.includes('password') || key.includes('token') || key.includes('key'))
-                  ? '***'
-                  : JSON.stringify(value)
+              const displayValue = JSON.stringify(value)
               ctx.log.info(`  ${key}: ${displayValue}`)
             }
           })
