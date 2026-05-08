@@ -29,7 +29,7 @@ export class Logger implements ILogger {
     this.logLevel = this.ctx.getConfig('settings.logLevel')
     if (!this.ctx.getConfig<Undefinable<string>>('silent') && this.checkLogLevel(type, this.logLevel)) {
       const logHeader = chalk[this.level[type] as ILogColor](`[PicList ${type.toUpperCase()}]:`)
-      console.log(logHeader, ...msg)
+      console.log(`${dayjs().format('YYYY-MM-DD HH:mm:ss')} ${logHeader}`, ...msg)
       this.logPath =
         this.ctx.getConfig<Undefinable<string>>('settings.logPath') || path.join(this.ctx.baseDir, './piclist.log')
       setTimeout(() => {
@@ -37,13 +37,13 @@ export class Logger implements ILogger {
           const result = this.checkLogFileIsLarge(this.logPath)
           if (result.isLarge) {
             const warningMsg = `Log file is too large (> ${result.logFileSizeLimit! / 1024 / 1024 || '10'} MB), recreate log file`
-            console.log(chalk.yellow('[PicList WARN]:'), warningMsg)
+            console.log(`${dayjs().format('YYYY-MM-DD HH:mm:ss')} ${chalk.yellow('[PicList WARN]:')}`, warningMsg)
             this.recreateLogFile(this.logPath)
             msg.unshift(warningMsg)
           }
           this.handleWriteLog(this.logPath, type, ...msg)
         } catch (e) {
-          console.error('[PicList Error] on checking log file size', e)
+          console.error(`${dayjs().format('YYYY-MM-DD HH:mm:ss')} [PicList Error] on checking log file size`, e)
         }
       }, 0)
     }
@@ -90,7 +90,7 @@ export class Logger implements ILogger {
       log += '\n'
       fs.appendFileSync(logPath, log)
     } catch (e) {
-      console.error('[PicList Error] on writing log file', e)
+      console.error(`${dayjs().format('YYYY-MM-DD HH:mm:ss')} [PicList Error] on writing log file`, e)
     }
   }
 
