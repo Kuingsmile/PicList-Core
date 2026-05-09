@@ -1,3 +1,12 @@
+##  (2026-05-09)
+
+* :hammer: Refactor(custom): enhance config management with detailed logging and error handling 35526d1
+* :sparkles: Feature(custom): add new command to list installed plugins 2e6ccac
+* :sparkles: Feature(custom): add timestamps to log messages for better traceability 1fa3f95
+* :sparkles: Feature(custom): remove sensitive data masking in config display c28b891
+
+
+
 ##  (2026-05-05)
 
 * :arrow_up: Upgrade(custom): upgrade deps and ts to 6.0 a6a841b
