@@ -9,6 +9,8 @@ import mime from 'mime'
 import sharp from 'sharp'
 import TextToSVG from 'text-to-svg'
 import { v4 as uuidv4 } from 'uuid'
+import { ulid } from 'ulid'
+
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -96,6 +98,7 @@ export function renameFileNameWithCustomString(
     '{md5-16}': () => getMd5(fileBuffer || filebasename).slice(0, 16),
     '{filename}': () => (affixFileName ? path.basename(affixFileName, path.extname(affixFileName)) : filebasename),
     '{uuid}': () => uuidv4().replace(/-/g, ''),
+    '{ulid}': () => ulid(),
     '{timestampS}': () => Math.floor(now.getTime() / 1000).toString(),
     '{timestamp}': () => now.getTime().toString(),
   }
