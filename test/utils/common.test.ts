@@ -1,5 +1,6 @@
 import path from 'node:path'
 
+import sharp from 'sharp'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -10,6 +11,7 @@ import {
   handleStreamlinePluginName,
   handleUnixStylePath,
   handleUrlEncode,
+  imageCompress,
   isConfigKeyInBlackList,
   isInputConfigValid,
   isUrl,
@@ -245,6 +247,32 @@ describe('getImageTypeByMagicNumber', () => {
   it('should return empty string for null/undefined input', () => {
     expect(getImageTypeByMagicNumber(null as any)).toBe('')
     expect(getImageTypeByMagicNumber(undefined as any)).toBe('')
+  })
+})
+
+describe('imageCompress', () => {
+  it('should convert images to HEIF with explicit AV1 compression', async () => {
+    const input = await sharp({
+      create: {
+        width: 2,
+        height: 2,
+        channels: 3,
+        background: { r: 255, g: 0, b: 0 },
+      },
+    })
+      .jpeg()
+      .toBuffer()
+    const errors: string[] = []
+    const logger = {
+      error: (message: string) => errors.push(message),
+    } as any
+
+    const output = await imageCompress(input, { isConvert: true, convertFormat: 'heif', quality: 80 }, '.jpg', logger)
+    const metadata = await sharp(output).metadata()
+
+    expect(errors).toHaveLength(0)
+    expect(metadata.format).toBe('heif')
+    expect(output.subarray(4, 12).toString('ascii')).toBe('ftypavif')
   })
 })
 

@@ -6,6 +6,7 @@ import fs from 'fs-extra'
 import { emptyDirSync, ensureDirSync } from 'fs-extra/esm'
 import heicConvert from 'heic-convert'
 import { cloneDeep } from 'lodash-es'
+import sharp from 'sharp'
 
 import {
   IBuildInCompressOptions,
@@ -428,14 +429,27 @@ export class Lifecycle extends EventEmitter {
     compressOptions: IBuildInCompressOptions,
     ctx: IPicGo,
   ): Promise<Buffer> {
-    const heicResult = await heicConvert({
-      buffer: fileBuffer.buffer,
-      format: 'JPEG',
-      quality: 1,
-    })
+    const convertedBuffer = await this.convertHeicToJpegBuffer(fileBuffer)
     const tempHeicConvertFile = path.join(tempFilePath, `${path.basename(item, extension)}.jpg`)
-    fs.writeFileSync(tempHeicConvertFile, Buffer.from(heicResult))
-    return await imageCompress(fs.readFileSync(tempHeicConvertFile), compressOptions, '.jpg', ctx.log)
+    fs.writeFileSync(tempHeicConvertFile, convertedBuffer)
+    return await imageCompress(convertedBuffer, compressOptions, '.jpg', ctx.log)
+  }
+
+  private async convertHeicToJpegBuffer(fileBuffer: Buffer): Promise<Buffer> {
+    try {
+      return await sharp(fileBuffer, { animated: true })
+        .jpeg({
+          quality: 100,
+        })
+        .toBuffer()
+    } catch (_sharpError) {
+      const heicResult = await heicConvert({
+        buffer: fileBuffer,
+        format: 'JPEG',
+        quality: 1,
+      })
+      return Buffer.from(heicResult)
+    }
   }
 
   private async saveProcessedImage(

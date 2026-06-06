@@ -768,6 +768,21 @@ function formatOptions(options: IBuildInCompressOptions): IBuildInCompressOption
   }
 }
 
+type SharpFormatOptions = NonNullable<Parameters<sharp.Sharp['toFormat']>[1]>
+
+function getSharpFormatOptions(format: string, quality: number): SharpFormatOptions {
+  if (format === 'heif') {
+    return {
+      quality,
+      compression: 'av1',
+    }
+  }
+  return {
+    quality,
+    mozjpeg: true,
+  }
+}
+
 export async function imageCompress(
   img: Buffer,
   options: IBuildInCompressOptions,
@@ -860,17 +875,11 @@ export async function imageCompress(
     if (options.isConvert) {
       const newFormat = getConvertedFormat(options, rawFormat) as any
       if (newFormat !== rawFormat) {
-        image = image.toFormat(newFormat, {
-          quality,
-          mozjpeg: true,
-        })
+        image = image.toFormat(newFormat, getSharpFormatOptions(newFormat, quality))
       }
     } else {
       if (rawFormat && validOutputFormat(rawFormat)) {
-        image = image.toFormat(rawFormat as any, {
-          quality,
-          mozjpeg: true,
-        })
+        image = image.toFormat(rawFormat as any, getSharpFormatOptions(rawFormat, quality))
       } else {
         image = image.toFormat('jpg', {
           quality,
