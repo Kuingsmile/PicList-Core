@@ -128,6 +128,12 @@ describe('renameFileNameWithCustomString', () => {
     expect(result).toMatch(/^[0-9a-f]{32}\.png$/)
   })
 
+  it('should substitute {ulid}', () => {
+    const result = renameFileNameWithCustomString('photo.png', '{ulid}')
+    // ULID is 26 chars of Crockford's Base32
+    expect(result).toMatch(/^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}\.png$/)
+  })
+
   it('should substitute {filename} with the base name', () => {
     const result = renameFileNameWithCustomString('my-image.png', '{filename}')
     expect(result).toBe('my-image.png')
