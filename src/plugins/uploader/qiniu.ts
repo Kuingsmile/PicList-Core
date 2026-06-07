@@ -5,7 +5,13 @@ import { ILocalesKey } from '../../i18n/zh-CN'
 import { IOldReqOptions, IPicGo, IPluginConfig, IQiniuConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig } from './helper'
-import { buildInUploaderNames } from './utils'
+import { buildInUploaderNames, createField } from './utils'
+
+const messageGetter = (ctx: IPicGo, key: ILocalesKey) => ({
+  get message() {
+    return ctx.i18n.translate<ILocalesKey>(key)
+  },
+})
 
 function postOptions(options: IQiniuConfig, fileName: string, token: string, imgBase64: string): IOldReqOptions {
   const area = selectArea(options.area || 'z0')
@@ -84,102 +90,49 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IQiniuConfig>('picBed.qiniu') || {}
   const config: IPluginConfig[] = [
-    {
-      name: 'accessKey',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_ACCESSKEY')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_ACCESSKEY')
-      },
-      default: userConfig.accessKey || '',
-      required: true,
-    },
-    {
-      name: 'secretKey',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_SECRETKEY')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_SECRETKEY')
-      },
-      default: userConfig.secretKey || '',
-      required: true,
-    },
-    {
-      name: 'bucket',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_BUCKET')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_BUCKET')
-      },
-      default: userConfig.bucket || '',
-      required: true,
-    },
-    {
-      name: 'url',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_URL')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_URL')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_MESSAGE_URL')
-      },
-      default: userConfig.url || '',
-      required: true,
-    },
-    {
-      name: 'area',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_AREA')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_AREA')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_MESSAGE_AREA')
-      },
-      default: userConfig.area || '',
-      required: true,
-    },
-    {
-      name: 'options',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_OPTIONS')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_OPTIONS')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_MESSAGE_OPTIONS')
-      },
-      default: userConfig.options || '',
-      required: false,
-    },
-    {
-      name: 'path',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_PATH')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_PATH')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU_MESSAGE_PATH')
-      },
-      default: userConfig.path || '',
-      required: false,
-    },
+    createField(ctx, 'qiniu', 'accessKey', 'input', userConfig.accessKey || '', true),
+    createField(ctx, 'qiniu', 'secretKey', 'input', userConfig.secretKey || '', true),
+    createField(ctx, 'qiniu', 'bucket', 'input', userConfig.bucket || '', true),
+    createField(
+      ctx,
+      'qiniu',
+      'url',
+      'input',
+      userConfig.url || '',
+      true,
+      undefined,
+      messageGetter(ctx, 'PICBED_QINIU_MESSAGE_URL'),
+    ),
+    createField(
+      ctx,
+      'qiniu',
+      'area',
+      'input',
+      userConfig.area || '',
+      true,
+      undefined,
+      messageGetter(ctx, 'PICBED_QINIU_MESSAGE_AREA'),
+    ),
+    createField(
+      ctx,
+      'qiniu',
+      'options',
+      'input',
+      userConfig.options || '',
+      false,
+      undefined,
+      messageGetter(ctx, 'PICBED_QINIU_MESSAGE_OPTIONS'),
+    ),
+    createField(
+      ctx,
+      'qiniu',
+      'path',
+      'input',
+      userConfig.path || '',
+      false,
+      undefined,
+      messageGetter(ctx, 'PICBED_QINIU_MESSAGE_PATH'),
+    ),
   ]
   return config
 }

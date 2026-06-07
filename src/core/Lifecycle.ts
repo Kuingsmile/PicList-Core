@@ -64,6 +64,29 @@ const DEFAULT_SKIP_EXTENSIONS = ['zip', 'rar', '7z', 'tar', 'gz', 'tar.gz', 'tar
 const TTF_FILE_URL = 'https://release.piclist.cn/simhei.ttf'
 const DEFAULT_UPLOADER = 'smms'
 
+const getBuildInListItem = (buildInList: IBuildInListItem[], id: string): IBuildInListItem | undefined =>
+  buildInList.find(item => item.id === id)
+
+const resolveSkipProcessExtList = (idSpecificExtList?: string, globalExtList?: string): string[] => {
+  if (idSpecificExtList) return idSpecificExtList.split(',').map((item: string) => item.trim())
+  if (globalExtList) return globalExtList.split(',').map((item: string) => item.trim())
+  return DEFAULT_SKIP_EXTENSIONS
+}
+
+const createSkipExtensionSet = (extensions: string[]): Set<string> =>
+  new Set(
+    extensions.map((item: string) => {
+      const formattedItem = item.trim().toLowerCase()
+      return formattedItem.startsWith('.') ? formattedItem : `.${formattedItem}`
+    }),
+  )
+
+const getLocalFileExtension = (filePath: string, fileBuffer: Buffer): string => {
+  const extFromPath = path.extname(filePath)
+  if (extFromPath) return extFromPath
+  return getImageTypeByMagicNumber(fileBuffer) || extFromPath
+}
+
 export class Lifecycle extends EventEmitter {
   private readonly ctx: IPicGo
   ttfPath: string
@@ -108,8 +131,9 @@ export class Lifecycle extends EventEmitter {
     const buildInList = ctx.getConfig<Undefinable<IBuildInListItem[]>>('buildIn.list') || ([] as IBuildInListItem[])
 
     const uploaderType = this.getUploaderType(ctx)
-    const idSpecificCompressConfig = buildInList.find(item => item.id === uploaderType.id)?.compress || {}
-    const idSpecificWatermarkConfig = buildInList.find(item => item.id === uploaderType.id)?.watermark || {}
+    const buildInListItem = getBuildInListItem(buildInList, uploaderType.id)
+    const idSpecificCompressConfig = buildInListItem?.compress || {}
+    const idSpecificWatermarkConfig = buildInListItem?.watermark || {}
 
     if (compressOptionsGlobal) {
       compressOptionsGlobal.picBed = uploaderType.picBed
@@ -160,19 +184,13 @@ export class Lifecycle extends EventEmitter {
     const skipProcessGlobal = ctx.getConfig<Undefinable<IBuildInSkipProcessOptions>>('buildIn.skipProcess') || {}
     const buildInList = ctx.getConfig<Undefinable<IBuildInListItem[]>>('buildIn.list') || ([] as IBuildInListItem[])
     const uploaderType = this.getUploaderType(ctx)
-    const idSpecificSkipProcessConfig = buildInList.find(item => item.id === uploaderType.id)?.skipProcess || {}
-    const skipProcessExtList = idSpecificSkipProcessConfig.skipProcessExtList
-      ? idSpecificSkipProcessConfig.skipProcessExtList.split(',').map((item: string) => item.trim())
-      : skipProcessGlobal.skipProcessExtList
-        ? skipProcessGlobal.skipProcessExtList.split(',').map((item: string) => item.trim())
-        : DEFAULT_SKIP_EXTENSIONS
-
-    return new Set(
-      skipProcessExtList.map((item: string) => {
-        const formattedItem = item.trim().toLowerCase()
-        return formattedItem.startsWith('.') ? formattedItem : `.${formattedItem}`
-      }),
+    const idSpecificSkipProcessConfig = getBuildInListItem(buildInList, uploaderType.id)?.skipProcess || {}
+    const skipProcessExtList = resolveSkipProcessExtList(
+      idSpecificSkipProcessConfig.skipProcessExtList,
+      skipProcessGlobal.skipProcessExtList,
     )
+
+    return createSkipExtensionSet(skipProcessExtList)
   }
 
   // Main lifecycle methods
@@ -304,22 +322,11 @@ export class Lifecycle extends EventEmitter {
     if (itemIsUrl && (!info.success || !info.buffer)) return
 
     ctx.rawInputPath[index] = item
-    let extension: string
-    if (itemIsUrl) {
-      extension = info.extname || ''
-    } else {
-      const extFromPath = path.extname(item)
-      if (extFromPath) {
-        extension = extFromPath
-      } else {
-        const buffer = fs.readFileSync(item)
-        const imgType = getImageTypeByMagicNumber(buffer)
-        extension = imgType ? imgType : extFromPath
-      }
-    }
+    const localFileBuffer = itemIsUrl ? undefined : fs.readFileSync(item)
+    const extension = itemIsUrl ? info.extname || '' : getLocalFileExtension(item, localFileBuffer!)
     const shouldSkipExtension = skipExtensions.has(extension.toLowerCase())
 
-    const fileBuffer: Buffer = itemIsUrl ? info.buffer! : fs.readFileSync(item)
+    const fileBuffer: Buffer = itemIsUrl ? info.buffer! : localFileBuffer!
     const transformedBuffer = await this.applyProcessing(
       fileBuffer,
       extension,

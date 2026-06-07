@@ -65,4 +65,45 @@ describe('Lifecycle', () => {
     expect(metadata.format).toBe('heif')
     expect(output.subarray(4, 12).toString('ascii')).toBe('ftypavif')
   })
+
+  it('should detect image type from magic number for local files without extension', async () => {
+    const lifecycle = createLifecycle()
+    const tempFilePath = path.join(baseDirs[0], 'piclistTemp')
+    await fs.ensureDir(tempFilePath)
+    const input = await sharp({
+      create: {
+        width: 3,
+        height: 2,
+        channels: 3,
+        background: { r: 255, g: 255, b: 0 },
+      },
+    })
+      .png()
+      .toBuffer()
+    const inputPath = path.join(baseDirs[0], 'image-without-extension')
+    await fs.outputFile(inputPath, input)
+    const ctx = {
+      input: [inputPath],
+      rawInputPath: [],
+      log: {
+        info: () => undefined,
+        error: () => undefined,
+      },
+    }
+
+    await (lifecycle as any).processImage(
+      inputPath,
+      0,
+      ctx,
+      tempFilePath,
+      { isConvert: true, convertFormat: 'jpg' },
+      undefined,
+      new Set(),
+    )
+    const metadata = await sharp(ctx.input[0]).metadata()
+
+    expect(ctx.rawInputPath[0]).toBe(path.join(baseDirs[0], 'image-without-extension.jpg'))
+    expect(ctx.input[0]).toBe(path.join(tempFilePath, 'image-without-extension.jpg'))
+    expect(metadata.format).toBe('jpeg')
+  })
 })

@@ -622,6 +622,27 @@ const imageFormatList = [
 
 const validOutputFormat = (format: string): boolean => availableConvertFormatList.includes(format)
 
+const resolveOption = <T>(
+  idSpecificValue: T | undefined,
+  globalMap: Record<string, T> | undefined,
+  picBed: string,
+  globalValue: T | undefined,
+): T | undefined => idSpecificValue ?? globalMap?.[picBed] ?? globalValue
+
+const resolveBooleanOption = <T>(
+  idSpecificValue: T | undefined,
+  globalMap: Record<string, T> | undefined,
+  picBed: string,
+  globalValue: T | undefined,
+): boolean => !!resolveOption(idSpecificValue, globalMap, picBed, globalValue)
+
+const resolveNumberOption = (
+  idSpecificValue: number | undefined,
+  globalMap: Record<string, number> | undefined,
+  picBed: string,
+  globalValue: number | undefined,
+): number => forceNumber(resolveOption(idSpecificValue, globalMap, picBed, globalValue))
+
 export function getTreatedWaterMarkOptions(
   global: IBuildInWaterMarkOptions | undefined,
   idSpecificConfig: Partial<IBuildInWaterMarkOptions>,
@@ -630,35 +651,57 @@ export function getTreatedWaterMarkOptions(
 ): IBuildInWaterMarkOptionsTreated {
   global = global || {}
   const options: IBuildInWaterMarkOptionsTreated = {
-    isAddWatermark: !!(idSpecificConfig.isAddWatermark ?? global.isAddWatermarkMap?.[picBed] ?? global.isAddWatermark),
+    isAddWatermark: resolveBooleanOption(
+      idSpecificConfig.isAddWatermark,
+      global.isAddWatermarkMap,
+      picBed,
+      global.isAddWatermark,
+    ),
     watermarkType:
-      (idSpecificConfig.watermarkType ?? global.watermarkTypeMap?.[picBed] ?? global.watermarkType) || 'text',
-    isFullScreenWatermark: !!(
-      idSpecificConfig.isFullScreenWatermark ??
-      global.isFullScreenWatermarkMap?.[picBed] ??
-      global.isFullScreenWatermark
+      resolveOption(idSpecificConfig.watermarkType, global.watermarkTypeMap, picBed, global.watermarkType) || 'text',
+    isFullScreenWatermark: resolveBooleanOption(
+      idSpecificConfig.isFullScreenWatermark,
+      global.isFullScreenWatermarkMap,
+      picBed,
+      global.isFullScreenWatermark,
     ),
-    watermarkDegree: forceNumber(
-      idSpecificConfig.watermarkDegree ?? global.watermarkDegreeMap?.[picBed] ?? global.watermarkDegree,
+    watermarkDegree: resolveNumberOption(
+      idSpecificConfig.watermarkDegree,
+      global.watermarkDegreeMap,
+      picBed,
+      global.watermarkDegree,
     ),
-    watermarkText: (idSpecificConfig.watermarkText ?? global.watermarkTextMap?.[picBed] ?? global.watermarkText) || '',
+    watermarkText:
+      resolveOption(idSpecificConfig.watermarkText, global.watermarkTextMap, picBed, global.watermarkText) || '',
     watermarkFontPath: (idSpecificConfig.watermarkFontPath ?? global.watermarkFontPath) || '',
-    watermarkScaleRatio: forceNumber(
-      idSpecificConfig.watermarkScaleRatio ?? global.watermarkScaleRatioMap?.[picBed] ?? global.watermarkScaleRatio,
+    watermarkScaleRatio: resolveNumberOption(
+      idSpecificConfig.watermarkScaleRatio,
+      global.watermarkScaleRatioMap,
+      picBed,
+      global.watermarkScaleRatio,
     ),
     watermarkColor:
-      (idSpecificConfig.watermarkColor ?? global.watermarkColorMap?.[picBed] ?? global.watermarkColor) ||
+      resolveOption(idSpecificConfig.watermarkColor, global.watermarkColorMap, picBed, global.watermarkColor) ||
       'rgba(204, 204, 204, 0.45)',
     watermarkImagePath:
-      (idSpecificConfig.watermarkImagePath ?? global.watermarkImagePathMap?.[picBed] ?? global.watermarkImagePath) ||
-      '',
+      resolveOption(
+        idSpecificConfig.watermarkImagePath,
+        global.watermarkImagePathMap,
+        picBed,
+        global.watermarkImagePath,
+      ) || '',
     watermarkPosition:
-      (idSpecificConfig.watermarkPosition ?? global.watermarkPositionMap?.[picBed] ?? global.watermarkPosition) ||
-      'southeast',
-    watermarkImageOpacity: forceNumber(
-      idSpecificConfig.watermarkImageOpacity ??
-        global.watermarkImageOpacityMap?.[picBed] ??
-        global.watermarkImageOpacity,
+      resolveOption(
+        idSpecificConfig.watermarkPosition,
+        global.watermarkPositionMap,
+        picBed,
+        global.watermarkPosition,
+      ) || 'southeast',
+    watermarkImageOpacity: resolveNumberOption(
+      idSpecificConfig.watermarkImageOpacity,
+      global.watermarkImageOpacityMap,
+      picBed,
+      global.watermarkImageOpacity,
     ),
     picBed,
     id,
@@ -674,38 +717,60 @@ export function getTreatedCompressOptions(
 ): IBuildInCompressOptionsTreated {
   global = global || {}
   const options: IBuildInCompressOptionsTreated = {
-    quality: forceNumber(idSpecificConfig.quality ?? global.qualityMap?.[picBed] ?? global.quality),
-    isConvert: !!(idSpecificConfig.isConvert ?? global.isConvertMap?.[picBed] ?? global.isConvert),
+    quality: resolveNumberOption(idSpecificConfig.quality, global.qualityMap, picBed, global.quality),
+    isConvert: resolveBooleanOption(idSpecificConfig.isConvert, global.isConvertMap, picBed, global.isConvert),
     convertFormat:
-      (idSpecificConfig.convertFormat ?? global.convertFormatMap?.[picBed] ?? global.convertFormat) || 'jpg',
-    isReSize: !!(idSpecificConfig.isReSize ?? global.isReSizeMap?.[picBed] ?? global.isReSize),
-    reSizeHeight: forceNumber(idSpecificConfig.reSizeHeight ?? global.reSizeHeightMap?.[picBed] ?? global.reSizeHeight),
-    reSizeWidth: forceNumber(idSpecificConfig.reSizeWidth ?? global.reSizeWidthMap?.[picBed] ?? global.reSizeWidth),
-    skipReSizeOfSmallImg: !!(
-      idSpecificConfig.skipReSizeOfSmallImg ??
-      global.skipReSizeOfSmallImgMap?.[picBed] ??
-      global.skipReSizeOfSmallImg
+      resolveOption(idSpecificConfig.convertFormat, global.convertFormatMap, picBed, global.convertFormat) || 'jpg',
+    isReSize: resolveBooleanOption(idSpecificConfig.isReSize, global.isReSizeMap, picBed, global.isReSize),
+    reSizeHeight: resolveNumberOption(
+      idSpecificConfig.reSizeHeight,
+      global.reSizeHeightMap,
+      picBed,
+      global.reSizeHeight,
     ),
-    isReSizeByPercent: !!(
-      idSpecificConfig.isReSizeByPercent ??
-      global.isReSizeByPercentMap?.[picBed] ??
-      global.isReSizeByPercent
+    reSizeWidth: resolveNumberOption(idSpecificConfig.reSizeWidth, global.reSizeWidthMap, picBed, global.reSizeWidth),
+    skipReSizeOfSmallImg: resolveBooleanOption(
+      idSpecificConfig.skipReSizeOfSmallImg,
+      global.skipReSizeOfSmallImgMap,
+      picBed,
+      global.skipReSizeOfSmallImg,
     ),
-    reSizePercent: forceNumber(
-      idSpecificConfig.reSizePercent ?? global.reSizePercentMap?.[picBed] ?? global.reSizePercent,
+    isReSizeByPercent: resolveBooleanOption(
+      idSpecificConfig.isReSizeByPercent,
+      global.isReSizeByPercentMap,
+      picBed,
+      global.isReSizeByPercent,
     ),
-    longEdgeAsHeight: !!(
-      idSpecificConfig.longEdgeAsHeight ??
-      global.longEdgeAsHeightMap?.[picBed] ??
-      global.longEdgeAsHeight
+    reSizePercent: resolveNumberOption(
+      idSpecificConfig.reSizePercent,
+      global.reSizePercentMap,
+      picBed,
+      global.reSizePercent,
     ),
-    isRotate: !!(idSpecificConfig.isRotate ?? global.isRotateMap?.[picBed] ?? global.isRotate),
-    rotateDegree: forceNumber(idSpecificConfig.rotateDegree ?? global.rotateDegreeMap?.[picBed] ?? global.rotateDegree),
-    isRemoveExif: !!(idSpecificConfig.isRemoveExif ?? global.isRemoveExifMap?.[picBed] ?? global.isRemoveExif),
-    isFlip: !!(idSpecificConfig.isFlip ?? global.isFlipMap?.[picBed] ?? global.isFlip),
-    isFlop: !!(idSpecificConfig.isFlop ?? global.isFlopMap?.[picBed] ?? global.isFlop),
+    longEdgeAsHeight: resolveBooleanOption(
+      idSpecificConfig.longEdgeAsHeight,
+      global.longEdgeAsHeightMap,
+      picBed,
+      global.longEdgeAsHeight,
+    ),
+    isRotate: resolveBooleanOption(idSpecificConfig.isRotate, global.isRotateMap, picBed, global.isRotate),
+    rotateDegree: resolveNumberOption(
+      idSpecificConfig.rotateDegree,
+      global.rotateDegreeMap,
+      picBed,
+      global.rotateDegree,
+    ),
+    isRemoveExif: resolveBooleanOption(
+      idSpecificConfig.isRemoveExif,
+      global.isRemoveExifMap,
+      picBed,
+      global.isRemoveExif,
+    ),
+    isFlip: resolveBooleanOption(idSpecificConfig.isFlip, global.isFlipMap, picBed, global.isFlip),
+    isFlop: resolveBooleanOption(idSpecificConfig.isFlop, global.isFlopMap, picBed, global.isFlop),
     formatConvertObj:
-      (idSpecificConfig.formatConvertObj ?? global.formatConvertObjMap?.[picBed] ?? global.formatConvertObj) || {},
+      resolveOption(idSpecificConfig.formatConvertObj, global.formatConvertObjMap, picBed, global.formatConvertObj) ||
+      {},
     picBed,
     id,
   }
@@ -782,6 +847,110 @@ function getSharpFormatOptions(format: string, quality: number): SharpFormatOpti
   }
 }
 
+function getOutputQuality(qualityOption: number | undefined): number {
+  if (validParam(qualityOption) && qualityOption! < 100) {
+    return Math.min(Math.max(Math.round(qualityOption!), 1), 100)
+  }
+  return 100
+}
+
+async function applyPercentResize(image: sharp.Sharp, options: IBuildInCompressOptions): Promise<sharp.Sharp> {
+  if (!options.isReSizeByPercent || !validParam(options.reSizePercent)) return image
+
+  const { width, height } = await image.metadata()
+  if (!width || !height) return image
+
+  return image.resize(
+    Math.round((width * options.reSizePercent!) / 100),
+    Math.round((height * options.reSizePercent!) / 100),
+    {
+      fit: 'inside',
+    },
+  )
+}
+
+async function applyDimensionResize(image: sharp.Sharp, options: IBuildInCompressOptions): Promise<sharp.Sharp> {
+  if (options.isReSizeByPercent || !options.isReSize) return image
+
+  const hasHeight = typeof options.reSizeHeight === 'number' && options.reSizeHeight > 0
+  const hasWidth = typeof options.reSizeWidth === 'number' && options.reSizeWidth > 0
+
+  if (hasHeight && hasWidth) {
+    return image.resize(options.reSizeWidth, options.reSizeHeight, {
+      fit: 'fill',
+    })
+  }
+
+  const isHeightOnly = hasHeight && (typeof options.reSizeWidth !== 'number' || options.reSizeWidth === 0)
+  const isWidthOnly = hasWidth && (typeof options.reSizeHeight !== 'number' || options.reSizeHeight === 0)
+  if (!isHeightOnly && !isWidthOnly) return image
+
+  const { width, height } = await image.metadata()
+  if (!width || !height) return image
+
+  if (isHeightOnly) {
+    const targetEdge = options.longEdgeAsHeight && width > height ? width : height
+    if (!options.skipReSizeOfSmallImg || (options.skipReSizeOfSmallImg && options.reSizeHeight! < targetEdge)) {
+      const scaleRatio = options.reSizeHeight! / targetEdge
+      return image.resize(Math.round(width * scaleRatio), Math.round(height * scaleRatio), {
+        fit: 'inside',
+      })
+    }
+  }
+
+  if (
+    isWidthOnly &&
+    (!options.skipReSizeOfSmallImg || (options.skipReSizeOfSmallImg && options.reSizeWidth! < width))
+  ) {
+    const scaleRatio = options.reSizeWidth! / width
+    return image.resize(options.reSizeWidth, Math.round(height * scaleRatio), {
+      fit: 'inside',
+    })
+  }
+
+  return image
+}
+
+async function applyResizeOptions(image: sharp.Sharp, options: IBuildInCompressOptions): Promise<sharp.Sharp> {
+  return options.isReSizeByPercent ? applyPercentResize(image, options) : applyDimensionResize(image, options)
+}
+
+function applyTransformOptions(image: sharp.Sharp, options: IBuildInCompressOptions): sharp.Sharp {
+  if (options.isRotate && options.rotateDegree) {
+    image = image.rotate(options.rotateDegree, {
+      background: { r: 255, g: 255, b: 255, alpha: 0 },
+    })
+  }
+  if (options.isFlip) {
+    image = image.flip()
+  }
+  if (options.isFlop) {
+    image = image.flop()
+  }
+  return image
+}
+
+function applyOutputFormat(
+  image: sharp.Sharp,
+  options: IBuildInCompressOptions,
+  rawFormat: string,
+  quality: number,
+): sharp.Sharp {
+  if (options.isConvert) {
+    const newFormat = getConvertedFormat(options, rawFormat) as any
+    return newFormat !== rawFormat ? image.toFormat(newFormat, getSharpFormatOptions(newFormat, quality)) : image
+  }
+
+  if (rawFormat && validOutputFormat(rawFormat)) {
+    return image.toFormat(rawFormat as any, getSharpFormatOptions(rawFormat, quality))
+  }
+
+  return image.toFormat('jpg', {
+    quality,
+    mozjpeg: true,
+  })
+}
+
 export async function imageCompress(
   img: Buffer,
   options: IBuildInCompressOptions,
@@ -793,99 +962,10 @@ export async function imageCompress(
     rawFormat = normalizeImageExt(rawFormat)
     if (!imageFormatList.includes(rawFormat) || rawFormat === 'gif') return img
     let image: sharp.Sharp = sharp(img, { animated: true })
-    let quality = 100
-    if (validParam(options.quality) && options.quality! < 100) {
-      quality = Math.min(Math.max(Math.round(options.quality!), 1), 100)
-    }
-    if (options.isReSizeByPercent) {
-      if (validParam(options.reSizePercent)) {
-        const imageWidth = await image.metadata().then(metadata => metadata.width)
-        const imageHeight = await image.metadata().then(metadata => metadata.height)
-        if (imageWidth && imageHeight) {
-          image = image.resize(
-            Math.round((imageWidth * options.reSizePercent!) / 100),
-            Math.round((imageHeight * options.reSizePercent!) / 100),
-            {
-              fit: 'inside',
-            },
-          )
-        }
-      }
-    } else if (options.isReSize) {
-      if (
-        typeof options.reSizeHeight === 'number' &&
-        options.reSizeHeight > 0 &&
-        typeof options.reSizeWidth === 'number' &&
-        options.reSizeWidth > 0
-      ) {
-        image = image.resize(options.reSizeWidth, options.reSizeHeight, {
-          fit: 'fill',
-        })
-      } else if (
-        typeof options.reSizeHeight === 'number' &&
-        options.reSizeHeight > 0 &&
-        (typeof options.reSizeWidth !== 'number' || options.reSizeWidth === 0)
-      ) {
-        const rawImageWidth = await image.metadata().then(metadata => metadata.width)
-        const rawImageHeight = await image.metadata().then(metadata => metadata.height)
-        if (rawImageWidth && rawImageHeight) {
-          if (
-            !options.skipReSizeOfSmallImg ||
-            (options.skipReSizeOfSmallImg &&
-              options.reSizeHeight <
-                (options.longEdgeAsHeight && rawImageWidth > rawImageHeight ? rawImageWidth : rawImageHeight))
-          ) {
-            const scaleRatio =
-              options.reSizeHeight /
-              (options.longEdgeAsHeight && rawImageWidth > rawImageHeight ? rawImageWidth : rawImageHeight)
-            image = image.resize(Math.round(rawImageWidth * scaleRatio), Math.round(rawImageHeight * scaleRatio), {
-              fit: 'inside',
-            })
-          }
-        }
-      } else if (
-        typeof options.reSizeWidth === 'number' &&
-        options.reSizeWidth > 0 &&
-        (typeof options.reSizeHeight !== 'number' || options.reSizeHeight === 0)
-      ) {
-        const imageWidth = await image.metadata().then(metadata => metadata.width)
-        const imageHeight = await image.metadata().then(metadata => metadata.height)
-        if (imageWidth && imageHeight) {
-          if (!options.skipReSizeOfSmallImg || (options.skipReSizeOfSmallImg && options.reSizeWidth < imageWidth)) {
-            const scaleRatio = options.reSizeWidth / imageWidth
-            image = image.resize(options.reSizeWidth, Math.round(imageHeight * scaleRatio), {
-              fit: 'inside',
-            })
-          }
-        }
-      }
-    }
-    if (options.isRotate && options.rotateDegree) {
-      image = image.rotate(options.rotateDegree, {
-        background: { r: 255, g: 255, b: 255, alpha: 0 },
-      })
-    }
-    if (options.isFlip) {
-      image = image.flip()
-    }
-    if (options.isFlop) {
-      image = image.flop()
-    }
-    if (options.isConvert) {
-      const newFormat = getConvertedFormat(options, rawFormat) as any
-      if (newFormat !== rawFormat) {
-        image = image.toFormat(newFormat, getSharpFormatOptions(newFormat, quality))
-      }
-    } else {
-      if (rawFormat && validOutputFormat(rawFormat)) {
-        image = image.toFormat(rawFormat as any, getSharpFormatOptions(rawFormat, quality))
-      } else {
-        image = image.toFormat('jpg', {
-          quality,
-          mozjpeg: true,
-        })
-      }
-    }
+    const quality = getOutputQuality(options.quality)
+    image = await applyResizeOptions(image, options)
+    image = applyTransformOptions(image, options)
+    image = applyOutputFormat(image, options, rawFormat, quality)
     return await image.toBuffer()
   } catch (error: any) {
     logger.error(`Image process error: ${error}`)

@@ -45,6 +45,11 @@ export const buildInUploaderNames = {
   webdavplist: 'webdavplist',
 }
 
+const applyExtraDescriptors = <T extends Record<string, any>>(field: T, extras?: any): T => {
+  if (!extras) return field
+  return Object.defineProperties(field, Object.getOwnPropertyDescriptors(extras))
+}
+
 export const createField = (
   ctx: IPicGo,
   picBedName: string,
@@ -54,20 +59,23 @@ export const createField = (
   required: boolean,
   i18nPrefix: string = 'PICBED',
   extras?: any,
-) => ({
-  name,
-  type,
-  get prefix() {
-    return ctx.i18n.translate<ILocalesKey>(
-      `${i18nPrefix}_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey,
-    )
-  },
-  get alias() {
-    return ctx.i18n.translate<ILocalesKey>(
-      `${i18nPrefix}_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey,
-    )
-  },
-  default: defaultValue,
-  required,
-  ...extras,
-})
+): any =>
+  applyExtraDescriptors(
+    {
+      name,
+      type,
+      get prefix() {
+        return ctx.i18n.translate<ILocalesKey>(
+          `${i18nPrefix}_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey,
+        )
+      },
+      get alias() {
+        return ctx.i18n.translate<ILocalesKey>(
+          `${i18nPrefix}_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey,
+        )
+      },
+      default: defaultValue,
+      required,
+    },
+    extras,
+  )

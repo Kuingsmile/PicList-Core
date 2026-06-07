@@ -5,8 +5,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   forceNumber,
+  getConvertedFormat,
   getImageTypeByMagicNumber,
   getPluginNameType,
+  getTreatedCompressOptions,
+  getTreatedWaterMarkOptions,
   handleCompletePluginName,
   handleStreamlinePluginName,
   handleUnixStylePath,
@@ -14,6 +17,7 @@ import {
   imageCompress,
   isConfigKeyInBlackList,
   isInputConfigValid,
+  isNeedCompress,
   isUrl,
   isUrlEncode,
   randomStringGenerator,
@@ -279,6 +283,137 @@ describe('imageCompress', () => {
     expect(errors).toHaveLength(0)
     expect(metadata.format).toBe('heif')
     expect(output.subarray(4, 12).toString('ascii')).toBe('ftypavif')
+  })
+
+  it('should resize by percent and keep the original format when not converting', async () => {
+    const input = await sharp({
+      create: {
+        width: 10,
+        height: 8,
+        channels: 3,
+        background: { r: 0, g: 255, b: 0 },
+      },
+    })
+      .jpeg()
+      .toBuffer()
+    const logger = {
+      error: () => undefined,
+    } as any
+
+    const output = await imageCompress(input, { isReSizeByPercent: true, reSizePercent: 50 }, '.jpg', logger)
+    const metadata = await sharp(output).metadata()
+
+    expect(metadata.format).toBe('jpeg')
+    expect(metadata.width).toBe(5)
+    expect(metadata.height).toBe(4)
+  })
+
+  it('should fall back to jpeg output for processable but unsupported output formats', async () => {
+    const input = await sharp({
+      create: {
+        width: 2,
+        height: 2,
+        channels: 3,
+        background: { r: 0, g: 0, b: 255 },
+      },
+    })
+      .png()
+      .toBuffer()
+    const logger = {
+      error: () => undefined,
+    } as any
+
+    const output = await imageCompress(input, { quality: 80 }, '.ico', logger)
+    const metadata = await sharp(output).metadata()
+
+    expect(metadata.format).toBe('jpeg')
+  })
+})
+
+describe('getTreatedWaterMarkOptions', () => {
+  it('should prefer id-specific values, then scoped values, then global values', () => {
+    const options = getTreatedWaterMarkOptions(
+      {
+        isAddWatermark: true,
+        isAddWatermarkMap: { qiniu: true },
+        watermarkType: 'text',
+        watermarkTypeMap: { qiniu: 'image' },
+        watermarkDegree: 10,
+        watermarkDegreeMap: { qiniu: 20 },
+        watermarkText: 'global',
+        watermarkTextMap: { qiniu: 'scoped' },
+      },
+      {
+        isAddWatermark: false,
+        watermarkText: 'specific',
+      },
+      'qiniu',
+      'config-id',
+    )
+
+    expect(options.isAddWatermark).toBe(false)
+    expect(options.watermarkType).toBe('image')
+    expect(options.watermarkDegree).toBe(20)
+    expect(options.watermarkText).toBe('specific')
+    expect(options.picBed).toBe('qiniu')
+    expect(options.id).toBe('config-id')
+  })
+})
+
+describe('getTreatedCompressOptions', () => {
+  it('should preserve id-specific false values over scoped true values', () => {
+    const options = getTreatedCompressOptions(
+      {
+        quality: 60,
+        qualityMap: { qiniu: 70 },
+        isConvert: true,
+        isConvertMap: { qiniu: true },
+        convertFormat: 'jpg',
+        convertFormatMap: { qiniu: 'webp' },
+        reSizeWidth: 800,
+        reSizeWidthMap: { qiniu: 1024 },
+      },
+      {
+        quality: 80,
+        isConvert: false,
+      },
+      'qiniu',
+      'config-id',
+    )
+
+    expect(options.quality).toBe(80)
+    expect(options.isConvert).toBe(false)
+    expect(options.convertFormat).toBe('webp')
+    expect(options.reSizeWidth).toBe(1024)
+    expect(options.picBed).toBe('qiniu')
+    expect(options.id).toBe('config-id')
+  })
+})
+
+describe('getConvertedFormat', () => {
+  it('should keep gifs unchanged', () => {
+    expect(getConvertedFormat({ isConvert: true, convertFormat: 'webp' }, '.gif')).toBe('gif')
+  })
+
+  it('should apply format map overrides and fallback invalid mapped formats to jpg', () => {
+    expect(getConvertedFormat({ formatConvertObj: { png: 'avif' } }, '.png')).toBe('avif')
+    expect(getConvertedFormat({ convertFormat: 'webp', formatConvertObj: { png: 'invalid' } }, '.png')).toBe('jpg')
+  })
+
+  it('should prevent imgur webp conversion', () => {
+    expect(getConvertedFormat({ picBed: 'imgur', convertFormat: 'webp' }, '.png')).toBe('jpg')
+  })
+})
+
+describe('isNeedCompress', () => {
+  it('should detect only active compression operations', () => {
+    expect(isNeedCompress(undefined, '.jpg')).toBe(false)
+    expect(isNeedCompress({ quality: 100 }, '.jpg')).toBe(false)
+    expect(isNeedCompress({ quality: 80 }, '.jpg')).toBe(true)
+    expect(isNeedCompress({ isConvert: true, convertFormat: 'jpg' }, '.jpg')).toBe(false)
+    expect(isNeedCompress({ isConvert: true, convertFormat: 'webp' }, '.jpg')).toBe(true)
+    expect(isNeedCompress({ isReSize: true, reSizeWidth: 0, reSizeHeight: 0 }, '.jpg')).toBe(false)
+    expect(isNeedCompress({ quality: 80 }, '.zip')).toBe(false)
   })
 })
 

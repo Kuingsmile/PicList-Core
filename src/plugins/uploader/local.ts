@@ -7,7 +7,13 @@ import { ILocalesKey } from '../../i18n/zh-CN'
 import { ILocalConfig, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig, getImageBuffer } from './helper'
-import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
+import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
+
+const messageGetter = (ctx: IPicGo, key: ILocalesKey) => ({
+  get message() {
+    return ctx.i18n.translate<ILocalesKey>(key)
+  },
+})
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const localConfig = getAndCheckConfig<ILocalConfig>(ctx, 'picBed.local', [])
@@ -55,51 +61,36 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<ILocalConfig>('picBed.local') || {}
   const config: IPluginConfig[] = [
-    {
-      name: 'path',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_PATH')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_PATH')
-      },
-      default: userConfig.path || '',
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_MESSAGE_PATH')
-      },
-      required: true,
-    },
-    {
-      name: 'customUrl',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_CUSTOMURL')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_CUSTOMURL')
-      },
-      default: userConfig.customUrl || '',
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_MESSAGE_CUSTOMURL')
-      },
-      required: false,
-    },
-    {
-      name: 'webPath',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_WEBPATH')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_WEBPATH')
-      },
-      default: userConfig.webPath || '',
-      required: false,
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL_MESSAGE_WEBPATH')
-      },
-    },
+    createField(
+      ctx,
+      'local',
+      'path',
+      'input',
+      userConfig.path || '',
+      true,
+      undefined,
+      messageGetter(ctx, 'PICBED_LOCAL_MESSAGE_PATH'),
+    ),
+    createField(
+      ctx,
+      'local',
+      'customUrl',
+      'input',
+      userConfig.customUrl || '',
+      false,
+      undefined,
+      messageGetter(ctx, 'PICBED_LOCAL_MESSAGE_CUSTOMURL'),
+    ),
+    createField(
+      ctx,
+      'local',
+      'webPath',
+      'input',
+      userConfig.webPath || '',
+      false,
+      undefined,
+      messageGetter(ctx, 'PICBED_LOCAL_MESSAGE_WEBPATH'),
+    ),
   ]
   return config
 }

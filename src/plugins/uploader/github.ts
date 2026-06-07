@@ -4,7 +4,13 @@ import { ILocalesKey } from '../../i18n/zh-CN'
 import { IGithubConfig, IOldReqOptionsWithJSON, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig } from './helper'
-import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
+import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
+
+const messageGetter = (ctx: IPicGo, key: ILocalesKey) => ({
+  get message() {
+    return ctx.i18n.translate<ILocalesKey>(key)
+  },
+})
 
 function buildGithubApiUrl(repo: string, path: string, fileName: string, extra: string = ''): string {
   return `https://api.github.com/repos/${repo}/contents/${encodePath(`${path}${fileName}`)}${extra}`
@@ -98,93 +104,57 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IGithubConfig>('picBed.github') || {}
   const config: IPluginConfig[] = [
-    {
-      name: 'repo',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_REPO')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_REPO')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_MESSAGE_REPO')
-      },
-      default: userConfig.repo || '',
-      required: true,
-    },
-    {
-      name: 'branch',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_BRANCH')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_BRANCH')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_MESSAGE_BRANCH')
-      },
-      default: userConfig.branch || 'master',
-      required: true,
-    },
-    {
-      name: 'token',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_TOKEN')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_TOKEN')
-      },
-      default: userConfig.token || '',
-      required: true,
-    },
-    {
-      name: 'path',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_PATH')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_PATH')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_MESSAGE_PATH')
-      },
-      default: userConfig.path || '',
-      required: false,
-    },
-    {
-      name: 'webPath',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_WEBPATH')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_WEBPATH')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_MESSAGE_WEBPATH')
-      },
-      default: userConfig.webPath || '',
-      required: false,
-    },
-    {
-      name: 'customUrl',
-      type: 'input',
-      get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_CUSTOMURL')
-      },
-      get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_CUSTOMURL')
-      },
-      get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB_MESSAGE_CUSTOMURL')
-      },
-      default: userConfig.customUrl || '',
-      required: false,
-    },
+    createField(
+      ctx,
+      'github',
+      'repo',
+      'input',
+      userConfig.repo || '',
+      true,
+      undefined,
+      messageGetter(ctx, 'PICBED_GITHUB_MESSAGE_REPO'),
+    ),
+    createField(
+      ctx,
+      'github',
+      'branch',
+      'input',
+      userConfig.branch || 'master',
+      true,
+      undefined,
+      messageGetter(ctx, 'PICBED_GITHUB_MESSAGE_BRANCH'),
+    ),
+    createField(ctx, 'github', 'token', 'input', userConfig.token || '', true),
+    createField(
+      ctx,
+      'github',
+      'path',
+      'input',
+      userConfig.path || '',
+      false,
+      undefined,
+      messageGetter(ctx, 'PICBED_GITHUB_MESSAGE_PATH'),
+    ),
+    createField(
+      ctx,
+      'github',
+      'webPath',
+      'input',
+      userConfig.webPath || '',
+      false,
+      undefined,
+      messageGetter(ctx, 'PICBED_GITHUB_MESSAGE_WEBPATH'),
+    ),
+    createField(
+      ctx,
+      'github',
+      'customUrl',
+      'input',
+      userConfig.customUrl || '',
+      false,
+      undefined,
+      messageGetter(ctx, 'PICBED_GITHUB_MESSAGE_CUSTOMURL'),
+    ),
   ]
   return config
 }
