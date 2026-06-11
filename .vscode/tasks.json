@@ -2,11 +2,126 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "type": "npm",
-      "script": "debug",
+      "label": "yarn: build",
+      "type": "shell",
+      "command": "yarn",
+      "args": ["build"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
       "problemMatcher": [],
-      "label": "npm: debug",
-      "detail": "tsc -p . --sourcemap && npm run copy"
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "yarn: dev",
+      "type": "shell",
+      "command": "yarn",
+      "args": ["dev"],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "yarn: lint",
+      "type": "shell",
+      "command": "yarn",
+      "args": ["lint"],
+      "group": "test",
+      "problemMatcher": ["$eslint-stylish"],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "yarn: lint:fix",
+      "type": "shell",
+      "command": "yarn",
+      "args": ["lint:fix"],
+      "problemMatcher": ["$eslint-stylish"],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "yarn: lint:dpdm",
+      "type": "shell",
+      "command": "yarn",
+      "args": ["lint:dpdm"],
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "yarn: test",
+      "type": "shell",
+      "command": "yarn",
+      "args": ["test"],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "yarn: test current file",
+      "type": "shell",
+      "command": "yarn",
+      "args": ["vitest", "run", "${file}"],
+      "group": "test",
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "yarn: test:coverage",
+      "type": "shell",
+      "command": "yarn",
+      "args": ["test:coverage"],
+      "group": "test",
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "yarn: start",
+      "type": "shell",
+      "command": "yarn",
+      "args": ["start"],
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "yarn: server",
+      "type": "shell",
+      "command": "yarn",
+      "args": ["server"],
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
     }
   ]
 }

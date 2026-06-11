@@ -1,10 +1,53 @@
 {
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "never"
+  },
+  "editor.detectIndentation": false,
+  "editor.rulers": [120],
+  "editor.tabSize": 2,
+  "editor.trimAutoWhitespace": true,
   "eslint.useFlatConfig": true,
-  "eslint.experimental.useFlatConfig": null,
-  "files.trimTrailingWhitespace": true,
   "eslint.run": "onSave",
   "eslint.codeActionsOnSave.mode": "all",
   "eslint.format.enable": true,
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact", "json", "jsonc"],
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "eslint.config.js": ".eslintignore",
+    "package.json": "yarn.lock, package-lock.json, pnpm-lock.yaml, .npmrc, renovate.json",
+    "tsconfig.json": "tsconfig.*.json",
+    "vitest.config.ts": "coverage"
+  },
+  "files.associations": {
+    "**/bin/picgo": "javascript",
+    "**/bin/picgo-server": "javascript"
+  },
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.trimTrailingWhitespace": true,
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/coverage/**": true,
+    "**/dist/**": true,
+    "**/node_modules/**": true
+  },
+  "js/ts.preferences.quoteStyle": "single",
+  "js/ts.updateImportsOnFileMove.enabled": "always",
+  "npm.packageManager": "yarn",
+  "prettier.configPath": ".prettierrc",
+  "prettier.requireConfig": true,
+  "search.exclude": {
+    "**/coverage": true,
+    "**/dist": true,
+    "**/node_modules": true
+  },
+  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
   "[typescript]": {
     "editor.defaultFormatter": "dbaeumer.vscode-eslint",
     "editor.codeActionsOnSave": {
@@ -19,12 +62,27 @@
     },
     "editor.formatOnSave": false
   },
-  "[vue]": {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.codeActionsOnSave": {
       "source.fixAll.eslint": "always"
     },
-    "editor.formatOnSave": false
+    "editor.formatOnSave": true
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "always"
+    },
+    "editor.formatOnSave": true
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
   },
   "[typescriptreact]": {
     "editor.defaultFormatter": "dbaeumer.vscode-eslint",
@@ -39,21 +97,5 @@
       "source.fixAll.eslint": "always"
     },
     "editor.formatOnSave": false
-  },
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
-  },
-  "[css]": {
-    "editor.defaultFormatter": "stylelint.vscode-stylelint",
-    "editor.codeActionsOnSave": {
-      "source.fixAll.stylelint": "always"
-    },
-    "editor.formatOnSave": false
-  },
-  "eslint.validate": ["javascript", "javascriptreact", "vue", "typescript", "typescriptreact", "json", "jsonc"],
-  "editor.tabSize": 2,
-  "js/ts.tsdk.path": "node_modules/typescript/lib",
-  "css.validate": false,
-  "scss.validate": false,
-  "less.validate": false
+  }
 }
