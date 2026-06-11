@@ -2559,13 +2559,6 @@ ci-info@^4.4.0:
   resolved "https://registry.yarnpkg.com/ci-info/-/ci-info-4.4.0.tgz#7d54eff9f54b45b62401c26032696eb59c8bd18c"
   integrity sha512-77PSwercCZU2Fc4sX94eF8k8Pxte6JAwL4/ICZLFjJLqegs7kCuAsqqj/70NQF6TvDpgFjkubQB2FW2ZZddvQg==
 
-clean-regexp@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/clean-regexp/-/clean-regexp-1.0.0.tgz#8df7c7aae51fd36874e8f8d05b9180bc11a3fed7"
-  integrity sha512-GfisEZEJvzKrmGWkvfhgzcz/BllN1USeqD2V6tg14OAOgaCD2Z/PUEuxnAZ/nPvmaHRG7a8y77p1T/IRQ4D1Hw==
-  dependencies:
-    escape-string-regexp "^1.0.5"
-
 cli-cursor@^2.1.0:
   version "2.1.0"
   resolved "https://registry.npmjs.org/cli-cursor/-/cli-cursor-2.1.0.tgz"
@@ -3040,6 +3033,11 @@ detect-indent@6.1.0:
   resolved "https://registry.npmmirror.com/detect-indent/-/detect-indent-6.1.0.tgz#592485ebbbf6b3b1ab2be175c8393d04ca0d57e6"
   integrity sha512-reYkTUJAZb9gUuZ2RvVCNhVHdg62RHnJ7WJl8ftMi4diZ6NWlciOzQN88pUhSELEwflJht4oQDv0F0BMlwaYtA==
 
+detect-indent@^7.0.2:
+  version "7.0.2"
+  resolved "https://registry.yarnpkg.com/detect-indent/-/detect-indent-7.0.2.tgz#16c516bf75d4b2f759f68214554996d467c8d648"
+  integrity sha512-y+8xyqdGLL+6sh0tVeHcfP/QDd8gUgbasolJJpY7NgeQGSZ739bDtSiaiDgtoicy+mtYB81dKLxO9xRhCyIB3A==
+
 detect-libc@^2.0.3, detect-libc@^2.1.0:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/detect-libc/-/detect-libc-2.1.2.tgz#689c5dcdc1900ef5583a4cb9f6d7b473742074ad"
@@ -3298,24 +3296,23 @@ eslint-plugin-simple-import-sort@^13.0.0:
   resolved "https://registry.yarnpkg.com/eslint-plugin-simple-import-sort/-/eslint-plugin-simple-import-sort-13.0.0.tgz#93936354367d8bb42c1b9b4c13c92eb29fffd2a5"
   integrity sha512-McAc+/Nlvcg4byY/CABGH8kqnefWBj8s3JA2okEtz8ixbECQgU46p0HkTUKa4YS7wvgGceimlc34p1nXqbWqtA==
 
-eslint-plugin-unicorn@^64.0.0:
-  version "64.0.0"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-unicorn/-/eslint-plugin-unicorn-64.0.0.tgz#e1cd29155d7da42cd42180211f053ed9b68d11f5"
-  integrity sha512-rNZwalHh8i0UfPlhNwg5BTUO1CMdKNmjqe+TgzOTZnpKoi8VBgsW7u9qCHIdpxEzZ1uwrJrPF0uRb7l//K38gA==
+eslint-plugin-unicorn@^65.0.0:
+  version "65.0.1"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-unicorn/-/eslint-plugin-unicorn-65.0.1.tgz#df3d5561783439f798797243c3fcf1363e85c12a"
+  integrity sha512-daCrQrgxOoOz2uMPWB3Y3vvv/5q+ncwICI8IjoebiwtW87CaY4tAN5EEiRXTYVnf7qi1v1BGBdHOSnZLV0rx6A==
   dependencies:
     "@babel/helper-validator-identifier" "^7.28.5"
     "@eslint-community/eslint-utils" "^4.9.1"
     change-case "^5.4.4"
     ci-info "^4.4.0"
-    clean-regexp "^1.0.0"
     core-js-compat "^3.49.0"
+    detect-indent "^7.0.2"
     find-up-simple "^1.0.1"
     globals "^17.4.0"
     indent-string "^5.0.0"
     is-builtin-module "^5.0.0"
     jsesc "^3.1.0"
     pluralize "^8.0.0"
-    regexp-tree "^0.1.27"
     regjsparser "^0.13.0"
     semver "^7.7.4"
     strip-indent "^4.1.1"
@@ -5497,11 +5494,6 @@ readable-stream@^3.4.0:
     string_decoder "^1.1.1"
     util-deprecate "^1.0.1"
 
-regexp-tree@^0.1.27:
-  version "0.1.27"
-  resolved "https://registry.yarnpkg.com/regexp-tree/-/regexp-tree-0.1.27.tgz#2198f0ef54518ffa743fe74d983b56ffd631b6cd"
-  integrity sha512-iETxpjK6YoRWJG5o6hXLwvjYAoW+FEZn9os0PD/b6AP6xQwsa/Y7lCVgIixBbUPMfhu+i2LtdeAqVTgGlQarfA==
-
 regjsparser@^0.13.0:
   version "0.13.0"
   resolved "https://registry.yarnpkg.com/regjsparser/-/regjsparser-0.13.0.tgz#01f8351335cf7898d43686bc74d2dd71c847ecc0"
@@ -6389,6 +6381,7 @@ ulid@^3.0.2:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/ulid/-/ulid-3.0.2.tgz#b6a1f2a3de7852e39aa86bf497a8e33b1867c984"
   integrity sha512-yu26mwteFYzBAot7KVMqFGCVpsF6g8wXfJzQUHvu1no3+rRRSFcSV2nKeYvNPLD2J4b08jYBDhHUjeH0ygIl9w==
+
 "undici-types@>=7.24.0 <7.24.7":
   version "7.24.6"
   resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-7.24.6.tgz#61275b485d7fd4e9d269c7cf04ec2873c9cc0f91"
