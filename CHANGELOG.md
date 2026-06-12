@@ -1,3 +1,22 @@
+##  (2026-06-12)
+
+* :bug: Fix(custom): fix several issues related with heif input and output 22ba40c
+* :hammer: Refactor(custom): add image processing utilities including compression, watermarking, and f 2277b1f
+* :hammer: Refactor(custom): add unit test for ulid rename 898d7d3
+* :hammer: Refactor(custom): streamline uploader configuration fields and enhance message handling 31783b4
+* :package: Chore(custom): add AGENTS.md 0be2dd1
+* :package: Chore(custom): remove vitest suggestion f7d6ec0
+* :package: Chore(custom): update docker workflow file e4bb2b2
+* :package: Chore(custom): update logo image file c4b673c
+* :package: Chore(custom): update vscode setting 2235e2f
+* :sparkles: Feature(custom): remove exif info byte to byte ab4b63f, closes kuingsmile/piclist#526
+* :sparkles: Feature(custom): support upload absolute file path in clipboard ad9aa4c
+* add ULID for advanced rename (#62) 98f2a01, closes #62
+* Update docker/build-push-action action to v7 (#63) f1382ba, closes #63
+* Update docker/login-action action to v4 (#64) 35fc46f, closes #64
+
+
+
 ##  (2026-05-09)
 
 * :hammer: Refactor(custom): enhance config management with detailed logging and error handling 35526d1
