@@ -21,12 +21,38 @@ import {
   isUrl,
   isUrlEncode,
   randomStringGenerator,
+  removeExif,
   removePluginVersion,
   renameFileNameWithCustomString,
   renameFileNameWithRandomString,
   renameFileNameWithTimestamp,
   safeParse,
 } from '../../src/utils/common'
+
+const createJpegApp1Segment = (payload: Buffer): Buffer => {
+  const segment = Buffer.alloc(4)
+  segment[0] = 0xff
+  segment[1] = 0xe1
+  segment.writeUInt16BE(payload.length + 2, 2)
+  return Buffer.concat([segment, payload])
+}
+
+const createPngChunk = (type: string, data: Buffer): Buffer => {
+  const chunk = Buffer.alloc(12 + data.length)
+  chunk.writeUInt32BE(data.length, 0)
+  chunk.write(type, 4, 4, 'ascii')
+  data.copy(chunk, 8)
+  return chunk
+}
+
+const createWebpChunk = (type: string, data: Buffer): Buffer => {
+  const padding = data.length % 2
+  const chunk = Buffer.alloc(8 + data.length + padding)
+  chunk.write(type, 0, 4, 'ascii')
+  chunk.writeUInt32LE(data.length, 4)
+  data.copy(chunk, 8)
+  return chunk
+}
 
 // --------------- rename helpers ---------------
 
@@ -327,6 +353,171 @@ describe('imageCompress', () => {
     const metadata = await sharp(output).metadata()
 
     expect(metadata.format).toBe('jpeg')
+  })
+})
+
+describe('removeExif', () => {
+  it('should remove JPEG Exif APP1 data without re-encoding image data', async () => {
+    const input = await sharp({
+      create: {
+        width: 3,
+        height: 2,
+        channels: 3,
+        background: { r: 255, g: 128, b: 0 },
+      },
+    })
+      .jpeg()
+      .toBuffer()
+    const exifSegment = createJpegApp1Segment(Buffer.concat([Buffer.from('Exif\0\0', 'binary'), Buffer.from('test')]))
+    const inputWithExif = Buffer.concat([input.subarray(0, 2), exifSegment, input.subarray(2)])
+
+    const output = await removeExif(inputWithExif, '.jpg')
+
+    expect(output.equals(input)).toBe(true)
+  })
+
+  it('should keep non-Exif JPEG APP1 data unchanged', async () => {
+    const input = await sharp({
+      create: {
+        width: 2,
+        height: 2,
+        channels: 3,
+        background: { r: 0, g: 128, b: 255 },
+      },
+    })
+      .jpeg()
+      .toBuffer()
+    const xmpSegment = createJpegApp1Segment(Buffer.from('http://ns.adobe.com/xap/1.0/\0test', 'binary'))
+    const inputWithXmp = Buffer.concat([input.subarray(0, 2), xmpSegment, input.subarray(2)])
+
+    const output = await removeExif(inputWithXmp, '.jpg')
+
+    expect(output.equals(inputWithXmp)).toBe(true)
+  })
+
+  it('should allow large JPEG Exif removal to reduce size without recompressing scan data', async () => {
+    const input = await sharp({
+      create: {
+        width: 400,
+        height: 300,
+        channels: 3,
+        background: { r: 95, g: 150, b: 220 },
+      },
+    })
+      .jpeg({ progressive: true })
+      .toBuffer()
+    const largeExifPayload = Buffer.concat([Buffer.from('Exif\0\0', 'binary'), Buffer.alloc(35_000, 0x20)])
+    const exifSegment = createJpegApp1Segment(largeExifPayload)
+    const xmpSegment = createJpegApp1Segment(Buffer.from('http://ns.adobe.com/xap/1.0/\0test', 'binary'))
+    const inputWithMetadata = Buffer.concat([input.subarray(0, 2), exifSegment, xmpSegment, input.subarray(2)])
+    const expectedOutput = Buffer.concat([input.subarray(0, 2), xmpSegment, input.subarray(2)])
+
+    const output = await removeExif(inputWithMetadata, '.jpg')
+
+    expect(output.equals(expectedOutput)).toBe(true)
+    expect(inputWithMetadata.length - output.length).toBe(exifSegment.length)
+  })
+
+  it('should remove PNG eXIf chunks without recompressing the image', async () => {
+    const input = await sharp({
+      create: {
+        width: 3,
+        height: 2,
+        channels: 3,
+        background: { r: 20, g: 180, b: 40 },
+      },
+    })
+      .png()
+      .toBuffer()
+    const ihdrEnd = 8 + 8 + input.readUInt32BE(8) + 4
+    const exifChunk = createPngChunk('eXIf', Buffer.from('test'))
+    const inputWithExif = Buffer.concat([input.subarray(0, ihdrEnd), exifChunk, input.subarray(ihdrEnd)])
+
+    const output = await removeExif(inputWithExif, '.png')
+
+    expect(output.equals(input)).toBe(true)
+  })
+
+  it('should remove WebP EXIF chunks and update RIFF size without recompressing the image', async () => {
+    const input = await sharp({
+      create: {
+        width: 3,
+        height: 2,
+        channels: 3,
+        background: { r: 60, g: 70, b: 220 },
+      },
+    })
+      .webp()
+      .toBuffer()
+    const exifChunk = createWebpChunk('EXIF', Buffer.from('test'))
+    const inputWithExif = Buffer.concat([Buffer.from(input.subarray(0, 12)), exifChunk, input.subarray(12)])
+    inputWithExif.writeUInt32LE(inputWithExif.length - 8, 4)
+
+    const output = await removeExif(inputWithExif, '.webp')
+
+    expect(output.equals(input)).toBe(true)
+  })
+
+  it('should remove AVIF Exif items without recompressing the image', async () => {
+    const input = await sharp({
+      create: {
+        width: 3,
+        height: 2,
+        channels: 3,
+        background: { r: 90, g: 70, b: 220 },
+      },
+    })
+      .withExif({ IFD0: { Artist: 'codex' } })
+      .avif()
+      .toBuffer()
+
+    expect((await sharp(input).metadata()).exif).toBeDefined()
+
+    const output = await removeExif(input, '.avif')
+    const metadata = await sharp(output).metadata()
+
+    expect(metadata.exif).toBeUndefined()
+    expect(metadata.width).toBe(3)
+    expect(metadata.height).toBe(2)
+    expect(output.length).toBeLessThan(input.length)
+    expect(output.includes(Buffer.from('Exif'))).toBe(false)
+  })
+
+  it('should remove HEIF and HEIC Exif items through the same container path', async () => {
+    const input = await sharp({
+      create: {
+        width: 3,
+        height: 2,
+        channels: 3,
+        background: { r: 30, g: 120, b: 190 },
+      },
+    })
+      .withExif({ IFD0: { Artist: 'codex' } })
+      .heif({ compression: 'av1' })
+      .toBuffer()
+
+    const heifOutput = await removeExif(input, '.heif')
+    const heicOutput = await removeExif(input, '.heic')
+
+    expect((await sharp(heifOutput).metadata()).exif).toBeUndefined()
+    expect((await sharp(heicOutput).metadata()).exif).toBeUndefined()
+  })
+
+  it('should keep TIFF unchanged instead of recompressing through sharp', async () => {
+    const input = await sharp({
+      create: {
+        width: 3,
+        height: 2,
+        channels: 3,
+        background: { r: 10, g: 120, b: 90 },
+      },
+    })
+      .tiff()
+      .toBuffer()
+
+    const output = await removeExif(input, '.tiff')
+
+    expect(output.equals(input)).toBe(true)
   })
 })
 
