@@ -3,7 +3,7 @@ import path from 'node:path'
 import { I18n, ObjectAdapter } from '@piclist/i18n'
 import fs from 'fs-extra'
 import { ensureDirSync, pathExistsSync } from 'fs-extra/esm'
-import yaml from 'js-yaml'
+import { load } from 'js-yaml'
 import { merge } from 'lodash-es'
 
 import { II18nManager, IPicGo, IStringKeyMap } from '../types'
@@ -47,7 +47,7 @@ class I18nManager implements II18nManager {
         const i18nFilePath = path.join(i18nFolder, file.name)
         const i18nFile = fs.readFileSync(i18nFilePath, 'utf8')
         try {
-          const i18nFileObj = yaml.load(i18nFile) as ILocales
+          const i18nFileObj = load(i18nFile) as ILocales
           languageList[file.name.replace(/\.yml$/, '')] = i18nFileObj
         } catch (e) {
           console.error(e)
