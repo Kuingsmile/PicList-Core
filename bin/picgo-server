@@ -79,6 +79,16 @@ if (configPath !== true && configPath !== '') {
 const picgo = await PicGo.create(configPath)
 const errorMessage = 'Upload failed, please check your network and config'
 
+export const getUploadedImageUrls = (result, expectedCount) => {
+  const output = result.ctx?.output
+  if (!Array.isArray(output) || output.length !== expectedCount) return null
+
+  const urls = Array.from(output, item => item?.imgUrl)
+  if (!urls.every(url => typeof url === 'string' && url.trim().length > 0)) return null
+
+  return urls
+}
+
 const handleResponse = ({
   response,
   statusCode = 200,
@@ -232,14 +242,14 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
       // upload with clipboard
       console.log('[PicList Server] upload clipboard file')
       const result = await picgo.uploadReturnCtx()
-      const res = result.ctx?.output[0].imgUrl
-      console.log('[PicList Server] upload result:', res)
+      const res = getUploadedImageUrls(result, 1)
+      console.log('[PicList Server] upload result:', res?.[0])
       if (res) {
         handleResponse({
           response,
           body: {
             success: true,
-            result: [res],
+            result: res,
           },
         })
       } else {
@@ -255,11 +265,9 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
       console.log('[PicList Server] upload files in list')
       //  upload with files
       const result = await picgo.uploadReturnCtx(list)
-      const res = result.ctx?.output.map(item => {
-        return item.imgUrl
-      })
-      console.log('[PicList Server] upload result\n', res.join('\n'))
-      if (res.length) {
+      const res = getUploadedImageUrls(result, list.length)
+      console.log('[PicList Server] upload result\n', res?.join('\n') || '')
+      if (res) {
         handleResponse({
           response,
           body: {

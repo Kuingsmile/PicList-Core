@@ -1,7 +1,22 @@
+import { fileURLToPath } from 'node:url'
+
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  plugins: [
+    {
+      name: 'script-as-string',
+      enforce: 'pre',
+      transform(code, id) {
+        if (!/\.(?:applescript|ps1|sh)$/.test(id)) return null
+        return { code: `export default ${JSON.stringify(code)}`, map: null }
+      },
+    },
+  ],
   resolve: {
+    alias: {
+      '../dist/index.js': fileURLToPath(new URL('./src/index.ts', import.meta.url)),
+    },
     extensions: ['.ts', '.js', '.json'],
   },
   test: {
