@@ -4304,9 +4304,9 @@ is-windows@^1.0.1:
   integrity sha512-eXK1UInq2bPmjyX6e3VHIzMLobc4J94i4AWn+Hpq3OU5KkrRC96OAcR3PRJ/pGu6m8TRnBHP9dkXQVsT/COVIA==
 
 is-wsl@^3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/is-wsl/-/is-wsl-3.1.0.tgz#e1c657e39c10090afcbedec61720f6b924c3cbd2"
-  integrity sha512-UcVfVfaK4Sc4m7X3dUSoHoozQGBEFeDC+zVo06t98xe8CzHSZZBekNXH+tu0NalHolcJ/QAGqS46Hef7QXBIMw==
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/is-wsl/-/is-wsl-3.1.1.tgz#327897b26832a3eb117da6c27492d04ca132594f"
+  integrity sha512-e6rvdUCiQCAuumZslxRJWR/Doq4VpPR82kqclvcS0efgt430SlGIk05vdCN58+VrzgtIcfNODjozVielycD4Sw==
   dependencies:
     is-inside-container "^1.0.0"
 
