@@ -5385,10 +5385,10 @@ punycode@^2.1.0:
   resolved "https://registry.npmjs.org/punycode/-/punycode-2.1.1.tgz"
   integrity sha512-XRsRjdf+j5ml+y/6GKHPZbrF/8p2Yga0JPtdqTIY2Xe5ohJPD9saDJJLPvp9+NSBprVvevdXZybnj2cv8OEd0A==
 
-qiniu@7.14.0:
-  version "7.14.0"
-  resolved "https://registry.yarnpkg.com/qiniu/-/qiniu-7.14.0.tgz#250ded0894a0d423dd3b508cd3245b66a674867b"
-  integrity sha512-3q7nIQQjqR69k7hbDPfM+hx52BmUxt8J/n9LrmjxypWVEeNK5PTaPS2pnxqaxs0tL9utNOPVfjFiBr18mHOFqQ==
+qiniu@7.15.2:
+  version "7.15.2"
+  resolved "https://registry.yarnpkg.com/qiniu/-/qiniu-7.15.2.tgz#76aea7f3ea3bfce067cae4fcb5c0aa1e255fc70f"
+  integrity sha512-j3GkmPP4P5o0c2cphqo6TwetCID8ZCMubcPaZlFS6iXng0mvV4BRxfMb9eROItTvyRL/XPWe2+T6ZLUC5Hs1BA==
   dependencies:
     agentkeepalive "^4.0.2"
     before "^0.0.1"
