@@ -109,7 +109,7 @@
     "@types/heic-convert": "^2.1.1",
     "@types/js-yaml": "^4.0.9",
     "@types/lodash-es": "^4.17.12",
-    "@types/node": "25.9.2",
+    "@types/node": "25.9.6",
     "@types/resolve": "^1.20.6",
     "@types/text-to-svg": "^3.1.4",
     "@types/tunnel": "^0.0.7",
