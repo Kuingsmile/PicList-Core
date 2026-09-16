@@ -5,6 +5,14 @@ import { NodeSSH } from 'node-ssh-no-cpu-features'
 
 import type { ISftpPlistConfig } from '../types'
 
+const quoteShellArgument = (value: string): string => {
+  if (value.includes('\0')) {
+    throw new Error('SSH command arguments must not contain null bytes')
+  }
+  // POSIX single quotes prevent expansion; embedded quotes must be escaped outside them.
+  return `'${value.replace(/'/g, "'\\''")}'`
+}
+
 class SSHClient {
   private static instance: SSHClient
   private client = new NodeSSH()
@@ -54,7 +62,7 @@ class SSHClient {
       await this.client.putFile(local, remote)
       const fileMode = config.fileMode || '0644'
       if (fileMode !== '0644') {
-        await this.exec(`chmod ${fileMode} "${remote}"`)
+        await this.exec(`chmod -- ${quoteShellArgument(String(fileMode))} ${quoteShellArgument(remote)}`)
       }
     } catch (err: any) {
       throw new Error(err, { cause: err })
@@ -72,12 +80,13 @@ class SSHClient {
       for (const dir of dirs) {
         if (dir) {
           currentPath += `/${dir}`
-          const script = `mkdir "${currentPath}" && chmod ${directoryMode} "${currentPath}"`
+          const quotedPath = quoteShellArgument(currentPath)
+          const script = `mkdir -- ${quotedPath} && chmod -- ${quoteShellArgument(String(directoryMode))} ${quotedPath}`
           await this.exec(script)
         }
       }
     } else {
-      const script = `cd / && mkdir -p "${dirPath}"`
+      const script = `cd / && mkdir -p -- ${quoteShellArgument(dirPath)}`
       await this.exec(script)
     }
   }
@@ -86,7 +95,7 @@ class SSHClient {
     remote = SSHClient.changeWinStylePathToUnix(remote)
     const [_user, _group] = group ? [user, group] : user.includes(':') ? user.split(':') : [user, user]
 
-    await this.exec(`chown ${_user}:${_group} "${remote}"`)
+    await this.exec(`chown -- ${quoteShellArgument(`${_user}:${_group}`)} ${quoteShellArgument(remote)}`)
   }
 
   private async exec(script: string): Promise<boolean> {
