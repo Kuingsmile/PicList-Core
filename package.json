@@ -87,7 +87,7 @@
     "minimist": "^1.2.8",
     "multer": "^2.2.0",
     "node-ssh-no-cpu-features": "^2.0.0",
-    "qiniu": "7.14.0",
+    "qiniu": "7.15.2",
     "resolve": "^1.22.11",
     "sharp": "0.34.4",
     "text-to-svg": "^3.1.5",
