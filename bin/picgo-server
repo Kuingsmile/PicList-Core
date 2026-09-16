@@ -150,13 +150,16 @@ class Router {
 }
 
 const router = new Router()
+const uploadDirectory = Symbol('uploadDirectory')
 
 const multerStorage = multer.diskStorage({
-  destination(_req, _file, cb) {
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir)
+  destination(req, _file, cb) {
+    try {
+      // Separate files too, while retaining their original names for uploaders.
+      cb(null, fs.mkdtempSync(path.join(req[uploadDirectory], 'file-')))
+    } catch (err) {
+      cb(err)
     }
-    cb(null, tempDir)
   },
   filename(_req, file, cb) {
     if (!/[^\u0000-\u00ff]/.test(file.originalname)) {
@@ -169,6 +172,46 @@ const multerStorage = multer.diskStorage({
 const uploadMulter = multer({
   storage: multerStorage,
 })
+
+const handleMultipartUpload = async (request, response, handler, urlparams) => {
+  let requestTempDir
+  try {
+    requestTempDir = await fs.mkdtemp(path.join(tempDir, 'request-'))
+    request[uploadDirectory] = requestTempDir
+    if (request.destroyed || response.destroyed) return
+
+    await new Promise((resolve, reject) => {
+      uploadMulter.any()(request, response, err => (err ? reject(err) : resolve()))
+    })
+    if (request.aborted || response.destroyed) return
+
+    await handler({
+      list: (request.files || []).map(file => file.path),
+      response,
+      urlparams,
+    })
+  } catch (err) {
+    if (!response.destroyed && !response.headersSent) {
+      const limitExceeded = err instanceof multer.MulterError && err.code.startsWith('LIMIT_')
+      handleResponse({
+        response,
+        statusCode: limitExceeded ? 413 : 200,
+        body: {
+          success: false,
+          message: limitExceeded ? `Upload limit exceeded: ${err.code}` : 'Error processing formData',
+        },
+      })
+    }
+  } finally {
+    if (requestTempDir) {
+      try {
+        await fs.remove(requestTempDir)
+      } catch (err) {
+        console.error('[PicList Server] temporary upload cleanup failed:', err.code)
+      }
+    }
+  }
+}
 
 const changeCurrentUploader = (type, config, id) => {
   if (!type) return
@@ -194,17 +237,6 @@ router.get('/upload', responseForGet)
 router.post('/upload', async ({ response, list = [], urlparams }) => {
   try {
     const picbed = urlparams?.get('picbed')
-    const passedKey = urlparams?.get('key')
-    if (key && key !== passedKey) {
-      console.log('[PicList Server] Unauthorized access')
-      return handleResponse({
-        response,
-        body: {
-          success: false,
-          message: 'Unauthorized access',
-        },
-      })
-    }
 
     let needRestore = false
     let currentPicBedType = ''
@@ -285,7 +317,6 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
         })
       }
     }
-    fs.emptyDirSync(tempDir)
     if (needRestore) {
       picgo.saveConfig({
         'picBed.current': currentPicBedType,
@@ -412,39 +443,33 @@ class Server {
     }
 
     if (method === 'POST') {
-      let urlSP = query ? new URLSearchParams(query) : undefined
+      const urlSP = new URLSearchParams(query || '')
       const remote = request.socket?.remoteAddress
       if (isLoopback(remote)) {
-        if (urlSP) {
-          urlSP.set('key', key)
-        } else {
-          urlSP = new URLSearchParams('key=' + key)
-        }
+        urlSP.set('key', key)
+      }
+
+      // Authenticate before consuming a body or creating any upload files.
+      if (url === '/upload' && key && key !== urlSP.get('key')) {
+        request.resume()
+        handleResponse({
+          response,
+          body: { success: false, message: 'Unauthorized access' },
+        })
+        return
+      }
+
+      // Heartbeats never need body parsing or temporary upload storage.
+      if (url === '/heartbeat') {
+        request.resume()
+        handlerEntry.handler({ response, urlparams: urlSP })
+        return
       }
 
       const contentType = String(request.headers['content-type'] || '')
       const isForm = contentType.startsWith('multipart/form-data')
       if (isForm) {
-        uploadMulter.any()(request, response, err => {
-          if (err) {
-            console.log('[PicList Server]', err)
-            return handleResponse({
-              response,
-              body: {
-                success: false,
-                message: 'Error processing formData',
-              },
-            })
-          }
-          const list = request.files.map(file => file.path)
-          if (handlerEntry.handler) {
-            handlerEntry.handler({
-              list,
-              response,
-              urlparams: urlSP,
-            })
-          }
-        })
+        void handleMultipartUpload(request, response, handlerEntry.handler, urlSP)
       } else {
         let body = ''
         let postObj
@@ -454,7 +479,6 @@ class Server {
         request.on('end', () => {
           try {
             postObj = body === '' ? {} : JSON.parse(body)
-            console.log('[PicList Server] get the request', body)
             if (handlerEntry.handler) {
               handlerEntry.handler({
                 ...postObj,
