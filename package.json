@@ -133,6 +133,7 @@
     "typescript-eslint": "^8.70.0",
     "vitest": "^4.1.11"
   },
+  "packageManager": "yarn@1.22.22",
   "engines": {
     "node": "^22.13.0 || >=24.0.0"
   },
