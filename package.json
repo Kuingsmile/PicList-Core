@@ -126,7 +126,7 @@
     "node-bump-version": "^3.0.0",
     "prettier": "^3.9.6",
     "rimraf": "^6.1.3",
-    "rollup": "4.62.3",
+    "rollup": "4.63.3",
     "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-string": "^3.0.0",
     "typescript": "^6.0.3",
