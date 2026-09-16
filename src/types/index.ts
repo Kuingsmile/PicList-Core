@@ -808,4 +808,6 @@ export type IScriptLifecycle =
 export interface IAlistTokenStore {
   token: string
   refreshedAt: number
+  /** Identifies the server and login credentials; absent in legacy caches. */
+  cacheKey?: string
 }

@@ -4,25 +4,35 @@ import axios from 'axios'
 
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IAlistConfig, IAlistTokenStore, IFullResponse, IOldReqOptions, IPicGo, IPluginConfig } from '../../types'
+import { getSha256 } from '../../utils/common/hash'
 import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
 const getAlistToken = async (ctx: IPicGo, url: string, username: string, password: string): Promise<string> => {
+  // Legacy caches have no identity and must be refreshed before they can be trusted.
+  const cacheKey = getSha256(JSON.stringify([url, username, password]))
   const tokenStore = ctx.getConfig<IAlistTokenStore>('picgo-plugin-buildin-alistplist')
-  if (tokenStore && tokenStore.refreshedAt && Date.now() - tokenStore.refreshedAt < 3600000 && tokenStore.token) {
+  if (
+    tokenStore?.cacheKey === cacheKey &&
+    tokenStore.refreshedAt &&
+    Date.now() - tokenStore.refreshedAt >= 0 &&
+    Date.now() - tokenStore.refreshedAt < 3600000 &&
+    tokenStore.token
+  ) {
     return tokenStore.token
   }
   const res = await axios.post(`${url}/api/auth/login`, {
     username,
     password,
   })
-  if (res.data.code === 200 && res.data.message === 'success') {
-    const token = res.data.data.token
+  const token = res.data?.data?.token
+  if (res.data?.code === 200 && res.data.message === 'success' && typeof token === 'string' && token) {
     ctx.saveConfig({
       'picgo-plugin-buildin-alistplist': {
         token,
         refreshedAt: Date.now(),
+        cacheKey,
       },
     })
     return token
