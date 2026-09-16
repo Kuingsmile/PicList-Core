@@ -222,7 +222,7 @@ export class Request implements IRequest {
       return obj
     })
     if ('resolveWithFullResponse' in options && options.resolveWithFullResponse) {
-      return instance.request(opt)
+      return instance.request<T, IFullResponse<T, U>>(opt) as Promise<IResponse<T, U>>
     } else {
       return instance.request(opt).then(res => {
         // use old request option format

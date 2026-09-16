@@ -1,13 +1,13 @@
 import crypto from 'node:crypto'
 
-export function getMd5(input: crypto.BinaryLike): string {
+export function getMd5(input: Parameters<crypto.Hash['update']>[0]): string {
   return crypto.createHash('md5').update(input).digest('hex')
 }
 
-export function getSha256(input: crypto.BinaryLike): string {
+export function getSha256(input: Parameters<crypto.Hash['update']>[0]): string {
   return crypto.createHash('sha256').update(input).digest('hex')
 }
 
-export function getSha1(input: crypto.BinaryLike): string {
+export function getSha1(input: Parameters<crypto.Hash['update']>[0]): string {
   return crypto.createHash('sha1').update(input).digest('hex')
 }

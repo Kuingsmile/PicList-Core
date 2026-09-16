@@ -1,4 +1,3 @@
-import type { BinaryLike } from 'node:crypto'
 import path from 'node:path'
 
 import { ulid } from 'ulid'
@@ -44,7 +43,7 @@ export function renameFileNameWithCustomString(
   oldName: string,
   customFormat: string,
   affixFileName?: string,
-  fileBuffer?: BinaryLike,
+  fileBuffer?: Parameters<typeof getMd5>[0],
 ): string {
   const now = new Date()
   const year = now.getFullYear().toString()
