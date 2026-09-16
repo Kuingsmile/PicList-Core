@@ -57,9 +57,9 @@
     "baseline-browser-mapping": "^2.11.24"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1133.0",
-    "@aws-sdk/lib-storage": "3.1133.0",
-    "@aws-sdk/s3-request-presigner": "3.1133.0",
+    "@aws-sdk/client-s3": "3.1134.0",
+    "@aws-sdk/lib-storage": "3.1134.0",
+    "@aws-sdk/s3-request-presigner": "3.1134.0",
     "@inquirer/prompts": "^8.7.2",
     "@piclist/i18n": "^2.1.0",
     "@piclist/store": "^4.0.0",
