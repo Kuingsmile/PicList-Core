@@ -178,11 +178,11 @@ export type IRequestConfig<T> = T extends IRequestLibOnlyOptions ? IOldReqOption
 export interface IRequest {
   request: <
     T,
-    U extends IRequestConfig<U> extends IOldReqOptions
+    U extends (IRequestConfig<U> extends IOldReqOptions
       ? IOldReqOptions
       : IRequestConfig<U> extends AxiosRequestConfig
         ? AxiosRequestConfig
-        : never,
+        : never),
   >(
     config: U,
   ) => Promise<IResponse<T, U>>

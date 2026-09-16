@@ -1,34 +1,22 @@
 import js from '@eslint/js'
 import { defineConfig } from 'eslint/config'
-import configPrettier from 'eslint-config-prettier'
 import jsonc from 'eslint-plugin-jsonc'
 import pluginPrettier from 'eslint-plugin-prettier/recommended'
 import simpleImportSort from 'eslint-plugin-simple-import-sort'
 import eslintPluginUnicorn from 'eslint-plugin-unicorn'
 import globals from 'globals'
-import * as jsoncParser from 'jsonc-eslint-parser'
 import tseslint from 'typescript-eslint'
+
+const jsoncFiles = ['**/*.jsonc', '**/tsconfig.json', '**/tsconfig.*.json', '**/.vscode/*.json']
+
 export default defineConfig(
   {
-    ignores: ['**/node_modules/**', '**/dist/**', 'vitest.workspace.mjs'],
+    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
   },
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
-  ...tseslint.configs.stylistic,
   {
-    files: [
-      'src/**/*.{ts,tsx,cts,mts,js,cjs,mjs}',
-      'scripts/**/*.{ts,js,mjs}',
-      'test/**/*.{ts,js,mjs}',
-      './bin/picgo',
-      './bin/picgo-server',
-      'eslint.config.js',
-      'rollup.config.js',
-    ],
+    files: ['**/*.{js,jsx,cjs,mjs,ts,tsx,cts,mts}', 'bin/picgo', 'bin/picgo-server'],
+    extends: [js.configs.recommended, tseslint.configs.recommended, tseslint.configs.stylistic],
     languageOptions: {
-      parserOptions: {
-        warnOnUnsupportedTypeScriptVersion: false,
-      },
       globals: globals.node,
     },
     plugins: {
@@ -54,14 +42,11 @@ export default defineConfig(
       'prefer-const': 'error',
       'prefer-object-spread': 'error',
       'unicode-bom': ['error', 'never'],
-      'no-console': 'off',
       'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
-      'no-unused-vars': 'off',
       'no-extra-boolean-cast': 'off',
       'no-case-declarations': 'off',
       'no-cond-assign': 'off',
       'no-control-regex': 'off',
-      'no-inner-declarations': 'off',
       'no-empty': 'off',
       // @typescript-eslint/eslint-plugin
       '@typescript-eslint/no-unused-expressions': 'off',
@@ -69,17 +54,14 @@ export default defineConfig(
       '@typescript-eslint/no-empty-function': 'off',
       '@typescript-eslint/no-namespace': 'off',
       '@typescript-eslint/no-non-null-asserted-optional-chain': 'off',
-      '@typescript-eslint/no-var-requires': 'off',
-      '@typescript-eslint/no-empty-interface': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-empty-object-type': 'off', // {} is a totally useful and valid type.
       '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-inferrable-types': 'off',
-      // Pending https://github.com/typescript-eslint/typescript-eslint/issues/4820
-      '@typescript-eslint/prefer-optional-chain': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
+          varsIgnorePattern: '^_',
           args: 'all',
           argsIgnorePattern: '^_',
           caughtErrors: 'all',
@@ -88,31 +70,10 @@ export default defineConfig(
       ],
     },
   },
-  ...jsonc.configs['flat/recommended-with-jsonc'],
   {
-    files: ['**/*.json', '**/*.jsonc', '**/*.json5'],
+    files: ['**/*.{cjs,cts}'],
     languageOptions: {
-      parser: jsoncParser,
-    },
-    rules: {
-      'jsonc/array-bracket-spacing': ['error', 'never'],
-      'jsonc/comma-dangle': ['error', 'never'],
-      'jsonc/indent': ['error', 2],
-      'jsonc/no-comments': 'off',
-      'jsonc/quotes': ['error', 'double'],
-    },
-  },
-  {
-    files: ['src/i18n/**/*.json'],
-    rules: {
-      'jsonc/sort-keys': [
-        'error',
-        'asc', // 升序排列
-        {
-          caseSensitive: false,
-          natural: true,
-        },
-      ],
+      sourceType: 'commonjs',
     },
   },
   {
@@ -129,6 +90,34 @@ export default defineConfig(
       ],
     },
   },
-  configPrettier,
+  {
+    files: ['**/*.json'],
+    ignores: jsoncFiles,
+    extends: [jsonc.configs['recommended-with-json'], jsonc.configs.prettier],
+    language: 'jsonc/json',
+  },
+  {
+    files: jsoncFiles,
+    extends: [jsonc.configs['recommended-with-jsonc'], jsonc.configs.prettier],
+    language: 'jsonc/jsonc',
+  },
+  {
+    files: ['**/*.json5'],
+    extends: [jsonc.configs['recommended-with-json5'], jsonc.configs.prettier],
+    language: 'jsonc/json5',
+  },
+  {
+    files: ['./tsconfig.json'],
+    rules: {
+      'jsonc/sort-keys': [
+        'error',
+        'asc', // 升序排列
+        {
+          caseSensitive: false,
+          natural: true,
+        },
+      ],
+    },
+  },
   pluginPrettier,
 )

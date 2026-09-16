@@ -4,6 +4,7 @@ thumbs.db
 
 /node_modules/
 /dist/
+/coverage/
 
 yarn-error.log
 package-lock.json

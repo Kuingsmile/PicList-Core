@@ -1,21 +1,21 @@
 {
   "compilerOptions": {
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "lib": ["esnext", "es2015", "es6"],
     "module": "esnext",
     "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "sourceMap": true,
-    "target": "esnext",
-    "declaration": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "outDir": "dist",
+    "resolveJsonModule": true,
     "rootDir": "src",
-    "lib": ["esnext", "es2015", "es6"]
+    "sourceMap": true,
+    "strict": true,
+    "strictFunctionTypes": true,
+    "strictNullChecks": true,
+    "target": "esnext"
   },
   "exclude": ["node_modules", "dist", "test", "vitest.config.ts"]
 }

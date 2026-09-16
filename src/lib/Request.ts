@@ -174,11 +174,11 @@ export class Request implements IRequest {
   // #64 dynamic get proxy value
   request<
     T,
-    U extends IRequestConfig<U> extends IOldReqOptions
+    U extends (IRequestConfig<U> extends IOldReqOptions
       ? IOldReqOptions
       : IRequestConfig<U> extends AxiosRequestConfig
         ? AxiosRequestConfig
-        : never,
+        : never),
   >(options: U): Promise<IResponse<T, U>> {
     this.options.proxy = this.handleProxy()
     this.options.headers = options.headers || {}
