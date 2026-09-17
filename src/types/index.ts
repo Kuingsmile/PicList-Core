@@ -199,6 +199,8 @@ export interface IImgInfo {
   extname?: string
   imgUrl?: string
   filePath?: string
+  /** Index of the source input, retained when failed inputs are removed from the output. */
+  inputIndex?: number
   [propName: string]: any
 }
 

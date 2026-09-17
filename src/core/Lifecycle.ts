@@ -508,7 +508,7 @@ export class Lifecycle extends EventEmitter {
       let fileName = item.fileName
       if (format) {
         fileName = renameFileNameWithCustomString(
-          ctx.rawInputPath[index],
+          ctx.rawInputPath[item.inputIndex ?? index],
           format,
           undefined,
           item.base64Image ? item.base64Image : item.buffer,

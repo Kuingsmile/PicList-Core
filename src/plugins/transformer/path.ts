@@ -25,6 +25,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         const imgSize = getImgSize(ctx, info.buffer, item)
         const extname = info.extname || imgSize.extname || '.png'
         results[index] = {
+          inputIndex: index,
           buffer: info.buffer,
           fileName: info.fileName || `${dayjs().format('YYYYMMDDHHmmssSSS')}${extname}`,
           width: imgSize.width,

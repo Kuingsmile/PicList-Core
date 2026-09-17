@@ -206,7 +206,7 @@ describe('Lifecycle preprocessing isolation', () => {
 
   it('preserves different URL images with the same basename', async () => {
     const urls = ['https://example.invalid/a/photo.png', 'https://example.invalid/b/photo.png']
-    vi.spyOn(picgo, 'request', 'get').mockReturnValue((async ({ url }: { url: string }) => ({
+    vi.spyOn(picgo.Request, 'request').mockImplementation((async ({ url }: { url: string }) => ({
       data: inputBuffers[urls.indexOf(url)],
       headers: { 'content-type': 'image/png' },
     })) as IPicGo['request'])
@@ -227,5 +227,75 @@ describe('Lifecycle preprocessing isolation', () => {
     await expectDistinctImages(uploaded)
     expect(uploaded.map(item => item.fileName)).toEqual(['photo.png', 'photo.png'])
     expect(ctx?.rawInputPath).toEqual([inputPaths[0], inputPaths[0]])
+  })
+
+  it.each([
+    { format: '{filename}', processing: 'none' },
+    { format: '{localFolder}/{filename}', processing: 'none' },
+    { format: '{localFolder}/{filename}', processing: 'resize' },
+    { format: '{localFolder}/{filename}', processing: 'convert' },
+  ])('renames surviving batch inputs with $format and $processing processing', async ({ format, processing }) => {
+    if (processing === 'none') picgo.unsetConfig('buildIn', 'compress')
+    if (processing === 'convert') {
+      picgo.setConfig({ 'buildIn.compress.isConvert': true, 'buildIn.compress.convertFormat': 'jpg' })
+    }
+    picgo.setConfig({ 'buildIn.rename': { enable: true, format } })
+    const secondPath = path.join(baseDir, 'b', 'other.png')
+    await fs.outputFile(secondPath, inputBuffers[1])
+    const inputs = [
+      path.join(baseDir, 'missing-first', 'missing.png'),
+      inputPaths[0],
+      path.join(baseDir, 'missing-middle', 'missing.webp'),
+      secondPath,
+      path.join(baseDir, 'missing-last', 'missing.jpg'),
+    ]
+
+    const { ctx } = await picgo.uploadReturnCtx([...inputs])
+
+    const extension = processing === 'convert' ? 'jpg' : 'png'
+    expect(uploaded.map(item => item.fileName)).toEqual(
+      format === '{filename}' ? ['photo.png', 'other.png'] : [`a/photo.${extension}`, `b/other.${extension}`],
+    )
+    expect(ctx?.processedInput.map(item => item.fileName)).toEqual(uploaded.map(item => item.fileName))
+    expect(ctx?.rawInput).toEqual(inputs)
+    expect(ctx?.input).toEqual(inputs)
+    expect(ctx?.rawInputPath).toEqual(
+      inputs.map(input =>
+        processing === 'convert' && [inputPaths[0], secondPath].includes(input)
+          ? input.replace(/\.png$/, '.jpg')
+          : input,
+      ),
+    )
+  })
+
+  it('keeps the valid filename when the first batch input is missing', async () => {
+    picgo.unsetConfig('buildIn', 'compress')
+    picgo.setConfig({ 'buildIn.rename': { enable: true, format: '{filename}' } })
+    const validPath = path.join(baseDir, 'valid.png')
+    await fs.outputFile(validPath, inputBuffers[0])
+
+    await picgo.uploadReturnCtx([path.join(baseDir, 'missing.png'), validPath])
+
+    expect(uploaded).toHaveLength(1)
+    expect(uploaded[0].fileName).toBe('valid.png')
+    expect(uploaded[0].buffer).toEqual(inputBuffers[0])
+  })
+
+  it('retains positional renaming for custom transformers without source indices', async () => {
+    picgo.setConfig({
+      'picBed.transformer': 'custom',
+      'buildIn.rename': { enable: true, format: '{localFolder}/{filename}' },
+    })
+    picgo.helper.transformer.register('custom', {
+      handle: async ctx => {
+        ctx.output = await Promise.all(
+          ctx.input.map(async input => ({ buffer: await fs.readFile(input), fileName: path.basename(input) })),
+        )
+      },
+    })
+
+    await picgo.uploadReturnCtx([...inputPaths])
+
+    expect(uploaded.map(item => item.fileName)).toEqual(['a/photo.png', 'b/photo.png'])
   })
 })
