@@ -1028,7 +1028,6 @@ export const isNeedCompress = (compressOptions: IBuildInCompressOptions | undefi
     isRotate,
     rotateDegree,
     isConvert,
-    convertFormat,
     isFlip,
     isFlop,
   } = formatOptions(compressOptions)
@@ -1044,7 +1043,7 @@ export const isNeedCompress = (compressOptions: IBuildInCompressOptions | undefi
   if (isRotate && rotateDegree) return true
   if (isFlip || isFlop) return true
   if (isConvert) {
-    const newFormat = convertFormat || 'jpg'
+    const newFormat = getConvertedFormat(compressOptions, fileExt)
     return normalizeImageExt(fileExt) !== normalizeImageExt(newFormat)
   }
   return false

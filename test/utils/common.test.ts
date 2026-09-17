@@ -606,6 +606,41 @@ describe('isNeedCompress', () => {
     expect(isNeedCompress({ isReSize: true, reSizeWidth: 0, reSizeHeight: 0 }, '.jpg')).toBe(false)
     expect(isNeedCompress({ quality: 80 }, '.zip')).toBe(false)
   })
+
+  it.each(['jpg', '.jpg', '.JPG'])('should apply per-format conversion overrides for %s inputs', fileExt => {
+    expect(isNeedCompress({ isConvert: true, convertFormat: 'jpg', formatConvertObj: { jpg: 'png' } }, fileExt)).toBe(
+      true,
+    )
+    expect(isNeedCompress({ isConvert: true, convertFormat: 'jpg', formatConvertObj: '{"jpg":"png"}' }, fileExt)).toBe(
+      true,
+    )
+  })
+
+  it('should skip conversion when the override preserves the input format', () => {
+    expect(isNeedCompress({ isConvert: true, convertFormat: 'png', formatConvertObj: { jpg: 'jpg' } }, '.jpg')).toBe(
+      false,
+    )
+  })
+
+  it('should use the global format when there is no matching override', () => {
+    expect(isNeedCompress({ isConvert: true, convertFormat: 'png', formatConvertObj: { webp: 'jpg' } }, '.jpg')).toBe(
+      true,
+    )
+  })
+
+  it('should ignore conversion overrides when conversion is disabled', () => {
+    expect(isNeedCompress({ isConvert: false, convertFormat: 'jpg', formatConvertObj: { jpg: 'png' } }, '.jpg')).toBe(
+      false,
+    )
+  })
+
+  it('should account for conversion fallbacks and formats that remain unchanged', () => {
+    expect(
+      isNeedCompress({ isConvert: true, convertFormat: 'png', formatConvertObj: { jpg: 'invalid' } }, '.jpg'),
+    ).toBe(false)
+    expect(isNeedCompress({ isConvert: true, convertFormat: 'webp', picBed: 'imgur' }, '.jpg')).toBe(false)
+    expect(isNeedCompress({ isConvert: true, convertFormat: 'png' }, '.gif')).toBe(false)
+  })
 })
 
 // --------------- plugin name helpers ---------------
