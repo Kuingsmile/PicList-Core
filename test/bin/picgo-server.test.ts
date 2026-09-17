@@ -32,6 +32,7 @@ describe('picgo-server', () => {
   let tempDir: string
   let uploaderServer: any
   let uploaderRequests = 0
+  let picgo: PicGo
   let getUploadedImageUrls: typeof import('../../bin/picgo-server').getUploadedImageUrls
 
   beforeAll(async () => {
@@ -83,7 +84,22 @@ describe('picgo-server', () => {
     process.env.HOME = baseDir
     process.env.USERPROFILE = baseDir
 
+    const createPicGo = vi.spyOn(PicGo, 'create')
     const serverModule = await import('../../bin/picgo-server')
+    picgo = await createPicGo.mock.results[0].value
+    picgo.helper.transformer.register('test', {
+      handle: async ctx => {
+        ctx.output = ctx.input.map(file => ({ fileName: path.basename(file) }))
+      },
+    })
+    for (const type of ['server-a', 'server-b']) {
+      picgo.helper.uploader.register(type, {
+        handle: async ctx => {
+          const destination = ctx.getConfig<string>(`picBed.${type}.destination`)
+          for (const item of ctx.output) item.imgUrl = `https://example.invalid/${destination}/${item.fileName}`
+        },
+      })
+    }
     server = serverModule.default
     getUploadedImageUrls = serverModule.getUploadedImageUrls
     tempDir = path.join(baseDir, '.piclist', 'serverTemp')
@@ -140,6 +156,82 @@ describe('picgo-server', () => {
 
   it('rejects sparse upload output arrays', () => {
     expect(getUploadedImageUrls({ ctx: { output: Array(1) } }, 1)).toBeNull()
+  })
+
+  it.each([
+    { query: 'picbed=server-b', destination: 'b', multipart: true },
+    { query: 'picbed=server-a&configName=Other', destination: 'a2', multipart: false },
+  ])('isolates overlapping HTTP requests with $query', async ({ query, destination, multipart }) => {
+    const originalConfig = picgo.getConfig<any>()
+    const configA = { _id: 'a', _configName: 'Default', destination: 'a' }
+    const configB = { _id: 'b', _configName: 'Default', destination: 'b' }
+    picgo.saveConfig({
+      picBed: {
+        current: 'server-a',
+        uploader: 'server-a',
+        transformer: 'test',
+        'server-a': configA,
+        'server-b': configB,
+      },
+      uploader: {
+        'server-a': {
+          defaultId: 'a',
+          configList: [configA, { _id: 'a2', _configName: 'Other', destination: 'a2' }],
+        },
+        'server-b': { defaultId: 'b', configList: [configB] },
+      },
+    })
+    const savedConfig = await fs.readFile(picgo.configPath, 'utf8')
+    const save = vi.spyOn(picgo, 'saveConfig')
+    let releaseFirst!: () => void
+    const waitForRelease = new Promise<void>(resolve => (releaseFirst = resolve))
+    let startedFirst!: () => void
+    const firstStarted = new Promise<void>(resolve => (startedFirst = resolve))
+    const transformer = picgo.helper.transformer.get('test')!
+    const transform = transformer.handle
+    vi.spyOn(transformer, 'handle').mockImplementation(async ctx => {
+      if (path.basename(ctx.input[0]) === 'first.png') {
+        startedFirst()
+        await waitForRelease
+      }
+      return transform(ctx)
+    })
+    const form = new FormData()
+    form.append('file', new Blob(['synthetic']), 'first.png')
+    const firstResponse = fetch(`http://127.0.0.1:${port}/upload?${query}`, {
+      method: 'POST',
+      ...(multipart
+        ? { body: form }
+        : {
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ list: ['first.png'] }),
+          }),
+    })
+
+    try {
+      await firstStarted
+      const secondResponse = await fetch(`http://127.0.0.1:${port}/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ list: ['second.png'] }),
+      })
+      expect(await secondResponse.json()).toEqual({
+        success: true,
+        result: ['https://example.invalid/a/second.png'],
+      })
+      expect(await fs.readFile(picgo.configPath, 'utf8')).toBe(savedConfig)
+      releaseFirst()
+      expect(await (await firstResponse).json()).toEqual({
+        success: true,
+        result: [`https://example.invalid/${destination}/first.png`],
+      })
+      expect(save).not.toHaveBeenCalled()
+      expect(await fs.readFile(picgo.configPath, 'utf8')).toBe(savedConfig)
+    } finally {
+      releaseFirst()
+      await firstResponse
+      picgo.saveConfig({ picBed: originalConfig.picBed, uploader: originalConfig.uploader || {} })
+    }
   })
 
   it.each(['', '?key=wrong-key'])('rejects unauthorized multipart requests before writing files (%s)', async query => {

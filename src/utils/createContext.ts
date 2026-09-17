@@ -1,3 +1,5 @@
+import { AsyncLocalStorage } from 'node:async_hooks'
+
 import { IPicGo } from '../types'
 
 /**
@@ -24,11 +26,12 @@ export const createContext = (ctx: IPicGo): IPicGo => {
     request: ctx.request,
     i18n: ctx.i18n,
     configManager: ctx.configManager,
-    getConfig: ctx.getConfig.bind(ctx),
-    saveConfig: ctx.saveConfig.bind(ctx),
-    removeConfig: ctx.removeConfig.bind(ctx),
-    setConfig: ctx.setConfig.bind(ctx),
-    unsetConfig: ctx.unsetConfig.bind(ctx),
+    // Retain this upload's configuration even when the returned context is used later.
+    getConfig: AsyncLocalStorage.bind(ctx.getConfig.bind(ctx)),
+    saveConfig: AsyncLocalStorage.bind(ctx.saveConfig.bind(ctx)),
+    removeConfig: AsyncLocalStorage.bind(ctx.removeConfig.bind(ctx)),
+    setConfig: AsyncLocalStorage.bind(ctx.setConfig.bind(ctx)),
+    unsetConfig: AsyncLocalStorage.bind(ctx.unsetConfig.bind(ctx)),
     upload: ctx.upload.bind(ctx),
     uploadReturnCtx: ctx.uploadReturnCtx.bind(ctx),
     addListener: ctx.addListener.bind(ctx),
@@ -46,6 +49,6 @@ export const createContext = (ctx: IPicGo): IPicGo => {
     prependListener: ctx.prependListener.bind(ctx),
     prependOnceListener: ctx.prependOnceListener.bind(ctx),
     eventNames: ctx.eventNames.bind(ctx),
-    changeCurrentUploader: ctx.changeCurrentUploader.bind(ctx),
+    changeCurrentUploader: AsyncLocalStorage.bind(ctx.changeCurrentUploader.bind(ctx)),
   }
 }

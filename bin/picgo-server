@@ -213,67 +213,19 @@ const handleMultipartUpload = async (request, response, handler, urlparams) => {
   }
 }
 
-const changeCurrentUploader = (type, config, id) => {
-  if (!type) return
-  if (id) {
-    picgo.saveConfig({
-      [`uploader.${type}.defaultId`]: id,
-    })
-  }
-  if (config) {
-    picgo.saveConfig({
-      [`picBed.${type}`]: config,
-    })
-  }
-  picgo.saveConfig({
-    'picBed.current': type,
-    'picBed.uploader': type,
-  })
-}
-
 router.get('/', responseForGet)
 router.get('/upload', responseForGet)
 
 router.post('/upload', async ({ response, list = [], urlparams }) => {
   try {
-    const picbed = urlparams?.get('picbed')
-
-    let needRestore = false
-    let currentPicBedType = ''
-    let currentPicBedConfig = {}
-    let currentPicBedConfigId = ''
-    const currentPicBed = picgo.getConfig('picBed') || {}
-
-    if (picbed) {
-      currentPicBedType = currentPicBed.uploader || currentPicBed.current || 'smms'
-      currentPicBedConfig = currentPicBed[currentPicBedType] || {}
-      currentPicBedConfigId = currentPicBedConfig._id
-      const configName = urlparams?.get('configName') || currentPicBed[picbed]?._configName
-      if (picbed === currentPicBedType && currentPicBedConfig._configName === configName) {
-        // do nothing
-      } else {
-        if (picbed !== currentPicBedType) {
-          needRestore = true
-          picgo.saveConfig({
-            'picBed.current': picbed,
-            'picBed.uploader': picbed,
-          })
-        }
-        if (currentPicBed[picbed]?._configName) {
-          needRestore = true
-          const picBeds = picgo.getConfig('uploader')
-          const currentPicBedList = picBeds?.[picbed]?.configList
-          if (currentPicBedList) {
-            const currentConfig = currentPicBedList?.find(item => item._configName === configName)
-            changeCurrentUploader(picbed, currentConfig, currentConfig._id)
-          }
-        }
-      }
+    const uploadOptions = {
+      picBed: urlparams?.get('picbed') || undefined,
+      configName: urlparams?.get('configName') || undefined,
     }
     if (list.length === 0) {
       // upload with clipboard
       console.log('[PicList Server] upload clipboard file')
-      const result = await picgo.uploadReturnCtx()
+      const result = await picgo.uploadReturnCtx(undefined, uploadOptions)
       const res = getUploadedImageUrls(result, 1)
       console.log('[PicList Server] upload result:', res?.[0])
       if (res) {
@@ -296,7 +248,7 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
     } else {
       console.log('[PicList Server] upload files in list')
       //  upload with files
-      const result = await picgo.uploadReturnCtx(list)
+      const result = await picgo.uploadReturnCtx(list, uploadOptions)
       const res = getUploadedImageUrls(result, list.length)
       console.log('[PicList Server] upload result\n', res?.join('\n') || '')
       if (res) {
@@ -315,15 +267,6 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
             message: errorMessage,
           },
         })
-      }
-    }
-    if (needRestore) {
-      picgo.saveConfig({
-        'picBed.current': currentPicBedType,
-        'picBed.uploader': currentPicBedType,
-      })
-      if (currentPicBed[picbed]?._configName) {
-        changeCurrentUploader(currentPicBedType, currentPicBedConfig, currentPicBedConfigId)
       }
     }
   } catch (err) {

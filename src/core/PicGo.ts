@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { EventEmitter } from 'node:events'
 import { homedir } from 'node:os'
 import path from 'node:path'
@@ -25,6 +26,7 @@ import {
   IPluginLoader,
   IRequest,
   IStringKeyMap,
+  IUploadOptions,
   IUploadResultWithBackup,
 } from '../types'
 import { isConfigKeyInBlackList, isInputConfigValid } from '../utils/common'
@@ -37,6 +39,7 @@ import { Lifecycle } from './Lifecycle'
 
 export class PicGo extends EventEmitter implements IPicGo {
   private _config!: IConfig
+  private readonly uploadConfig = new AsyncLocalStorage<IConfig>()
   private lifecycle!: Lifecycle
   private db!: DB
   private _pluginLoader!: PluginLoader
@@ -155,6 +158,11 @@ export class PicGo extends EventEmitter implements IPicGo {
   }
 
   getConfig<T>(name?: string): T {
+    const uploadConfig = this.uploadConfig.getStore()
+    if (uploadConfig) {
+      // Callers can manipulate returned values without changing the upload's snapshot.
+      return cloneDeep(name ? get(uploadConfig, name) : uploadConfig) as T
+    }
     this._config = this.db.read(true) as IConfig
     if (!name) {
       return this._config as unknown as T
@@ -192,7 +200,7 @@ export class PicGo extends EventEmitter implements IPicGo {
 
         delete config[name]
       }
-      set(this._config, name, config[name])
+      set(this.uploadConfig.getStore() || this._config, name, cloneDeep(config[name]))
       eventBus.emit(IBusEvent.CONFIG_CHANGE, {
         configName: name,
         value: config[name],
@@ -206,14 +214,41 @@ export class PicGo extends EventEmitter implements IPicGo {
       this.log.warn(`the config.${key} can't be unset`)
       return
     }
-    unset(this.getConfig(key), propName)
+    const config = this.uploadConfig.getStore()
+    unset(config ? get(config, key) : this.getConfig(key), propName)
   }
 
   get request(): IRequest['request'] {
     return this.Request.request.bind(this.Request)
   }
 
-  async upload(input?: any[]): Promise<IImgInfo[] | Error> {
+  private getUploadConfig(options: IUploadOptions = {}): IConfig {
+    const config = cloneDeep(this.getConfig<IConfig>())
+    const type = options.picBed
+    if (!type) return config
+
+    const picBed = config.picBed || {}
+    const currentType = picBed.uploader || picBed.current || 'smms'
+    const configName = options.configName || picBed[type]?._configName
+    if (type !== currentType || picBed[type]?._configName !== configName) {
+      const configList = config.uploader?.[type]?.configList
+      if (picBed[type]?._configName && configList) {
+        const selected = configList.find(item => item._configName === configName)
+        if (!selected) throw new Error('Uploader configuration not found')
+        set(config, `picBed.${type}`, cloneDeep(selected))
+        if (selected._id) set(config, `uploader.${type}.defaultId`, selected._id)
+      }
+    }
+    set(config, 'picBed.current', type)
+    set(config, 'picBed.uploader', type)
+    return config
+  }
+
+  async upload(input?: any[], options?: IUploadOptions): Promise<IImgInfo[] | Error> {
+    return this.uploadConfig.run(this.getUploadConfig(options), () => this.uploadWithConfig(input))
+  }
+
+  private async uploadWithConfig(input?: any[]): Promise<IImgInfo[] | Error> {
     if (this.configPath === '') {
       this.log.error('No config file found, please check your config file path')
       return []
@@ -255,7 +290,11 @@ export class PicGo extends EventEmitter implements IPicGo {
     })
   }
 
-  async uploadReturnCtx(input?: any[]): Promise<IUploadResultWithBackup> {
+  async uploadReturnCtx(input?: any[], options?: IUploadOptions): Promise<IUploadResultWithBackup> {
+    return this.uploadConfig.run(this.getUploadConfig(options), () => this.uploadReturnCtxWithConfig(input))
+  }
+
+  private async uploadReturnCtxWithConfig(input?: any[]): Promise<IUploadResultWithBackup> {
     const ctxResult: IUploadResultWithBackup = { ctx: this, backupCtx: undefined }
     if (this.configPath === '') {
       this.log.error('No config file found, please check your config file path')
@@ -265,6 +304,11 @@ export class PicGo extends EventEmitter implements IPicGo {
     let enableSecondUploader = this.getConfig<boolean>('settings.enableSecondUploader') || false
     const secondaryUploaderType = this.getConfig<string>('picBed.secondUploader') || ''
     const secondUploaderConfig = this.getConfig<IStringKeyMap<any>>('picBed.secondUploaderConfig') || {}
+    const secondPicBedMode = this.getConfig<string>('settings.secondPicBedMode')
+    const secondaryConfig = this.getUploadConfig()
+    set(secondaryConfig, `picBed.${secondaryUploaderType}`, secondUploaderConfig)
+    set(secondaryConfig, 'picBed.current', secondaryUploaderType)
+    set(secondaryConfig, 'picBed.uploader', secondaryUploaderType)
     if (!secondUploaderConfig || Object.keys(secondUploaderConfig).length === 0) {
       enableSecondUploader = false
     }
@@ -322,38 +366,31 @@ export class PicGo extends EventEmitter implements IPicGo {
     }
     if (!enableSecondUploader) return ctxResult
     // upload the second picbed
-    const secondPicBedMode = this.getConfig<string>('settings.secondPicBedMode')
-    let ctxOofSecond: IPicGo
     if (!secondUploaderConfig || Object.keys(secondUploaderConfig).length === 0) {
       this.log.error('Second uploader config is empty, please check your settings')
       return ctxResult
     }
-    this.changeCurrentUploader(secondaryUploaderType, secondUploaderConfig)
     try {
-      if (secondPicBedMode === 'seperate') {
-        if (initialUploadType === 'clipboard') {
-          const cleanupForSecond = (): void => {
-            if (!getClipboardResult.shouldKeepAfterUploading) {
-              remove(imgPath).catch(e => {
-                this.log.error(e)
-              })
+      ctxResult.backupCtx = await this.uploadConfig.run(secondaryConfig, async () => {
+        if (secondPicBedMode === 'seperate') {
+          if (initialUploadType === 'clipboard') {
+            const cleanupForSecond = (): void => {
+              if (!getClipboardResult.shouldKeepAfterUploading) {
+                remove(imgPath).catch(e => {
+                  this.log.error(e)
+                })
+              }
             }
+            this.once(IBuildInEvent.FAILED, cleanupForSecond)
+            this.once(IBuildInEvent.FINISHED, cleanupForSecond)
           }
-          this.once(IBuildInEvent.FAILED, cleanupForSecond)
-          this.once(IBuildInEvent.FINISHED, cleanupForSecond)
+          return this.lifecycle.start(initialUploadType === 'file' ? rawInput : [getClipboardResult.imgPath], false)
+        } else {
+          return this.lifecycle.start(ctxP.processedInput, true)
         }
-        ctxOofSecond = await this.lifecycle.start(
-          initialUploadType === 'file' ? rawInput : [getClipboardResult.imgPath],
-          false,
-        )
-      } else {
-        ctxOofSecond = await this.lifecycle.start(ctxP.processedInput, true)
-      }
-      ctxResult.backupCtx = ctxOofSecond
+      })
     } catch (e: any) {
       this.log.error('Failed to upload to second uploader:', e)
-    } finally {
-      this.changeCurrentUploader(currentUploader.picBed, currentUploader.config || {})
     }
     return ctxResult
   }

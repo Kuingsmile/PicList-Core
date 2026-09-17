@@ -33,8 +33,8 @@ export interface IPicGo extends NodeJS.EventEmitter {
   removeConfig: (key: string, propName: string) => void
   setConfig: (config: IStringKeyMap<any>) => void
   unsetConfig: (key: string, propName: string) => void
-  upload: (input?: any[]) => Promise<IImgInfo[] | Error>
-  uploadReturnCtx: (input?: any[]) => Promise<IUploadResultWithBackup>
+  upload: (input?: any[], options?: IUploadOptions) => Promise<IImgInfo[] | Error>
+  uploadReturnCtx: (input?: any[], options?: IUploadOptions) => Promise<IUploadResultWithBackup>
   changeCurrentUploader: (type: string, config: IStringKeyMap<any>) => void
 }
 
@@ -785,6 +785,13 @@ export interface IBuildInListItem {
   autoRename?: boolean
   // settings.rename
   manualRename?: boolean
+}
+
+export interface IUploadOptions {
+  /** Select an uploader for this upload only, without changing saved defaults. */
+  picBed?: string
+  /** Select a saved configuration by name (requires picBed). */
+  configName?: string
 }
 
 export interface IUploadResultWithBackup {
