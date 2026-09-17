@@ -2,7 +2,9 @@ import { Box, Text, useInput, useWindowSize } from 'ink'
 import { useEffect, useRef, useState } from 'react'
 
 import type { IInquirerQuestion } from '../utils/inquirerShim'
+import { useTranslation } from './i18n'
 import { TextField } from './input'
+import { isEmptyValue } from './readiness'
 import { isSecretQuestion, type PromptPosition } from './session'
 import { theme } from './theme'
 
@@ -38,6 +40,7 @@ export function Menu({
   vimKeys?: boolean
   pageNavigation?: boolean
 }) {
+  const t = useTranslation()
   const [cursor, setCursor] = useState(initial)
   const index = Math.max(0, Math.min(selectedIndex ?? cursor, choices.length - 1))
   const { rows } = useWindowSize()
@@ -62,7 +65,7 @@ export function Menu({
   )
   return (
     <Box flexDirection='column'>
-      {!choices.length && <Text color={theme.muted}>No matches. Try another search.</Text>}
+      {!choices.length && <Text color={theme.muted}>{t('No matches. Try another search.')}</Text>}
       {choices.slice(start, start + limit).map((choice, offset) => {
         const selected = index === start + offset
         return (
@@ -78,7 +81,7 @@ export function Menu({
       {choices.length > limit && (
         <Text color={theme.muted}>
           {' '}
-          {index + 1} / {choices.length} · ↑↓ scroll
+          {index + 1} / {choices.length} · ↑↓ {t('scroll')}
         </Text>
       )}
     </Box>
@@ -117,6 +120,7 @@ export function PromptForm({
   onCancel: () => void
   compact?: boolean
 }) {
+  const t = useTranslation()
   const [value, setValue] = useState(String(question.default ?? ''))
   const [checked, setChecked] = useState<any[]>(Array.isArray(question.default) ? question.default : [])
   const [error, setError] = useState('')
@@ -135,8 +139,8 @@ export function PromptForm({
   const choices: Choice[] =
     question.type === 'confirm'
       ? [
-          { name: 'Yes', value: true },
-          { name: 'No', value: false },
+          { name: t('Yes'), value: true },
+          { name: t('No'), value: false },
         ]
       : (question.choices || []).map(choice => (typeof choice === 'string' ? { name: choice, value: choice } : choice))
   const filtered = choices.filter(choice => choice.name.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
@@ -147,18 +151,20 @@ export function PromptForm({
     lock.current = true
     setValidating(true)
     try {
-      const empty =
-        answer === undefined ||
-        answer === '' ||
-        (typeof answer === 'string' && !answer.trim()) ||
-        (Array.isArray(answer) && !answer.length)
-      const result = question.required && empty ? 'This field is required.' : await question.validate?.(answer)
+      const missing = question.required && isEmptyValue(answer)
+      const result = missing ? t('This field is required.') : await question.validate?.(answer)
       if (!mounted.current || cancelled.current) return
       if (result === false || typeof result === 'string')
-        setError(typeof result === 'string' ? result : 'Enter a valid value.')
+        setError(
+          missing
+            ? t('This field is required.')
+            : secret || typeof result !== 'string'
+              ? t('Enter a valid value.')
+              : t(result),
+        )
       else onSubmit(answer)
     } catch {
-      if (mounted.current && !cancelled.current) setError('Unable to validate this value. Please try again.')
+      if (mounted.current && !cancelled.current) setError(t('Unable to validate this value. Please try again.'))
     } finally {
       lock.current = false
       if (mounted.current) setValidating(false)
@@ -183,17 +189,17 @@ export function PromptForm({
     <Box flexDirection='column' gap={compact ? 0 : 1}>
       <Box justifyContent='space-between'>
         <Text color={secret ? theme.warning : theme.muted}>
-          {secret ? '◆ PRIVATE INPUT' : isSelection ? 'SELECT AN OPTION' : 'ENTER DETAILS'}
+          {t(secret ? '◆ PRIVATE INPUT' : isSelection ? 'SELECT AN OPTION' : 'ENTER DETAILS')}
         </Text>
         {position && (
           <Text color={theme.muted}>
-            Field {position.current} / {position.total}
+            {t('Field ${current} / ${total}', { current: String(position.current), total: String(position.total) })}
           </Text>
         )}
       </Box>
       <Text bold>
         {question.message || question.alias || question.name}
-        <Text color={theme.muted}>{!isSelection && (question.required ? ' · required' : ' · optional')}</Text>
+        <Text color={theme.muted}>{!isSelection && ` · ${t(question.required ? 'required' : 'optional')}`}</Text>
       </Text>
       {question.description && <Text color={theme.muted}>{question.description}</Text>}
       {isSelection ? (
@@ -201,13 +207,13 @@ export function PromptForm({
           {filtering && (
             <Box>
               <Text color={theme.accent}>/ </Text>
-              <TextField value={query} onChange={setQuery} placeholder='Filter options…' />
+              <TextField value={query} onChange={setQuery} placeholder={t('Filter options…')} />
             </Box>
           )}
-          {!filtering && query && <Text color={theme.muted}>Filter: {query} · / to edit</Text>}
+          {!filtering && query && <Text color={theme.muted}>{t('Filter: ${query} · / to edit', { query })}</Text>}
           {!choices.length ? (
             <Text color={theme.muted}>
-              No options available.{question.type === 'checkbox' ? ' Enter to continue.' : ' Esc to return.'}
+              {t('No options available.')} {t(question.type === 'checkbox' ? 'Enter to continue.' : 'Esc to return.')}
             </Text>
           ) : (
             <Menu
@@ -239,7 +245,9 @@ export function PromptForm({
               }}
             />
           )}
-          {question.type === 'checkbox' && <Text color={theme.muted}>{checked.length} selected</Text>}
+          {question.type === 'checkbox' && (
+            <Text color={theme.muted}>{t('${count} selected', { count: String(checked.length) })}</Text>
+          )}
         </Box>
       ) : (
         <Box borderStyle='round' borderColor={error ? theme.error : theme.accent} paddingX={1}>
@@ -255,25 +263,25 @@ export function PromptForm({
             }}
             focus={!validating}
             mask={secret ? '*' : undefined}
-            placeholder={secret ? 'Enter a value…' : question.placeholder || 'Type here…'}
+            placeholder={secret ? t('Enter a value…') : question.placeholder || t('Type here…')}
           />
         </Box>
       )}
       {error && <Text color={theme.error}>! {error}</Text>}
       {secret && !compact && (
-        <Text color={theme.muted}>Input stays hidden. Use Ctrl+U to replace the current value.</Text>
+        <Text color={theme.muted}>{t('Input stays hidden. Use Ctrl+U to replace the current value.')}</Text>
       )}
       <Box flexWrap='wrap'>
         {validating ? (
-          <Text color={theme.accent}>Validating…</Text>
+          <Text color={theme.accent}>{t('Validating…')}</Text>
         ) : (
           <>
-            <Shortcut keys='Enter' label={filtering && question.type === 'checkbox' ? 'apply filter' : 'confirm'} />
-            {isSelection && <Shortcut keys='↑↓' label='move' />}
-            {question.type === 'checkbox' && <Shortcut keys='Space' label='toggle' />}
-            {isSelection && question.type !== 'confirm' && <Shortcut keys='/' label='filter' />}
-            {!isSelection && !compact && <Shortcut keys='Ctrl+U' label='clear' />}
-            <Shortcut keys='Esc' label={filtering ? 'close filter' : 'cancel'} />
+            <Shortcut keys='Enter' label={t(filtering && question.type === 'checkbox' ? 'apply filter' : 'confirm')} />
+            {isSelection && <Shortcut keys='↑↓' label={t('move')} />}
+            {question.type === 'checkbox' && <Shortcut keys='Space' label={t('toggle')} />}
+            {isSelection && question.type !== 'confirm' && <Shortcut keys='/' label={t('filter')} />}
+            {!isSelection && !compact && <Shortcut keys='Ctrl+U' label={t('clear')} />}
+            <Shortcut keys='Esc' label={t(filtering ? 'close filter' : 'cancel')} />
           </>
         )}
       </Box>

@@ -208,21 +208,28 @@ Use `picgo -c /path/to/config.json` to open a specific configuration. For local 
 and then `yarn start`.
 
 The interface supports file/URL and clipboard uploads, uploader switching, named configuration management,
-secondary uploads, image processing, transformers, plugins, upload proxies and form languages. Start with
-**Uploader configurations** to add your upload destination. Quote pasted paths containing spaces, for example
+secondary uploads, image processing, transformers, plugins, upload proxies and language settings. Start with
+**Set up a destination** to add your upload destination. Quote pasted paths containing spaces, for example
 `"C:\My Pictures\photo.png"` or `"/home/me/My Pictures/photo.png"`. Upload progress and resulting URLs appear in the UI.
 
 The workspace groups actions into **Upload**, **Destinations**, **Processing** and **Settings**. Use **Tab**,
 **←/→** or **1–4** to change sections, **↑/↓** to navigate, and **Enter** to open an action. Press **/** to
 search all actions. New users can choose **Set up a destination** for guided setup.
 
+Readiness checks the uploader's required fields and existing validators, so an empty saved token still needs setup.
+Under **Destinations**, **Check connection** offers a small test upload using the current processing and backup settings.
+It asks before uploading and leaves the test image at each destination; local temporary input files are removed.
+
 Forms show field progress, inline validation and searchable options (**/**). Use **Space** to toggle checkboxes,
 **Ctrl+U** to clear a text field, and **Esc** to cancel the current form. **r** reopens recent results even after
-changing settings; select a result with **↑/↓** and scroll a long link with **PgUp/PgDn**. **q** quits from the menu. **Ctrl+C** cancels a
+changing settings; select a result with **↑/↓**, copy its URL with **c**, copy a Markdown image link with **m**,
+and scroll a long link with **PgUp/PgDn**. Clipboard copying uses PowerShell on Windows/WSL, `pbcopy` on macOS,
+or `wl-copy`, `xclip` or `xsel` on Linux. If unavailable, the link remains visible for manual copying.
+**q** quits from the menu. **Ctrl+C** cancels a
 form and exits; if an upload or npm operation is already running, PicList waits for it to finish before exiting.
 Credentials are masked in forms, and TUI operations do not write provider payloads or form values to PicList logs.
-Restart PicList after changing plugins to reload their code. The navigation is in English; the language setting
-controls existing uploader and processing forms.
+Restart PicList after changing plugins to reload their code. **Settings → Language** updates navigation, search,
+shortcuts and forms immediately, using the existing English, Simplified Chinese and Traditional Chinese locales.
 
 See the [UI design](docs/tui-design.md) and [interactive design study](docs/tui-design.html).
 

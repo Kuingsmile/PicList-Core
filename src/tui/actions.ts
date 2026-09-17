@@ -1,4 +1,5 @@
-import { homedir } from 'node:os'
+import { randomUUID } from 'node:crypto'
+import { homedir, tmpdir } from 'node:os'
 import path from 'node:path'
 
 import fs from 'fs-extra'
@@ -8,9 +9,12 @@ import { handleBuildinModule, handlePlugin } from '../plugins/commander/setting'
 import { uploaderTranslators } from '../plugins/commander/utils'
 import type { IPicGo } from '../types'
 import type { IInquirerQuestion } from '../utils/inquirerShim'
+import { translator } from './i18n'
+import { invalidFields, uploaderReady } from './readiness'
 import { TuiError } from './session'
 
 export interface TuiAction {
+  id: string
   label: string
   description: string
   run: () => Promise<string[] | void>
@@ -63,8 +67,17 @@ export async function validateUploadPaths(input: string): Promise<string[]> {
 }
 
 export function createActions(ctx: IPicGo): TuiAction[] {
+  const t = translator(ctx)
   const ask = async <T>(question: Omit<IInquirerQuestion, 'name'>): Promise<T> => {
-    const answer = await ctx.cmd.inquirer.prompt<{ value: T }>([{ ...question, name: 'value', type: question.type }])
+    const answer = await ctx.cmd.inquirer.prompt<{ value: T }>([
+      {
+        ...question,
+        name: 'value',
+        type: question.type,
+        message: question.message ? t(question.message) : undefined,
+        description: question.description ? t(question.description) : undefined,
+      },
+    ])
     return answer.value
   }
   const choose = <T>(message: string, choices: { name: string; value: T }[], defaultValue?: T) => {
@@ -86,7 +99,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     const id = await choose(
       'Choose a saved configuration',
       configs.map(config => ({
-        name: `${config._configName}${config._id === current?._id ? ' (default)' : ''}`,
+        name: `${config._configName}${config._id === current?._id ? ` (${t('Default')})` : ''}`,
         value: config._id,
       })),
       current?._id,
@@ -115,6 +128,14 @@ export function createActions(ctx: IPicGo): TuiAction[] {
       default: existing && question.name in existing ? existing[question.name] : question.default,
     }))
     const answer = await ctx.cmd.inquirer.prompt(questions)
+    // Validate again after filters have run, before persisting any part of the form.
+    let valid = false
+    try {
+      valid = (await invalidFields(questions, answer)).length === 0
+    } catch {
+      /* Provider validation errors are not safe to display. */
+    }
+    if (!valid) throw new TuiError(t('Check the required fields and validation rules before saving this destination.'))
     if (existing) ctx.configManager.updateUploaderConfig(uploader, existing._id, answer)
     else {
       const created = ctx.configManager.addUploaderConfig(uploader, name, answer)
@@ -123,15 +144,16 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     ctx.saveConfig({ 'picBed.uploader': uploader, 'picBed.current': uploader })
   }
   const upload = async (input?: string[]) => {
-    const current = ctx.getConfig<string>('picBed.uploader') || ctx.getConfig<string>('picBed.current') || 'smms'
-    if (!ctx.configManager.getCurrentUploaderConfig(current)) {
-      throw new TuiError('Configure the current uploader before uploading.')
-    }
+    await requireDestination()
     const result = await ctx.uploadReturnCtx(input)
     const urls = result.ctx?.output.filter(item => item.imgUrl).map(item => item.imgUrl!) || []
     const backup = result.backupCtx?.output.filter(item => item.imgUrl).map(item => `Backup: ${item.imgUrl}`) || []
     if (!urls.length) throw new TuiError('No images were uploaded. Check the input and uploader settings.')
     return [...urls, ...backup]
+  }
+  const requireDestination = async () => {
+    if (!(await uploaderReady(ctx)))
+      throw new TuiError(t('Complete the required destination settings before uploading or checking the connection.'))
   }
 
   return [
@@ -142,6 +164,37 @@ export function createActions(ctx: IPicGo): TuiAction[] {
         const uploader = await chooseUploader()
         const name = await configName(uploader, ctx.configManager.getConfigByName(uploader, 'Default') ? '' : 'Default')
         await configureUploader(uploader, name, false)
+      },
+    },
+    {
+      label: 'Check connection',
+      description: 'Upload a small test image using your current upload settings.',
+      run: async () => {
+        await requireDestination()
+        if (
+          !(await ask<boolean>({
+            type: 'confirm',
+            message: 'Upload a test image?',
+            description:
+              'This uses your current processing and backup settings and leaves a test image at each destination.',
+            default: false,
+          }))
+        )
+          return
+        const directory = await fs.mkdtemp(path.join(tmpdir(), 'piclist-connection-'))
+        try {
+          const file = path.join(directory, `piclist-connection-${randomUUID()}.png`)
+          await fs.writeFile(
+            file,
+            Buffer.from(
+              'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=',
+              'base64',
+            ),
+          )
+          return await upload([file])
+        } finally {
+          await fs.remove(directory)
+        }
       },
     },
     {
@@ -188,7 +241,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
         const uploader = await chooseUploader()
         const operation = await choose(
           'Manage configurations',
-          ['Create', 'Edit', 'Set default', 'Rename', 'Delete'].map(value => ({ name: value, value })),
+          ['Create', 'Edit', 'Set default', 'Rename', 'Delete'].map(value => ({ name: t(value), value })),
         )
         if (operation === 'Create') {
           await configureUploader(uploader, await configName(uploader, 'Default'), false)
@@ -209,7 +262,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
             if (
               await ask<boolean>({
                 type: 'confirm',
-                message: `Delete configuration "${config._configName}"?`,
+                message: t('Delete configuration "${name}"?', { name: config._configName }),
                 default: false,
               })
             ) {
@@ -235,8 +288,8 @@ export function createActions(ctx: IPicGo): TuiAction[] {
       description: 'Configure compression, watermarks, renaming and processing rules.',
       run: async () => {
         const scope = await choose('Apply image processing settings to', [
-          { name: 'All uploaders (global settings)', value: 'global' },
-          { name: 'A saved uploader configuration', value: 'uploader' },
+          { name: t('All uploaders (global settings)'), value: 'global' },
+          { name: t('A saved uploader configuration'), value: 'uploader' },
         ])
         if (scope === 'global') await handleBuildinModule(ctx)
         else {
@@ -266,7 +319,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
       run: async () => {
         const operation = await choose(
           'Manage plugins',
-          ['Enable / disable', 'Configure', 'Install', 'Update', 'Uninstall'].map(value => ({ name: value, value })),
+          ['Enable / disable', 'Configure', 'Install', 'Update', 'Uninstall'].map(value => ({ name: t(value), value })),
         )
         const installed = ctx.pluginLoader.getFullList()
         if (operation === 'Install') {
@@ -296,7 +349,9 @@ export function createActions(ctx: IPicGo): TuiAction[] {
           else if (operation === 'Update') {
             const result = await ctx.pluginHandler.update([name], { silent: true })
             if (!result.success) throw new TuiError('Plugin update failed. Check your npm connection.')
-          } else if (await ask<boolean>({ type: 'confirm', message: `Uninstall ${name}?`, default: false })) {
+          } else if (
+            await ask<boolean>({ type: 'confirm', message: t('Uninstall ${name}?', { name }), default: false })
+          ) {
             const result = await ctx.pluginHandler.uninstall([name], { silent: true })
             if (!result.success) throw new TuiError('Plugin removal failed.')
           }
@@ -326,7 +381,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     },
     {
       label: 'Language',
-      description: 'Change the language used by uploader and processing forms.',
+      description: 'Change the language used by navigation and forms.',
       run: async () => {
         const language = await choose(
           'Choose a language',
@@ -336,5 +391,5 @@ export function createActions(ctx: IPicGo): TuiAction[] {
         ctx.i18n.setLanguage(language)
       },
     },
-  ]
+  ].map(action => ({ ...action, id: action.label, label: t(action.label), description: t(action.description) }))
 }

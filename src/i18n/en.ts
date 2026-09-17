@@ -1,6 +1,8 @@
+import { TUI_EN } from './tui'
 import { ILocales } from './zh-CN'
 
 export const EN: ILocales = {
+  ...TUI_EN,
   UPLOAD_FAILED: 'Upload failed',
   CHECK_SETTINGS: 'Please check your settings',
   CHECK_SETTINGS_AND_NETWORK: 'Please check your settings and network',

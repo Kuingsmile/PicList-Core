@@ -1,6 +1,7 @@
 import type { IPicGo } from '../types'
 import { IBuildInEvent } from '../utils/enum'
 import type { IInquirerAdapter, IInquirerQuestion } from '../utils/inquirerShim'
+import { english, type Translate, translator } from './i18n'
 
 export class PromptCancelledError extends Error {
   constructor() {
@@ -48,6 +49,7 @@ export interface SessionState {
   title: string
   status: string
   error: boolean
+  outcome?: 'success' | 'warning' | 'cancelled' | 'error'
   progress?: number
   results: string[]
   resultTitle?: string
@@ -72,6 +74,7 @@ export class TuiSession {
   private disposed = false
   private task?: Promise<void>
   private restore?: () => void
+  private t: Translate = english
 
   getSnapshot = (): SessionState => this.state
 
@@ -86,6 +89,7 @@ export class TuiSession {
   }
 
   attach(ctx: IPicGo): void {
+    this.t = translator(ctx)
     const previousPrompt = ctx.cmd.inquirer
     const previousLogger = ctx.log
     ctx.cmd.inquirer = createPromptAdapter(this.ask)
@@ -142,26 +146,37 @@ export class TuiSession {
     if (this.state.busy || this.disposed) return Promise.resolve()
     this.failed = false
     this.warned = false
-    this.update({ busy: true, title, status: 'Working…', error: false, progress: undefined })
+    this.update({
+      busy: true,
+      title,
+      status: this.t('Working…'),
+      error: false,
+      outcome: undefined,
+      progress: undefined,
+    })
     this.task = (async () => {
       try {
         const results = await action()
         this.update({
           ...(results?.length ? { results, resultTitle: title, resultRevision: this.state.resultRevision + 1 } : {}),
           error: this.failed,
-          status: this.failed
-            ? 'The operation reported an error. Check your configuration and try again.'
-            : this.warned
-              ? 'Finished with a warning. Review the selected configuration.'
-              : 'Done',
+          outcome: this.failed ? 'error' : this.warned ? 'warning' : 'success',
+          status: this.t(
+            this.failed
+              ? 'The operation reported an error. Check your configuration and try again.'
+              : this.warned
+                ? 'Finished with a warning. Review the selected configuration.'
+                : 'Done',
+          ),
         })
       } catch (error) {
         this.update({
           error: !(error instanceof PromptCancelledError),
+          outcome: error instanceof PromptCancelledError ? 'cancelled' : 'error',
           status:
             error instanceof PromptCancelledError || error instanceof TuiError
-              ? error.message
-              : 'The operation failed. Check your configuration and connection, then try again.',
+              ? this.t(error.message)
+              : this.t('The operation failed. Check your configuration and connection, then try again.'),
         })
       } finally {
         this.update({ busy: false, prompt: undefined })

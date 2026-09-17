@@ -1,4 +1,5 @@
 import type { TuiAction } from './actions'
+import { english, type Translate } from './i18n'
 import type { Section } from './theme'
 
 export interface NavigationItem {
@@ -53,6 +54,13 @@ export const navigation: NavigationItem[] = [
     steps: ['Enable backup uploads', 'Select a saved destination', 'Choose how images are processed'],
   },
   {
+    label: 'Check connection',
+    action: 'Check connection',
+    section: 'Destinations',
+    headline: 'Try your destination.',
+    steps: ['Validate required settings', 'Confirm a small test upload', 'Review the returned link'],
+  },
+  {
     label: 'Image processing',
     action: 'Image processing',
     section: 'Processing',
@@ -85,20 +93,36 @@ export const navigation: NavigationItem[] = [
     steps: ['Enter an HTTP(S) proxy URL', 'Leave it empty to clear the proxy', 'Save your connection preference'],
   },
   {
-    label: 'Form language',
+    label: 'Language',
     action: 'Language',
     section: 'Settings',
-    headline: 'Forms in your language.',
-    steps: ['Choose a language', 'Apply it to uploader and processing forms', 'Continue in the current workspace'],
+    headline: 'Use PicList in your language.',
+    steps: ['Choose a language', 'Apply it to navigation and forms', 'Continue in the current workspace'],
   },
 ]
 
-export function findActions(actions: TuiAction[], section: Section, query?: string): (NavigationItem & TuiAction)[] {
+export function findActions(
+  actions: TuiAction[],
+  section: Section,
+  query?: string,
+  t: Translate = english,
+): (NavigationItem & TuiAction)[] {
   const words = query?.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean) || []
   return navigation.flatMap(item => {
-    const action = actions.find(action => action.label === item.action)
+    const action = actions.find(action => action.id === item.action)
     if (!action || (query === undefined && item.section !== section)) return []
-    const searchable = `${item.label} ${item.action} ${item.section} ${action.description}`.toLocaleLowerCase()
-    return words.every(word => searchable.includes(word)) ? [{ ...action, ...item }] : []
+    const searchable =
+      `${item.label} ${item.action} ${item.section} ${t(item.label)} ${t(item.section)} ${action.description}`.toLocaleLowerCase()
+    return words.every(word => searchable.includes(word))
+      ? [
+          {
+            ...action,
+            ...item,
+            label: t(item.label),
+            headline: t(item.headline),
+            steps: item.steps.map(step => t(step)),
+          },
+        ]
+      : []
   })
 }

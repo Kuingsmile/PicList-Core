@@ -1,6 +1,8 @@
+import { TUI_ZH_TW } from './tui'
 import { ILocales } from './zh-CN'
 
 export const ZH_TW: ILocales = {
+  ...TUI_ZH_TW,
   UPLOAD_FAILED: '上傳失敗',
   CHECK_SETTINGS: '請檢查你的設定是否正確',
   CHECK_SETTINGS_AND_NETWORK: '請檢查你的設定及網路',

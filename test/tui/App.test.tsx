@@ -3,18 +3,49 @@ import { EventEmitter } from 'node:events'
 import { cleanup, render } from 'ink-testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { TUI_ZH_CN, TUI_ZH_TW } from '../../src/i18n/tui'
 import { App } from '../../src/tui/App'
+import { copyText } from '../../src/tui/clipboard'
+import { english } from '../../src/tui/i18n'
 import { TuiError, TuiSession } from '../../src/tui/session'
 import type { IPicGo } from '../../src/types'
 
 afterEach(cleanup)
 
-function setup(configured = true) {
+vi.mock('../../src/tui/clipboard', async importOriginal => ({
+  ...(await importOriginal<typeof import('../../src/tui/clipboard')>()),
+  copyText: vi.fn().mockResolvedValue(undefined),
+}))
+
+function setup(configured: boolean | Record<string, unknown> = true) {
+  const config: Record<string, unknown> = {
+    'picBed.smms':
+      typeof configured === 'object'
+        ? configured
+        : configured
+          ? { _configName: 'Default', token: 'test-token' }
+          : undefined,
+    'settings.language': 'en',
+  }
   const ctx = Object.assign(new EventEmitter(), {
     configPath: '/tmp/piclist-test/config.json',
-    getConfig: vi.fn(key =>
-      key === 'picBed.smms' && configured ? { _configName: 'Default', token: 'test-token' } : undefined,
-    ),
+    getConfig: vi.fn(key => config[key]),
+    helper: { uploader: { get: () => ({ config: () => [{ name: 'token', type: 'input', required: true }] }) } },
+    i18n: {
+      translate: (key: string, args?: Record<string, string>) =>
+        english(
+          (config['settings.language'] === 'zh-CN'
+            ? TUI_ZH_CN
+            : config['settings.language'] === 'zh-TW'
+              ? TUI_ZH_TW
+              : {})[key] || key,
+          args,
+        ),
+      getLanguageList: () => ['en', 'zh-CN', 'zh-TW'],
+      setLanguage: (language: string) => {
+        config['settings.language'] = language
+      },
+    },
     cmd: { inquirer: { prompt: vi.fn() } },
     log: {},
   }) as unknown as IPicGo
@@ -46,7 +77,7 @@ describe('Ink application navigation', () => {
     ui.stdin.write('\u001B[Z')
     await vi.waitFor(() => expect(ui.lastFrame()).toContain('Files & URLs'))
     ui.stdin.write('4')
-    await vi.waitFor(() => expect(ui.lastFrame()).toContain('Form language'))
+    await vi.waitFor(() => expect(ui.lastFrame()).toContain('Language'))
     await session.dispose()
   })
 
@@ -62,7 +93,7 @@ describe('Ink application navigation', () => {
     await vi.waitFor(() => expect(ui.lastFrame()).toContain('Upload proxy URL'))
     expect(session.getSnapshot().prompt?.question.type).toBe('password')
     ui.stdin.write('\u001B')
-    await vi.waitFor(() => expect(ui.lastFrame()).toContain('Form language'))
+    await vi.waitFor(() => expect(ui.lastFrame()).toContain('Language'))
     await session.dispose()
   })
 
@@ -78,6 +109,40 @@ describe('Ink application navigation', () => {
     expect(session.getSnapshot().busy).toBe(false)
     ui.stdin.write('\u001B')
     await vi.waitFor(() => expect(ui.lastFrame()).toContain('Files & URLs'))
+    await session.dispose()
+  })
+
+  it.each([{ token: '' }, { token: '   ', _configName: 'Default' }, { _id: 'metadata-only' }])(
+    'guides incomplete saved configurations to setup',
+    async config => {
+      const { ctx, session } = setup(config)
+      const ui = render(<App ctx={ctx} session={session} />)
+      await vi.waitFor(() => expect(ui.lastFrame()).toContain('Setup needed'))
+      expect(ui.lastFrame()).toContain('› Set up a destination')
+      await session.dispose()
+    },
+  )
+
+  it('switches languages immediately and searches translated actions', async () => {
+    const { ctx, session } = setup()
+    const ui = render(<App ctx={ctx} session={session} />)
+    await ready()
+    ui.stdin.write('/')
+    await ready()
+    ui.stdin.write('language')
+    await vi.waitFor(() => expect(ui.lastFrame()).toContain('1 MATCHING ACTIONS'))
+    ui.stdin.write('\r')
+    await vi.waitFor(() => expect(ui.lastFrame()).toContain('Choose a language'))
+    session.answer('zh-CN')
+    await vi.waitFor(() => expect(ui.lastFrame()).toContain('设置'))
+    expect(ui.lastFrame()).toContain('就绪')
+    ui.stdin.write('/')
+    await ready()
+    ui.stdin.write('检查连接')
+    await vi.waitFor(() => expect(ui.lastFrame()).toContain('1 项匹配操作'))
+    ui.stdin.write('\r')
+    await vi.waitFor(() => expect(ui.lastFrame()).toContain('上传测试图片？'))
+    session.cancel()
     await session.dispose()
   })
 
@@ -181,6 +246,10 @@ describe('Ink application navigation', () => {
       'https://example.com/third.png',
     ])
     await vi.waitFor(() => expect(ui.lastFrame()).toContain('PgUp/PgDn'))
+    expect(ui.lastFrame()!.split('\n').length).toBeLessThanOrEqual(rows)
+    ui.stdin.write('c')
+    await vi.waitFor(() => expect(ui.lastFrame()).toContain('Copied URL.'))
+    expect(copyText).toHaveBeenLastCalledWith(session.getSnapshot().results[0])
     expect(ui.lastFrame()!.split('\n').length).toBeLessThanOrEqual(rows)
     ui.stdin.write('\u001B[6~')
     await ready()

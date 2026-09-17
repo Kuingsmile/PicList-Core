@@ -25,7 +25,7 @@ describe('TUI workflows', () => {
   const backup = { ...primary, _id: 'backup', _configName: 'Backup', destination: 'backup-destination' }
   const run = (label: string) =>
     createActions(ctx)
-      .find(action => action.label === label)!
+      .find(action => action.id === label)!
       .run()
   const answers = (...values: any[]) => {
     const prompt = vi.spyOn(ctx.cmd.inquirer, 'prompt')
@@ -38,6 +38,7 @@ describe('TUI workflows', () => {
     baseDir = await fs.mkdtemp(path.join(os.tmpdir(), 'piclist-tui-'))
     await fs.writeJson(path.join(baseDir, 'config.json'), {
       silent: true,
+      settings: { language: 'en' },
       picBed: { current: 'test-uploader', uploader: 'test-uploader', 'test-uploader': primary },
       uploader: { 'test-uploader': { defaultId: primary._id, configList: [primary, backup] } },
       picgoPlugins: {},
@@ -160,6 +161,67 @@ describe('TUI workflows', () => {
     expect(upload).not.toHaveBeenCalled()
     await expect(validateUploadPaths('')).rejects.toThrow('at least one')
     await expect(validateUploadPaths(`"${baseDir}"`)).rejects.toThrow('not a file')
+  })
+
+  it('blocks uploads and connection checks for an empty required credential', async () => {
+    ctx.saveConfig({ 'picBed.current': 'smms', 'picBed.uploader': 'smms', 'picBed.smms': { token: '  ' } })
+    const upload = vi.spyOn(ctx, 'uploadReturnCtx')
+    const prompt = answers()
+    await expect(run('Upload clipboard image')).rejects.toThrow('required destination settings')
+    await expect(run('Check connection')).rejects.toThrow('required destination settings')
+    expect(upload).not.toHaveBeenCalled()
+    expect(prompt).not.toHaveBeenCalled()
+  })
+
+  it('validates filtered answers before saving a destination', async () => {
+    answers({ value: 'smms' }, { value: 'Incomplete' }, { token: '' })
+    await expect(run('Set up a destination')).rejects.toThrow('required fields')
+    expect(ctx.configManager.getConfigByName('smms', 'Incomplete')).toBeNull()
+  })
+
+  it('skips a declined connection check without uploading', async () => {
+    const upload = vi.spyOn(ctx, 'uploadReturnCtx')
+    const prompt = answers({ value: false })
+    expect(await run('Check connection')).toBeUndefined()
+    expect(prompt.mock.calls[0][0][0]).toMatchObject({
+      default: false,
+      description: expect.stringContaining('leaves a test image'),
+    })
+    expect(upload).not.toHaveBeenCalled()
+  })
+
+  it('checks a local destination with a real test upload and removes the temporary input', async () => {
+    const target = path.join(baseDir, 'connection-test')
+    ctx.configManager.addUploaderConfig('local', 'Default', { path: target })
+    ctx.saveConfig({ 'picBed.current': 'local', 'picBed.uploader': 'local', 'settings.rename': false })
+    const upload = vi.spyOn(ctx, 'uploadReturnCtx')
+    answers({ value: true })
+    const result = await run('Check connection')
+    expect(result).toHaveLength(1)
+    expect(await fs.pathExists(result![0])).toBe(true)
+    const input = upload.mock.calls[0][0]![0] as string
+    expect(await fs.pathExists(path.dirname(input))).toBe(false)
+    expect(await fs.pathExists(path.join(baseDir, 'piclist.log'))).toBe(false)
+  })
+
+  it('cleans up a failed connection check and hides provider errors', async () => {
+    const upload = vi.spyOn(ctx, 'uploadReturnCtx').mockRejectedValue(new Error('private-provider-payload'))
+    answers({ value: true })
+    await session.run('Check connection', () => run('Check connection'))
+    expect(session.getSnapshot().error).toBe(true)
+    expect(session.getSnapshot().status).not.toContain('private-provider-payload')
+    expect(await fs.pathExists(path.dirname(upload.mock.calls[0][0]![0]))).toBe(false)
+  })
+
+  it('uses the existing language manager for translated actions without changing action IDs', async () => {
+    ctx.i18n.setLanguage('zh-CN')
+    expect(createActions(ctx).find(action => action.id === 'Check connection')).toMatchObject({
+      label: '检查连接',
+      description: '使用当前上传设置上传一张小型测试图片。',
+    })
+    answers({ value: 'zh-TW' })
+    await run('Language')
+    expect(createActions(ctx).find(action => action.id === 'Check connection')?.label).toBe('檢查連線')
   })
 })
 

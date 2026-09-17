@@ -1,4 +1,6 @@
+import { TUI_ZH_CN } from './tui'
 export const ZH_CN = {
+  ...TUI_ZH_CN,
   UPLOAD_FAILED: '上传失败',
   CHECK_SETTINGS: '请检查你的配置项是否正确',
   CHECK_SETTINGS_AND_NETWORK: '请检查你的配置项以及网络',
