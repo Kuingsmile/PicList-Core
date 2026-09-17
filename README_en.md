@@ -24,6 +24,12 @@ You can refer to the [DeepWiki of PiclList-Core](https://deepwiki.com/Kuingsmile
   - Rename configuration via `picgo config-rename <uploader> <oldName> <newName>`
   - View configuration details via `picgo config-show <uploader> [configName]`
 
+- **Secondary upload**:
+  - Run `picgo set secondUploader [uploader] [configName]` (or `picgo config secondUploader`) to enable or disable secondary upload and select an existing uploader configuration
+  - Example: `picgo set secondUploader github "Backup account"`; omitted uploader and configuration names are prompted
+  - Choose whether to share the primary uploader's processed files (`shared`) or process the originals separately (`seperate`, retained for config compatibility)
+  - Editing or renaming the selected source configuration updates `picBed.secondUploaderConfig`; deleting it clears the secondary selection and disables secondary upload
+
 - **Image processing capabilities**:
   - Add watermarks, compress images, and convert formats
   - Configure via `picgo set buildin watermark` and `picgo set buildin compress` CLI commands
@@ -211,7 +217,7 @@ Commands:
   config-remove <uploader> <configName>         remove a config for an uploader
   config-rename <uploader> <oldName> <newName>  rename a config for an uploader
   config-show <uploader> [configName]           show details of a config
-  set|config <module> [name] [configName]       configure config of picgo modules, uploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").
+  set|config <module> [name] [configName]       configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").
   upload|u [input...]                           upload, go go go
   use [module]                                  use modules of picgo
   i18n [lang]                                   change language, zh-CN, zh-TW, en

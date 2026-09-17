@@ -195,6 +195,32 @@ describe('PicGo upload configuration isolation', () => {
     expect(picgo.getConfig('picBed.secondUploaderConfig.destination')).toBe('b2')
   })
 
+  it('uses updated source config for subsequent secondary uploads', async () => {
+    picgo.saveConfig({ 'settings.enableSecondUploader': true })
+    expect(picgo.configManager.updateUploaderConfig('test-b', 'b', { destination: 'updated' })).toBe(true)
+
+    const result = await picgo.uploadReturnCtx(['first.png'])
+
+    expect(result.ctx?.output[0].imgUrl).toBe('https://example.invalid/a/first.png')
+    expect(result.backupCtx?.output[0].imgUrl).toBe('https://example.invalid/updated/first.png')
+  })
+
+  it('stops secondary uploads after their source config is deleted', async () => {
+    picgo.saveConfig({ 'settings.enableSecondUploader': true })
+    const secondary = vi.spyOn(picgo.helper.uploader.get('test-b')!, 'handle')
+    expect(picgo.configManager.deleteUploaderConfig('test-b', 'b')).toBe(true)
+
+    const result = await picgo.uploadReturnCtx(['first.png'])
+
+    expect(result.ctx?.output[0].imgUrl).toBe('https://example.invalid/a/first.png')
+    expect(result.backupCtx).toBeUndefined()
+    expect(secondary).not.toHaveBeenCalled()
+    const saved = await fs.readJson(picgo.configPath)
+    expect(saved.picBed.secondUploader).toBe('')
+    expect(saved.picBed.secondUploaderConfig).toEqual({})
+    expect(saved.settings.enableSecondUploader).toBe(false)
+  })
+
   it.each(['upload', 'uploadReturnCtx'] as const)('%s snapshots config before awaiting the clipboard', async method => {
     const started = deferred()
     const release = deferred()

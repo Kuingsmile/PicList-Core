@@ -127,6 +127,7 @@ export class ConfigManager {
     if (uploaderData.defaultId === configId) {
       this.syncConfigToPicBed(uploaderName, uploaderData.configList[configIndex])
     }
+    this.syncSecondUploaderConfig(uploaderName, uploaderData.configList[configIndex])
 
     return true
   }
@@ -167,6 +168,13 @@ export class ConfigManager {
     if (uploaderData.configList.length === 0) {
       this.ctx.removeConfig('picBed', uploaderName)
     }
+    if (this.isSecondUploaderConfig(uploaderName, configId)) {
+      this.ctx.saveConfig({
+        'picBed.secondUploader': '',
+        'picBed.secondUploaderConfig': {},
+        'settings.enableSecondUploader': false,
+      })
+    }
     this.ctx.log.info(`${uploaderName} is deleted everywhere.`)
 
     return true
@@ -199,6 +207,19 @@ export class ConfigManager {
     })
   }
 
+  private isSecondUploaderConfig(uploaderName: string, configId: string): boolean {
+    return (
+      this.ctx.getConfig<string>('picBed.secondUploader') === uploaderName &&
+      this.ctx.getConfig<IConfigItem>('picBed.secondUploaderConfig')?._id === configId
+    )
+  }
+
+  private syncSecondUploaderConfig(uploaderName: string, config: IConfigItem): void {
+    if (this.isSecondUploaderConfig(uploaderName, config._id)) {
+      this.ctx.saveConfig({ 'picBed.secondUploaderConfig': config })
+    }
+  }
+
   getConfigByName(uploaderName: string, configName: string): IConfigItem | null {
     this.migrateToMultiConfig(uploaderName)
 
@@ -226,6 +247,7 @@ export class ConfigManager {
     if (uploaderData.defaultId === configId) {
       this.syncConfigToPicBed(uploaderName, config)
     }
+    this.syncSecondUploaderConfig(uploaderName, config)
 
     return true
   }

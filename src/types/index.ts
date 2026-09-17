@@ -469,6 +469,8 @@ export interface IConfig {
     webdavplist?: IWebdavPlistConfig
     local?: ILocalConfig
     transformer?: string
+    secondUploader?: string
+    secondUploaderConfig?: Partial<IConfigItem>
     /** for uploader */
     proxy?: string
     [others: string]: any
@@ -479,6 +481,8 @@ export interface IConfig {
   debug?: boolean
   silent?: boolean
   settings?: {
+    enableSecondUploader?: boolean
+    secondPicBedMode?: 'shared' | 'seperate'
     logLevel?: string[]
     logPath?: string
     /** for npm */

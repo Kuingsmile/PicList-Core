@@ -4,6 +4,7 @@ import compress from '../beforetransformer/compress'
 import skipProcess from '../beforetransformer/skipProcess'
 import watermark from '../beforetransformer/watermark'
 import rename from '../beforeupload/buildInRename'
+import { handleSecondUploader } from './secondUploader'
 import { uploaderTranslators } from './utils'
 
 // Built-in modules configuration mapping
@@ -217,13 +218,16 @@ const setting = {
       .argument('[configName]')
       .argument('[uploaderName]')
       .description(
-        'configure config of picgo modules, uploader|transformer|plugin|buildin. For uploader and buildin, configName is optional (defaults to "Default"). For buildin module, uploaderName is the uploader name to which the buildin module config will be linked.',
+        'configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader and buildin, configName is optional (defaults to "Default"). For secondUploader, name and configName select an existing uploader config; omitted values are prompted. For buildin module, uploaderName is the uploader name to which the buildin module config will be linked.',
       )
       .action((module: string, name: string, configName?: string, uploaderName?: string) => {
-        ;(async () => {
+        return (async () => {
           try {
             // Handle different module types
             switch (module) {
+              case 'secondUploader':
+                if (!(await handleSecondUploader(ctx, name, configName))) return
+                break
               case 'buildin':
                 await handleBuildinModule(ctx, name, configName, uploaderName)
                 break
@@ -236,7 +240,7 @@ const setting = {
                 break
               default:
                 ctx.log.warn(`No module named ${module}`)
-                ctx.log.warn('Available modules are uploader|transformer|plugin|buildin')
+                ctx.log.warn('Available modules are uploader|secondUploader|transformer|plugin|buildin')
                 return
             }
 

@@ -1,6 +1,7 @@
+import { cloneDeep } from 'lodash-es'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { IPicGo, IUploaderConfigList } from '../../src/types'
+import type { IConfigItem, IPicGo, IUploaderConfigList } from '../../src/types'
 import { ConfigManager } from '../../src/utils/configManager'
 
 /**
@@ -38,7 +39,7 @@ function createMockCtx(initialConfig: Record<string, any> = {}): IPicGo {
     }),
     saveConfig: vi.fn((config: Record<string, any>) => {
       for (const [key, value] of Object.entries(config)) {
-        setByPath(store, key, value)
+        setByPath(store, key, cloneDeep(value))
       }
     }),
     removeConfig: vi.fn((parent: string, key: string) => {
@@ -276,6 +277,133 @@ describe('ConfigManager', () => {
   })
 
   // --- getConfigByName ---
+
+  describe('secondary uploader synchronization', () => {
+    const selectSecondary = (uploader: string, config: IConfigItem, enabled = true) => {
+      ctx.saveConfig({
+        'picBed.secondUploader': uploader,
+        'picBed.secondUploaderConfig': config,
+        'settings.enableSecondUploader': enabled,
+        'settings.secondPicBedMode': 'seperate',
+      })
+    }
+
+    it.each([true, false])('syncs replacement data for a non-default secondary config (enabled: %s)', enabled => {
+      const primary = cm.getCurrentUploaderConfig('github')!
+      const secondary = cm.addUploaderConfig('github', 'Backup', { repo: 'old/repo', obsolete: true })
+      selectSecondary('github', secondary, enabled)
+
+      expect(cm.updateUploaderConfig('github', secondary._id, { repo: 'new/repo' })).toBe(true)
+
+      const updated = cm.getConfigByName('github', 'Backup')!
+      expect(ctx.getConfig('picBed.secondUploaderConfig')).toEqual(updated)
+      expect(ctx.getConfig('picBed.secondUploaderConfig.obsolete')).toBeUndefined()
+      expect(ctx.getConfig('picBed.github')).toEqual(primary)
+      expect(ctx.getConfig('settings.enableSecondUploader')).toBe(enabled)
+    })
+
+    it('syncs secondary metadata on rename without changing the primary config', () => {
+      const primary = cm.getCurrentUploaderConfig('github')!
+      const secondary = cm.addUploaderConfig('github', 'Backup', { repo: 'backup/repo' })
+      selectSecondary('github', secondary)
+
+      expect(cm.renameConfig('github', secondary._id, 'Renamed backup')).toBe(true)
+
+      expect(ctx.getConfig('picBed.secondUploaderConfig')).toEqual(cm.getConfigByName('github', 'Renamed backup'))
+      expect(ctx.getConfig('picBed.secondUploaderConfig._configName')).toBe('Renamed backup')
+      expect(ctx.getConfig('picBed.github')).toEqual(primary)
+    })
+
+    it('syncs changes when the secondary config is also the uploader default', () => {
+      const secondary = cm.addUploaderConfig('imgur', 'Backup', { clientId: 'old-id' })
+      selectSecondary('imgur', secondary)
+
+      expect(cm.updateUploaderConfig('imgur', secondary._id, { clientId: 'new-id' })).toBe(true)
+      expect(ctx.getConfig('picBed.secondUploaderConfig')).toEqual(ctx.getConfig('picBed.imgur'))
+      expect(ctx.getConfig('picBed.secondUploaderConfig.clientId')).toBe('new-id')
+      expect(cm.renameConfig('imgur', secondary._id, 'New name')).toBe(true)
+      expect(ctx.getConfig('picBed.secondUploaderConfig')).toEqual(ctx.getConfig('picBed.imgur'))
+      expect(ctx.getConfig('picBed.secondUploaderConfig._configName')).toBe('New name')
+    })
+
+    it('clears the selection and disables secondary upload when a non-default source is deleted', () => {
+      const primary = cm.getCurrentUploaderConfig('github')!
+      const secondary = cm.addUploaderConfig('github', 'Backup', { repo: 'backup/repo' })
+      selectSecondary('github', secondary)
+
+      expect(cm.deleteUploaderConfig('github', secondary._id)).toBe(true)
+
+      expect(ctx.getConfig('picBed.secondUploader')).toBe('')
+      expect(ctx.getConfig('picBed.secondUploaderConfig')).toEqual({})
+      expect(ctx.getConfig('settings.enableSecondUploader')).toBe(false)
+      expect(ctx.getConfig('picBed.github')).toEqual(primary)
+      expect(cm.getCurrentUploaderConfig('github')).toEqual(primary)
+    })
+
+    it('resets secondary upload when its uploader loses its last config', () => {
+      const secondary = cm.addUploaderConfig('imgur', 'Backup', { clientId: 'test-id' })
+      selectSecondary('imgur', secondary)
+
+      expect(cm.deleteUploaderConfig('imgur', secondary._id)).toBe(true)
+
+      expect(ctx.getConfig('picBed.imgur')).toBeUndefined()
+      expect(ctx.getConfig('picBed.secondUploader')).toBe('')
+      expect(ctx.getConfig('picBed.secondUploaderConfig')).toEqual({})
+      expect(ctx.getConfig('settings.enableSecondUploader')).toBe(false)
+    })
+
+    it('keeps the secondary selection when another config changes, is renamed, or is deleted', () => {
+      const secondary = cm.getCurrentUploaderConfig('github')!
+      const other = cm.addUploaderConfig('github', 'Other', { repo: 'other/repo' })
+      selectSecondary('github', secondary)
+
+      cm.updateUploaderConfig('github', other._id, { repo: 'changed/repo' })
+      cm.renameConfig('github', other._id, 'Changed')
+      cm.deleteUploaderConfig('github', other._id)
+
+      expect(ctx.getConfig('picBed.secondUploaderConfig')).toEqual(secondary)
+      expect(ctx.getConfig('settings.enableSecondUploader')).toBe(true)
+    })
+
+    it('matches both uploader and config ID before updating or clearing the secondary selection', () => {
+      const source = cm.addUploaderConfig('imgur', 'Backup', { clientId: 'test-id' })
+      selectSecondary('github', source)
+
+      cm.updateUploaderConfig('imgur', source._id, { clientId: 'changed-id' })
+      cm.renameConfig('imgur', source._id, 'Changed')
+      cm.deleteUploaderConfig('imgur', source._id)
+
+      expect(ctx.getConfig('picBed.secondUploaderConfig')).toEqual(source)
+      expect(ctx.getConfig('settings.enableSecondUploader')).toBe(true)
+    })
+
+    it('keeps the secondary selection when the primary default changes', () => {
+      const secondary = cm.getCurrentUploaderConfig('github')!
+      const other = cm.addUploaderConfig('github', 'Other', { repo: 'other/repo' })
+      selectSecondary('github', secondary)
+
+      expect(cm.setDefaultConfig('github', other._id)).toBe(true)
+
+      expect(ctx.getConfig('picBed.github')).toEqual(other)
+      expect(ctx.getConfig('picBed.secondUploaderConfig')).toEqual(secondary)
+      expect(ctx.getConfig('settings.enableSecondUploader')).toBe(true)
+    })
+
+    it('does not reset secondary upload when deletion is refused or the source is missing', () => {
+      const secondary = cm.getCurrentUploaderConfig('github')!
+      selectSecondary('github', secondary)
+
+      expect(cm.deleteUploaderConfig('github', secondary._id)).toBe(false)
+      cm.addUploaderConfig('github', 'Other', { repo: 'other/repo' })
+      expect(cm.deleteUploaderConfig('github', secondary._id)).toBe(false)
+      expect(cm.updateUploaderConfig('github', 'missing', {})).toBe(false)
+      expect(cm.renameConfig('github', 'missing', 'Missing')).toBe(false)
+      expect(cm.deleteUploaderConfig('github', 'missing')).toBe(false)
+
+      expect(ctx.getConfig('picBed.secondUploaderConfig')).toEqual(secondary)
+      expect(ctx.getConfig('settings.enableSecondUploader')).toBe(true)
+    })
+  })
 
   describe('getConfigByName', () => {
     it('should find config by name', () => {

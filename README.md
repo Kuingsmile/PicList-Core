@@ -23,6 +23,12 @@ PicList-Core 是一个功能强大的图片上传工具，提供 CLI 和 API 两
   - 通过 `picgo config-rename <uploader> <oldName> <newName>` 重命名配置
   - 通过 `picgo config-show <uploader> [configName]` 查看配置详情
 
+- **第二图床上传**：
+  - 通过 `picgo set secondUploader [uploader] [configName]`（或 `picgo config secondUploader`）启用或禁用第二图床上传，并选择已有图床配置
+  - 示例：`picgo set secondUploader github "Backup account"`；省略图床或配置名称时会显示选择提示
+  - 支持共享主图床处理后的文件（`shared`）或独立处理原始文件（`seperate`，为兼容已有配置保留此拼写）
+  - 修改或重命名所选原始配置时会同步更新 `picBed.secondUploaderConfig`；删除原始配置时会清空第二图床选择并禁用第二图床上传
+
 - **图像处理能力**：
   - 添加水印、压缩图片和转换格式
   - 通过 `picgo set buildin watermark` 和 `picgo set buildin compress` CLI 命令进行配置
@@ -210,7 +216,7 @@ Commands:
   config-remove <uploader> <configName>         remove a config for an uploader
   config-rename <uploader> <oldName> <newName>  rename a config for an uploader
   config-show <uploader> [configName]           show details of a config
-  set|config <module> [name] [configName]       configure config of picgo modules, uploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").
+  set|config <module> [name] [configName]       configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").
   upload|u [input...]                           upload, go go go
   use [module]                                  use modules of picgo
   i18n [lang]                                   change language, zh-CN, zh-TW, en
