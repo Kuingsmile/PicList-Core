@@ -1,3 +1,4 @@
+import { mkdtempSync } from 'node:fs'
 import path from 'node:path'
 
 import { ensureDirSync, moveSync, outputFileSync, removeSync } from 'fs-extra/esm'
@@ -10,7 +11,7 @@ import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
 
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
-  const sftpplistConfig = getAndCheckConfig<ISftpPlistConfig>(ctx, 'picBed.sftpplist', [])
+  const sftpplistConfig = { ...getAndCheckConfig<ISftpPlistConfig>(ctx, 'picBed.sftpplist', []) }
   sftpplistConfig.port = Number(sftpplistConfig.port) || 22
   if (sftpplistConfig.port < 0 || sftpplistConfig.port > 65535) {
     sftpplistConfig.port = 22
@@ -28,31 +29,38 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       if (!img.fileName) continue
       const image = getImageBuffer(img)
       if (!image) continue
-      const uploadTempPath = path.join(ctx.baseDir, 'uploadTemp')
-      const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'sftpplist')
-      ensureDirSync(imgTempPath)
-      const tempFilePath = path.join(uploadTempPath, img.fileName)
-      ensureDirSync(path.dirname(tempFilePath))
-      outputFileSync(tempFilePath, image)
-      const client = SSHClient.getInstance()
-      await client.connect(sftpplistConfig)
-      const remotePath = path.join(`/${sftpplistConfig.uploadPath}`.replace(/\/\/+/g, '/'), img.fileName)
-      await client.upload(tempFilePath, remotePath, sftpplistConfig)
-      sftpplistConfig.fileUser && (await client.chown(remotePath, sftpplistConfig.fileUser))
-      delete img.base64Image
-      delete img.buffer
-      const baseUrl = sftpplistConfig.customUrl || sftpplistConfig.host
-      if (sftpplistConfig.webPath) {
-        img.imgUrl = `${baseUrl}/${encodePath(`${webPath === '/' ? '' : webPath}${img.fileName}`)}`
-      } else {
-        img.imgUrl = `${baseUrl}/${encodePath(`${sftpplistConfig.uploadPath === '/' ? '' : sftpplistConfig.uploadPath}${img.fileName}`)}`
+      const client = new SSHClient()
+      let uploadTempPath: string | undefined
+      try {
+        const uploadTempRoot = path.join(ctx.baseDir, 'uploadTemp')
+        ensureDirSync(uploadTempRoot)
+        uploadTempPath = mkdtempSync(path.join(uploadTempRoot, 'sftp-'))
+        const tempFilePath = path.join(uploadTempPath, path.basename(img.fileName))
+        outputFileSync(tempFilePath, image)
+        await client.connect(sftpplistConfig)
+        const remotePath = path.join(`/${sftpplistConfig.uploadPath}`.replace(/\/\/+/g, '/'), img.fileName)
+        await client.upload(tempFilePath, remotePath, sftpplistConfig)
+        sftpplistConfig.fileUser && (await client.chown(remotePath, sftpplistConfig.fileUser))
+        delete img.base64Image
+        delete img.buffer
+        const baseUrl = sftpplistConfig.customUrl || sftpplistConfig.host
+        if (sftpplistConfig.webPath) {
+          img.imgUrl = `${baseUrl}/${encodePath(`${webPath === '/' ? '' : webPath}${img.fileName}`)}`
+        } else {
+          img.imgUrl = `${baseUrl}/${encodePath(`${sftpplistConfig.uploadPath === '/' ? '' : sftpplistConfig.uploadPath}${img.fileName}`)}`
+        }
+        const imgTempFilePath = path.join(ctx.baseDir, 'imgTemp', 'sftpplist', img.fileName)
+        ensureDirSync(path.dirname(imgTempFilePath))
+        removeSync(imgTempFilePath)
+        moveSync(tempFilePath, imgTempFilePath)
+        img.galleryPath = `http://localhost:36699/sftpplist/${encodeURIComponent(img.fileName)}`
+      } finally {
+        try {
+          client.close()
+        } finally {
+          if (uploadTempPath) removeSync(uploadTempPath)
+        }
       }
-      const imgTempFilePath = path.join(imgTempPath, img.fileName)
-      ensureDirSync(path.dirname(imgTempFilePath))
-      removeSync(imgTempFilePath)
-      moveSync(tempFilePath, path.join(imgTempPath, img.fileName))
-      img.galleryPath = `http://localhost:36699/sftpplist/${encodeURIComponent(img.fileName)}`
-      client.close()
     }
     return ctx
   } catch (err: any) {

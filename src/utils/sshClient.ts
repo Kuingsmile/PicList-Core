@@ -14,18 +14,8 @@ const quoteShellArgument = (value: string): string => {
 }
 
 class SSHClient {
-  private static instance: SSHClient
   private client = new NodeSSH()
   isConnected = false
-
-  private constructor() {}
-
-  public static getInstance(): SSHClient {
-    if (!SSHClient.instance) {
-      SSHClient.instance = new SSHClient()
-    }
-    return SSHClient.instance
-  }
 
   private static changeWinStylePathToUnix(path: string): string {
     return path.replace(/\\/g, '/')

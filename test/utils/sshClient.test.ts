@@ -21,7 +21,7 @@ vi.mock('node-ssh-no-cpu-features', () => ({
 }))
 
 describe('SSHClient shell arguments', () => {
-  const client = SSHClient.getInstance()
+  const client = new SSHClient()
   const config = { host: 'example.invalid', username: 'test' }
 
   beforeEach(async () => {
