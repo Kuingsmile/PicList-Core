@@ -43,6 +43,7 @@
     "start": "node ./bin/picgo",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:package": "npm run build && node test/package/check.mjs",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },

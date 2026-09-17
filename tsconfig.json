@@ -19,6 +19,6 @@
     "strictNullChecks": true,
     "target": "esnext"
   },
-  "exclude": ["node_modules", "dist"],
+  "exclude": ["node_modules", "dist", "test/package/consumer"],
   "include": ["src", "test", "vitest.config.ts"]
 }
