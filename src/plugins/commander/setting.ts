@@ -25,6 +25,16 @@ const handleConfig = async (
   configName?: string,
   uploaderName?: string,
 ): Promise<void> => {
+  if (module === 'buildin' && uploaderName) {
+    const config = ctx.configManager.getConfigByName(uploaderName, configName || 'Default')
+    const linked = (ctx.getConfig<any[]>('buildIn.list') || []).find(item => item.id === config?._id)?.[name]
+    if (linked) {
+      prompts = prompts.map(question => ({
+        ...question,
+        default: question.name in linked ? linked[question.name] : question.default,
+      }))
+    }
+  }
   const answer = await ctx.cmd.inquirer.prompt(prompts)
   const configKey = getConfigName(module, name)
   if (module === 'uploader') {
@@ -96,7 +106,7 @@ const getConfigName = (module: string, name: string): string => {
   return configMap[module] || name
 }
 
-const handleBuildinModule = async (
+export const handleBuildinModule = async (
   ctx: IPicGo,
   name?: string,
   configName?: string,
@@ -174,7 +184,7 @@ const handleUploaderOrTransformer = async (
   }
 }
 
-const handlePlugin = async (ctx: IPicGo, name?: string): Promise<void> => {
+export const handlePlugin = async (ctx: IPicGo, name?: string): Promise<void> => {
   if (name) {
     const pluginName = name.includes('picgo-plugin-') ? name : `picgo-plugin-${name}`
 

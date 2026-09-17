@@ -17,11 +17,27 @@ if (configPath !== true && configPath !== '') {
 const picgo = await PicGo.create(configPath)
 picgo.registerCommands()
 
-try {
-  picgo.cmd.program.parse(process.argv)
-} catch (e) {
-  picgo.log.error(e)
-  if (process.argv.includes('--debug')) {
-    Promise.reject(e)
+const openTui = async () => {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    throw new Error('The TUI requires an interactive terminal. Use picgo --help for command-line usage.')
   }
+  const { startTui } = await import('../dist/tui.js')
+  await startTui(picgo)
+}
+
+picgo.cmd.program.command('tui').description('open the interactive terminal interface').action(openTui)
+picgo.cmd.program.addHelpCommand()
+picgo.cmd.program.action(async () => {
+  if (process.stdin.isTTY && process.stdout.isTTY && !picgo.getConfig('silent')) {
+    await openTui()
+  } else {
+    picgo.cmd.program.outputHelp()
+  }
+})
+
+try {
+  await picgo.cmd.program.parseAsync(process.argv)
+} catch (e) {
+  console.error(e instanceof Error ? e.message : 'Unable to start PicList.')
+  process.exitCode = 1
 }

@@ -17,14 +17,14 @@ export default defineConfig({
     alias: {
       '../dist/index.js': fileURLToPath(new URL('./src/index.ts', import.meta.url)),
     },
-    extensions: ['.ts', '.js', '.json'],
+    extensions: ['.tsx', '.ts', '.js', '.json'],
   },
   test: {
     globals: true,
-    include: ['test/**/*.test.ts'],
+    include: ['test/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.ts'],
+      include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/types/**', 'src/custom-env.d.ts'],
       reporter: ['text', 'lcov'],
     },

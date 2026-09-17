@@ -110,7 +110,7 @@ export class PluginHandler implements IPluginHandler {
     }
   }
 
-  async uninstall(plugins: string[]): Promise<IPluginHandlerResult<boolean>> {
+  async uninstall(plugins: string[], options: IPluginHandlerOptions = {}): Promise<IPluginHandlerResult<boolean>> {
     const processPlugins = plugins
       .map((item: string) => handlePluginNameProcess(this.ctx, item))
       .filter(item => item.success)
@@ -118,7 +118,7 @@ export class PluginHandler implements IPluginHandler {
     if (pkgNameList.length > 0) {
       // uninstall plugins must use pkgNameList:
       // npm uninstall will use the package.json's name
-      const result = await this.execCommand('uninstall', pkgNameList, this.ctx.baseDir)
+      const result = await this.execCommand('uninstall', pkgNameList, this.ctx.baseDir, options)
       if (!result.code) {
         pkgNameList.forEach((pluginName: string) => {
           this.ctx.pluginLoader.unregisterPlugin(pluginName)
@@ -244,17 +244,16 @@ export class PluginHandler implements IPluginHandler {
         })
 
         let output = ''
-        npm.stdout
-          ?.on('data', (data: string) => {
-            output += data
-          })
-          .pipe(process.stdout)
-
-        npm.stderr
-          ?.on('data', (data: string) => {
-            output += data
-          })
-          .pipe(process.stderr)
+        npm.stdout?.on('data', (data: string) => {
+          output += data
+        })
+        npm.stderr?.on('data', (data: string) => {
+          output += data
+        })
+        if (!options.silent) {
+          npm.stdout?.pipe(process.stdout)
+          npm.stderr?.pipe(process.stderr)
+        }
 
         npm.on('close', (code: number) => {
           if (!code) {
@@ -268,10 +267,12 @@ export class PluginHandler implements IPluginHandler {
           this.ctx.log.error(err)
           this.ctx.log.error('NPM is not installed')
           this.ctx.emit(IBuildInEvent.FAILED, 'NPM is not installed')
+          resolve({ code: 1, data: 'Unable to start npm' })
         })
       } catch (e) {
         this.ctx.log.error(e as Error)
         this.ctx.emit(IBuildInEvent.FAILED, e)
+        resolve({ code: 1, data: 'Unable to start npm' })
       }
     })
   }

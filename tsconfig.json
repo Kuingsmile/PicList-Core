@@ -3,6 +3,7 @@
     "allowSyntheticDefaultImports": true,
     "declaration": true,
     "esModuleInterop": true,
+    "jsx": "react-jsx",
     "lib": ["esnext", "es2015", "es6"],
     "module": "esnext",
     "moduleResolution": "bundler",

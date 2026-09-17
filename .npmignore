@@ -6,6 +6,7 @@ renovate.json
 node_modules/
 src/
 test/
+docs/
 
 rollup.config.js
 eslint.config.js

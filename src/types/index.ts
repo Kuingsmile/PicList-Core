@@ -524,7 +524,7 @@ export interface IPluginHandler {
     options: IPluginHandlerOptions,
     env?: IProcessEnv,
   ) => Promise<IPluginHandlerResult<boolean>>
-  uninstall: (plugins: string[]) => Promise<IPluginHandlerResult<boolean>>
+  uninstall: (plugins: string[], options?: IPluginHandlerOptions) => Promise<IPluginHandlerResult<boolean>>
 }
 
 export interface IPluginHandlerResult<T> {
@@ -533,6 +533,8 @@ export interface IPluginHandlerResult<T> {
 }
 
 export interface IPluginHandlerOptions {
+  /** Suppress npm output when embedding plugin management in a terminal UI. */
+  silent?: boolean
   proxy?: string
   registry?: string
 }

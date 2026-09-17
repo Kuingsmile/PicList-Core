@@ -192,6 +192,33 @@ $ picgo-server -h
 
 > PicList-Core uses `SM.MS` as the default upload pic-bed.
 
+Run `picgo` in an interactive terminal to open the Ink interface, or launch it explicitly with `picgo tui`.
+Use `picgo -c /path/to/config.json` to open a specific configuration. For local development, run `yarn build`
+and then `yarn start`.
+
+The interface supports file/URL and clipboard uploads, uploader switching, named configuration management,
+secondary uploads, image processing, transformers, plugins, upload proxies and form languages. Start with
+**Uploader configurations** to add your upload destination. Quote pasted paths containing spaces, for example
+`"C:\My Pictures\photo.png"` or `"/home/me/My Pictures/photo.png"`. Upload progress and resulting URLs appear in the UI.
+
+The workspace groups actions into **Upload**, **Destinations**, **Processing** and **Settings**. Use **Tab**,
+**←/→** or **1–4** to change sections, **↑/↓** to navigate, and **Enter** to open an action. Press **/** to
+search all actions. New users can choose **Set up a destination** for guided setup.
+
+Forms show field progress, inline validation and searchable options (**/**). Use **Space** to toggle checkboxes,
+**Ctrl+U** to clear a text field, and **Esc** to cancel the current form. **r** reopens recent results even after
+changing settings; select a result with **↑/↓** and scroll a long link with **PgUp/PgDn**. **q** quits from the menu. **Ctrl+C** cancels a
+form and exits; if an upload or npm operation is already running, PicList waits for it to finish before exiting.
+Credentials are masked in forms, and TUI operations do not write provider payloads or form values to PicList logs.
+Restart PicList after changing plugins to reload their code. The navigation is in English; the language setting
+controls existing uploader and processing forms.
+
+See the [UI design](docs/tui-design.md) and [interactive design study](docs/tui-design.html).
+
+Explicit commands such as `picgo upload ...`, `picgo set ...`, and plugin-provided commands remain available.
+Without a terminal (for example, piped output), bare `picgo` prints help; `picgo tui` reports that a terminal is required.
+The `picgo-server` command and Node API retain their existing behavior.
+
 Show help:
 
 ```bash
@@ -208,6 +235,7 @@ Options:
   -h, --help                                    display help for command
 
 Commands:
+  tui                                           open the interactive terminal interface
   list|ls                                       list installed plugins
   install|add [options] <plugins...>            install picgo plugin
   uninstall|rm <plugins...>                     uninstall picgo plugin

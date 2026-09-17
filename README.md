@@ -191,6 +191,27 @@ $ picgo-server -h
 
 > PicList-Core使用`SM.MS`作为默认上传图床。
 
+在交互式终端中运行 `picgo` 即可打开基于 Ink 的终端界面，也可以使用 `picgo tui` 显式启动。
+使用 `picgo -c /path/to/config.json` 指定配置文件。本地开发时先运行 `yarn build`，再运行 `yarn start`。
+
+界面支持文件/URL 和剪贴板上传、图床切换、多配置管理、第二图床、图片处理、转换器、插件、上传代理和表单语言设置。
+首次使用请在 **Uploader configurations** 中添加图床配置。粘贴包含空格的路径时请加引号，例如
+`"C:\My Pictures\photo.png"` 或 `"/home/me/My Pictures/photo.png"`。上传进度和结果链接会显示在界面中。
+
+工作区按 **Upload**、**Destinations**、**Processing**、**Settings** 分组。用 **Tab**、**←/→** 或 **1–4**
+切换分组，**↑/↓** 移动，**Enter** 打开操作，**/** 搜索所有操作。首次使用可选择 **Set up a destination** 完成引导设置。
+
+表单提供字段进度、即时校验和选项搜索（**/**）。用 **Space** 切换多选项、**Ctrl+U** 清空输入、**Esc** 取消表单。
+按 **r** 查看最近的结果，修改设置后结果仍保留；用 **↑/↓** 选择结果，**PgUp/PgDn** 滚动查看长链接。
+在菜单中按 **q** 退出。**Ctrl+C** 会取消表单并退出；如果上传或 npm 操作已经开始，
+则等待操作完成后退出。凭据字段会隐藏输入内容，TUI 操作不会将服务商响应或表单值写入 PicList 日志。
+修改插件后请重启 PicList 以重新加载插件代码。导航菜单为英文，语言设置控制已有图床和图片处理表单的语言。
+
+参见 [UI 设计说明](docs/tui-design.md) 和 [交互设计预览](docs/tui-design.html)。
+
+`picgo upload ...`、`picgo set ...` 以及插件提供的命令仍可使用。在非交互环境（如输出被重定向）中，
+直接运行 `picgo` 将显示帮助，`picgo tui` 将提示需要交互式终端。`picgo-server` 和 Node API 的使用方式保持不变。
+
 显示帮助:
 
 ```bash
@@ -207,6 +228,7 @@ Options:
   -h, --help                                    display help for command
 
 Commands:
+  tui                                           open the interactive terminal interface
   list|ls                                       list installed plugins
   install|add [options] <plugins...>            install picgo plugin
   uninstall|rm <plugins...>                     uninstall picgo plugin

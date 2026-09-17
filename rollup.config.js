@@ -18,7 +18,7 @@ const banner = `/*
  * (c) 2022-${new Date().getFullYear()} Kuingsmile
  * Released under the MIT License.
  */`
-const input = './src/index.ts'
+const input = { index: './src/index.ts', tui: './src/tui/index.tsx' }
 
 const commonOptions = {
   // Creating regex of the packages to make sure sub-paths of the
@@ -67,7 +67,8 @@ if (!isDev) {
 const nodeEsm = {
   output: [
     {
-      file: 'dist/index.js',
+      dir: 'dist',
+      entryFileNames: '[name].js',
       format: 'esm',
       banner,
       sourcemap,
