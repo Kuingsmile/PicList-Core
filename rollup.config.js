@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { builtinModules } from 'node:module'
+import { isBuiltin } from 'node:module'
 import path from 'node:path'
 
 import commonjs from '@rollup/plugin-commonjs'
@@ -7,6 +7,7 @@ import json from '@rollup/plugin-json'
 import replace from '@rollup/plugin-replace'
 import terser from '@rollup/plugin-terser'
 import typescript from '@rollup/plugin-typescript'
+import { defineConfig } from 'rollup'
 import copy from 'rollup-plugin-copy'
 import { string } from 'rollup-plugin-string'
 import ts from 'typescript'
@@ -55,73 +56,59 @@ function nodeDeclarationImports(context) {
   }
 }
 
-const pkg = JSON.parse(readFileSync('./package.json', 'utf8'))
+const fromRoot = file => path.resolve(import.meta.dirname, file)
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+const externalPackages = Object.keys({ ...pkg.dependencies, ...pkg.peerDependencies, ...pkg.optionalDependencies })
 
 const version = process.env.VERSION || pkg.version
-const sourcemap = true
+const isDev = process.env.NODE_ENV === 'development'
 const banner = `/*
  * piclist@${version}, https://github.com/Kuingsmile/PicList-Core
  * (c) 2022-${new Date().getFullYear()} Kuingsmile
  * Released under the MIT License.
  */`
-const input = { index: './src/index.ts', tui: './src/tui/index.tsx' }
 
-const commonOptions = {
-  // Creating regex of the packages to make sure sub-paths of the
-  // packages such as `lowdb/adapters/FileSync` are also treated as external
-  // See https://github.com/rollup/rollup/issues/3684#issuecomment-926558056
-  external: [
-    ...Object.keys(pkg.dependencies).map(packageName => new RegExp(`^${packageName}(/.*)?`)),
-    ...builtinModules.map(moduleName => new RegExp(`^(node:)?${moduleName}(/.*)?`)),
-  ],
+export default defineConfig({
+  input: { index: fromRoot('src/index.ts'), tui: fromRoot('src/tui/index.tsx') },
+  // Match package boundaries so e.g. `react-dom` is not mistaken for `react`.
+  external: id => isBuiltin(id) || externalPackages.some(name => id === name || id.startsWith(`${name}/`)),
+  onwarn(warning, warn) {
+    // Undeclared dependencies must not silently become runtime imports.
+    if (warning.code === 'UNRESOLVED_IMPORT') throw new Error(warning.message)
+    warn(warning)
+  },
   plugins: [
     typescript({
-      tsconfig: './tsconfig.build.json',
+      tsconfig: fromRoot('tsconfig.build.json'),
       transformers: { afterDeclarations: [nodeDeclarationImports] },
     }),
-    copy({
-      targets: [{ src: 'assets', dest: 'dist' }],
-    }),
-    // terser(),
-    commonjs(),
     string({
-      // Required to be specified
-      include: ['**/*.applescript', '**/*.ps1', '**/*.sh'],
+      include: /\.(applescript|ps1|sh)$/,
     }),
     json(),
     replace({
-      'process.env.PICGO_VERSION': JSON.stringify(pkg.version),
+      'process.env.PICGO_VERSION': JSON.stringify(version),
       preventAssignment: true,
     }),
-  ],
-  input,
-}
-
-const isDev = process.env.NODE_ENV === 'development'
-
-if (!isDev) {
-  commonOptions.plugins.push(
-    terser({
-      format: {
-        comments: /piclist@/i,
-      },
+    commonjs(),
+    copy({
+      hook: 'writeBundle',
+      targets: [{ src: fromRoot('assets').split(path.sep).join('/'), dest: fromRoot('dist') }],
     }),
-  )
-}
-
-/** @type import('rollup').RollupOptions */
-
-const nodeEsm = {
-  output: [
-    {
-      dir: 'dist',
-      entryFileNames: '[name].js',
-      format: 'esm',
-      banner,
-      sourcemap,
-    },
   ],
-  ...commonOptions,
-}
-
-export default [nodeEsm]
+  output: {
+    dir: fromRoot('dist'),
+    entryFileNames: '[name].js',
+    format: 'esm',
+    banner,
+    sourcemap: true,
+    plugins: [
+      !isDev &&
+        terser({
+          format: {
+            comments: /piclist@/i,
+          },
+        }),
+    ],
+  },
+})

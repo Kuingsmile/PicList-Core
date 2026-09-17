@@ -1,4 +1,31 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"]
+  "extends": ["config:recommended"],
+  "prConcurrentLimit": 5,
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "description": "Wait for npm releases to settle before proposing updates.",
+      "matchDatasources": ["npm"],
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Update the build toolchain together, keeping major upgrades separate.",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchPackageNames": ["rollup", "@rollup/**", "rollup-plugin-*", "typescript", "tslib"],
+      "groupName": "build tooling"
+    },
+    {
+      "description": "Update compatible lint and formatting tools together.",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchPackageNames": ["eslint", "@eslint/**", "eslint-*", "typescript-eslint", "prettier", "globals"],
+      "groupName": "lint and formatting tooling"
+    }
+  ]
 }

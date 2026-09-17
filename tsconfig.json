@@ -1,23 +1,20 @@
 {
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "declaration": true,
     "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
     "jsx": "react-jsx",
-    "lib": ["esnext", "es2015", "es6"],
+    "lib": ["ES2024"],
     "module": "esnext",
     "moduleResolution": "bundler",
     "noEmit": true,
+    "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "outDir": "dist",
     "resolveJsonModule": true,
-    "rootDir": ".",
-    "sourceMap": true,
     "strict": true,
-    "strictFunctionTypes": true,
-    "strictNullChecks": true,
-    "target": "esnext"
+    "target": "ES2022",
+    "types": ["node"]
   },
   "exclude": ["node_modules", "dist", "test/package/consumer"],
   "include": ["src", "test", "vitest.config.ts"]
