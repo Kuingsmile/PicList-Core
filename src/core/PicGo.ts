@@ -4,7 +4,7 @@ import { homedir } from 'node:os'
 import path from 'node:path'
 
 import { ensureFileSync, pathExistsSync, remove } from 'fs-extra/esm'
-import { cloneDeep, get, set, unset } from 'lodash-es'
+import { cloneDeep, get, has, set, toPath, unset } from 'lodash-es'
 
 import { I18nManager } from '../i18n'
 import { Commander } from '../lib/Commander'
@@ -39,6 +39,7 @@ import { Lifecycle } from './Lifecycle'
 
 export class PicGo extends EventEmitter implements IPicGo {
   private _config!: IConfig
+  private readonly runtimeConfigPaths = new Map<string, string[]>()
   private readonly uploadConfig = new AsyncLocalStorage<IConfig>()
   private lifecycle!: Lifecycle
   private db!: DB
@@ -113,7 +114,7 @@ export class PicGo extends EventEmitter implements IPicGo {
   private initConfig(): void {
     this.db = new DB(this)
     this.configManager = new ConfigManager(this)
-    this._config = this.db.read(true) as IConfig
+    this._config = cloneDeep(this.db.read(true)) as IConfig
   }
 
   private async init(): Promise<void> {
@@ -163,7 +164,16 @@ export class PicGo extends EventEmitter implements IPicGo {
       // Callers can manipulate returned values without changing the upload's snapshot.
       return cloneDeep(name ? get(uploadConfig, name) : uploadConfig) as T
     }
-    this._config = this.db.read(true) as IConfig
+    // Refresh saved settings while retaining explicitly set or unset runtime paths.
+    const config = cloneDeep(this.db.read(true)) as IConfig
+    for (const configPath of this.runtimeConfigPaths.values()) {
+      if (has(this._config, configPath)) {
+        set(config, configPath, cloneDeep(get(this._config, configPath)))
+      } else {
+        unset(config, configPath)
+      }
+    }
+    this._config = config
     if (!name) {
       return this._config as unknown as T
     }
@@ -177,6 +187,11 @@ export class PicGo extends EventEmitter implements IPicGo {
     }
     this.setConfig(config)
     this.db.saveConfig(config)
+    Object.keys(config).forEach(name => {
+      // Explicit saves also update defaults when called from an upload snapshot.
+      set(this._config, name, cloneDeep(config[name]))
+      this.clearRuntimeConfigPaths(toPath(name))
+    })
   }
 
   removeConfig(key: string, propName: string): void {
@@ -187,6 +202,8 @@ export class PicGo extends EventEmitter implements IPicGo {
     }
     this.unsetConfig(key, propName)
     this.db.unset(key, propName)
+    unset(get(this._config, key), propName)
+    this.clearRuntimeConfigPaths([...toPath(key), ...toPath(propName)])
   }
 
   setConfig(config: IStringKeyMap<any>): void {
@@ -199,8 +216,11 @@ export class PicGo extends EventEmitter implements IPicGo {
         this.log.warn(`the config.${name} can't be modified`)
 
         delete config[name]
+        return
       }
-      set(this.uploadConfig.getStore() || this._config, name, cloneDeep(config[name]))
+      const uploadConfig = this.uploadConfig.getStore()
+      set(uploadConfig || this._config, name, cloneDeep(config[name]))
+      if (!uploadConfig) this.trackRuntimeConfigPath(toPath(name))
       eventBus.emit(IBusEvent.CONFIG_CHANGE, {
         configName: name,
         value: config[name],
@@ -216,6 +236,20 @@ export class PicGo extends EventEmitter implements IPicGo {
     }
     const config = this.uploadConfig.getStore()
     unset(config ? get(config, key) : this.getConfig(key), propName)
+    if (!config) this.trackRuntimeConfigPath([...toPath(key), ...toPath(propName)])
+  }
+
+  private trackRuntimeConfigPath(configPath: string[]): void {
+    this.clearRuntimeConfigPaths(configPath)
+    this.runtimeConfigPaths.set(JSON.stringify(configPath), configPath)
+  }
+
+  private clearRuntimeConfigPaths(configPath: string[]): void {
+    for (const [key, runtimePath] of this.runtimeConfigPaths) {
+      if (configPath.every((part, index) => part === runtimePath[index])) {
+        this.runtimeConfigPaths.delete(key)
+      }
+    }
   }
 
   get request(): IRequest['request'] {

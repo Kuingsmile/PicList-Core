@@ -18,6 +18,129 @@ const deferred = () => {
   return { promise, resolve }
 }
 
+describe('PicGo runtime configuration', () => {
+  let baseDir: string
+  let picgo: PicGo
+
+  beforeEach(async () => {
+    baseDir = await fs.mkdtemp(path.join(os.tmpdir(), 'piclist-runtime-config-test-'))
+    picgo = new PicGo(path.join(baseDir, 'config.json'))
+  })
+
+  afterEach(async () => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+    await fs.remove(baseDir)
+  })
+
+  it('retains runtime flags across keyed and whole-config reads without saving them', async () => {
+    const savedConfig = await fs.readFile(picgo.configPath, 'utf8')
+
+    picgo.setConfig({ silent: true, debug: true })
+
+    expect(picgo.getConfig('silent')).toBe(true)
+    expect(picgo.getConfig('debug')).toBe(true)
+    expect(picgo.getConfig()).toMatchObject({ silent: true, debug: true })
+    expect(await fs.readFile(picgo.configPath, 'utf8')).toBe(savedConfig)
+    expect(new PicGo(picgo.configPath).getConfig('silent')).toBeUndefined()
+  })
+
+  it('retains CLI silent and debug flags when a command reads them', async () => {
+    const savedConfig = await fs.readFile(picgo.configPath, 'utf8')
+    vi.stubEnv('PICGO_VERSION', '0.0.0-test')
+    picgo.cmd.init()
+    const action = vi.fn(() => {
+      expect(picgo.getConfig('silent')).toBe(true)
+      expect(picgo.getConfig('debug')).toBe(true)
+    })
+    picgo.cmd.program.action(action)
+
+    await picgo.cmd.program.parseAsync(['--silent', '--debug'], { from: 'user' })
+
+    expect(action).toHaveBeenCalledOnce()
+    expect(await fs.readFile(picgo.configPath, 'utf8')).toBe(savedConfig)
+  })
+
+  it('makes runtime values available to configuration change listeners', () => {
+    const observed: unknown[] = []
+    const listener = ({ configName }: { configName: string }) => observed.push(picgo.getConfig(configName))
+    eventBus.on(IBusEvent.CONFIG_CHANGE, listener)
+    try {
+      picgo.setConfig({ silent: true, debug: false })
+      expect(observed).toEqual([true, false])
+      expect(picgo.getConfig()).toMatchObject({ silent: true, debug: false })
+    } finally {
+      eventBus.removeListener(IBusEvent.CONFIG_CHANGE, listener)
+    }
+  })
+
+  it('keeps runtime overrides while refreshing unrelated settings from disk', async () => {
+    picgo.setConfig({ silent: true, 'picBed.proxy': 'http://runtime.invalid' })
+    const saved = await fs.readJson(picgo.configPath)
+    await fs.writeJson(picgo.configPath, {
+      ...saved,
+      silent: false,
+      picBed: { ...saved.picBed, uploader: 'github', proxy: 'http://saved.invalid' },
+    })
+
+    expect(picgo.getConfig('silent')).toBe(true)
+    expect(picgo.getConfig('picBed.proxy')).toBe('http://runtime.invalid')
+    expect(picgo.getConfig('picBed.uploader')).toBe('github')
+  })
+
+  it('preserves object replacement, array replacement, and nested runtime edits', () => {
+    picgo.saveConfig({ 'test-plugin': { obsolete: true }, items: ['old', 'extra'] })
+    const config = { 'test-plugin': { enabled: true }, items: ['new'] }
+    picgo.setConfig(config)
+    config['test-plugin'].enabled = false
+    config.items.push('mutated')
+    picgo.setConfig({ 'test-plugin.nested.value': 1, 'items[0]': 'updated' })
+
+    expect(picgo.getConfig('test-plugin')).toEqual({ enabled: true, nested: { value: 1 } })
+    expect(picgo.getConfig('items')).toEqual(['updated'])
+    picgo.setConfig({ 'test-plugin': { replaced: true } })
+    expect(picgo.getConfig('test-plugin')).toEqual({ replaced: true })
+  })
+
+  it('preserves runtime unsets without removing saved values', async () => {
+    picgo.saveConfig({ 'test-plugin': { saved: true, keep: true } })
+    picgo.setConfig({ 'test-plugin.temporary': true })
+    picgo.unsetConfig('test-plugin', 'saved')
+    picgo.unsetConfig('test-plugin', 'temporary')
+
+    expect(picgo.getConfig('test-plugin')).toEqual({ keep: true })
+    expect((await fs.readJson(picgo.configPath))['test-plugin']).toEqual({ saved: true, keep: true })
+    picgo.setConfig({ 'test-plugin.saved': false })
+    expect(picgo.getConfig('test-plugin.saved')).toBe(false)
+  })
+
+  it('saves only explicit settings and releases their runtime overrides', async () => {
+    picgo.setConfig({ silent: true, debug: true, 'test-plugin.value': 'runtime' })
+    picgo.saveConfig({ debug: false, 'test-plugin': { value: 'saved' } })
+
+    expect(picgo.getConfig()).toMatchObject({ silent: true, debug: false, 'test-plugin': { value: 'saved' } })
+    const saved = await fs.readJson(picgo.configPath)
+    expect(saved.silent).toBeUndefined()
+    expect(saved.debug).toBe(false)
+    expect(saved['test-plugin']).toEqual({ value: 'saved' })
+    await fs.writeJson(picgo.configPath, { ...saved, debug: true, 'test-plugin': { value: 'external' } })
+    expect(picgo.getConfig('debug')).toBe(true)
+    expect(picgo.getConfig('test-plugin.value')).toBe('external')
+  })
+
+  it('removes runtime and saved properties while retaining sibling overrides', async () => {
+    picgo.saveConfig({ 'test-plugin': { saved: true } })
+    picgo.setConfig({ 'test-plugin.saved': false, 'test-plugin.temporary': true })
+    picgo.removeConfig('test-plugin', 'saved')
+
+    expect(picgo.getConfig('test-plugin')).toEqual({ temporary: true })
+    const saved = await fs.readJson(picgo.configPath)
+    expect(saved['test-plugin']).toEqual({})
+    await fs.writeJson(picgo.configPath, { ...saved, 'test-plugin': { saved: 'external' } })
+    expect(picgo.getConfig('test-plugin')).toEqual({ saved: 'external', temporary: true })
+  })
+})
+
 describe('PicGo upload configuration isolation', () => {
   let baseDir: string
   let picgo: PicGo
@@ -79,6 +202,26 @@ describe('PicGo upload configuration isolation', () => {
     }
     await fs.remove(baseDir)
   })
+
+  it.each(['upload', 'uploadReturnCtx'] as const)(
+    '%s inherits runtime flags and isolates plugin overrides',
+    async method => {
+      picgo.saveConfig({ silent: false, debug: false })
+      picgo.setConfig({ silent: true, debug: true })
+      beforeUpload = async ctx => {
+        expect(ctx.getConfig('silent')).toBe(true)
+        expect(ctx.getConfig('debug')).toBe(true)
+        ctx.setConfig({ 'test-plugin.temporary': true })
+        expect(ctx.getConfig('test-plugin.temporary')).toBe(true)
+      }
+
+      await picgo[method](['first.png'])
+
+      expect(picgo.getConfig('test-plugin.temporary')).toBeUndefined()
+      expect(picgo.getConfig()).toMatchObject({ silent: true, debug: true })
+      expect(await fs.readJson(picgo.configPath)).toMatchObject({ silent: false, debug: false })
+    },
+  )
 
   it.each([
     { picBed: 'test-b', destination: 'b' },
