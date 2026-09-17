@@ -42,7 +42,7 @@ describe('secondary uploader CLI settings', () => {
     for (const uploader of ['test-a', 'test-b', 'test-empty']) {
       picgo.helper.uploader.register(uploader, {
         handle: async () => {},
-        config: () => [{ name: 'destination', type: 'input', message: 'Destination' }],
+        config: () => [{ name: 'destination', type: 'input', message: 'Destination', required: false }],
       })
     }
     vi.spyOn(picgo.log, 'success').mockImplementation(() => {})

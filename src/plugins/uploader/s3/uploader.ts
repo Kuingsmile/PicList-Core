@@ -82,13 +82,9 @@ async function createUploadTask(opts: ICreateUploadTaskOpts): Promise<IUploadRes
 
     let url: string
     if (!opts.urlPrefix) {
-      url = await getFileURL(opts, output.ETag!, output.VersionId!)
+      url = await getFileURL(opts, output.VersionId)
     } else {
-      url = `${opts.urlPrefix}/${opts.path}`
-    }
-
-    if (opts.options) {
-      url += opts.options.startsWith('?') ? opts.options : `?${opts.options}`
+      url = appendUrlOptions(`${opts.urlPrefix}/${opts.path}`, opts.options)
     }
 
     return {
@@ -103,20 +99,41 @@ async function createUploadTask(opts: ICreateUploadTaskOpts): Promise<IUploadRes
   }
 }
 
-async function getFileURL(opts: ICreateUploadTaskOpts, eTag: string, versionId: string): Promise<string> {
-  const signedUrl = await getSignedUrl(
-    opts.client,
-    new GetObjectCommand({
-      Bucket: opts.bucketName,
-      Key: opts.path,
-      IfMatch: eTag,
-      VersionId: versionId,
-    }),
-    { expiresIn: 3600 },
-  )
+function appendUrlOptions(fileUrl: string, options: string): string {
+  if (!options) return fileUrl
+  return `${fileUrl}${fileUrl.includes('?') ? '&' : '?'}${options.replace(/^\?/, '')}`
+}
+
+async function getFileURL(opts: ICreateUploadTaskOpts, versionId?: string): Promise<string> {
+  const isPublic = opts.acl === 'public-read' || opts.acl === 'public-read-write'
+  const command = new GetObjectCommand({
+    Bucket: opts.bucketName,
+    Key: opts.path,
+    VersionId: versionId,
+  })
+
+  if (!isPublic && opts.options) {
+    const options = new url.URLSearchParams(opts.options)
+    const query = Object.fromEntries(Array.from(options.keys(), key => [key, options.getAll(key)]))
+    // Include URL options before signing so they do not invalidate the signature.
+    command.middlewareStack.add(
+      next => async args => {
+        const request = args.request as { query?: Record<string, string | string[] | null> }
+        request.query = { ...query, ...request.query }
+        return next(args)
+      },
+      { step: 'build', name: 'downloadUrlOptions' },
+    )
+  }
+
+  const signedUrl = await getSignedUrl(opts.client, command, { expiresIn: 3600 })
+  if (!isPublic) return signedUrl
+
+  // Public links do not need expiring credentials, but must retain the object version.
   const urlObject = new url.URL(signedUrl)
   urlObject.search = ''
-  return urlObject.href
+  if (versionId !== undefined) urlObject.searchParams.set('versionId', versionId)
+  return appendUrlOptions(urlObject.href, opts.options)
 }
 
 export default {

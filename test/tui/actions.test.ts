@@ -45,7 +45,7 @@ describe('TUI workflows', () => {
     ctx = await PicGo.create(path.join(baseDir, 'config.json'))
     ctx.helper.uploader.register('test-uploader', {
       handle: async () => {},
-      config: () => [{ name: 'destination', type: 'input', default: primary.destination }],
+      config: () => [{ name: 'destination', type: 'input', default: primary.destination, required: false }],
     })
     session = new TuiSession()
     session.attach(ctx)

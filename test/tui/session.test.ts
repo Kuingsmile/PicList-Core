@@ -82,7 +82,7 @@ describe('TUI session lifecycle', () => {
     const session = new TuiSession()
     session.attach(ctx)
     await session.run('Upload', async () => {
-      ctx.log.error({ token: 'test-sensitive-value' })
+      ctx.log.error(Object.assign(new Error('Provider failed'), { token: 'test-sensitive-value' }))
     })
     expect(session.getSnapshot().error).toBe(true)
     expect(JSON.stringify(session.getSnapshot())).not.toContain('test-sensitive-value')

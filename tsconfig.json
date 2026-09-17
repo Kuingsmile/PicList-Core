@@ -7,16 +7,18 @@
     "lib": ["esnext", "es2015", "es6"],
     "module": "esnext",
     "moduleResolution": "bundler",
+    "noEmit": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "outDir": "dist",
     "resolveJsonModule": true,
-    "rootDir": "src",
+    "rootDir": ".",
     "sourceMap": true,
     "strict": true,
     "strictFunctionTypes": true,
     "strictNullChecks": true,
     "target": "esnext"
   },
-  "exclude": ["node_modules", "dist", "test", "vitest.config.ts"]
+  "exclude": ["node_modules", "dist"],
+  "include": ["src", "test", "vitest.config.ts"]
 }
