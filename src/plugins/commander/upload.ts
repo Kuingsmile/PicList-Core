@@ -25,6 +25,10 @@ const upload: IPlugin = {
               }
               return exist
             })
+          // Only an invocation without inputs should fall back to the clipboard.
+          if (input.length > 0 && inputList.length === 0) {
+            return
+          }
           await ctx.uploadReturnCtx(inputList)
         })().catch(e => {
           ctx.log.error(e)
