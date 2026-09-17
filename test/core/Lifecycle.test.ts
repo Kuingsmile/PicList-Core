@@ -204,6 +204,198 @@ describe('Lifecycle preprocessing isolation', () => {
     expect(uploaded).toHaveLength(2)
   })
 
+  it.each(['upload', 'uploadReturnCtx'] as const)('%s cleans processed files after every upload', async method => {
+    for (const inputPath of inputPaths) {
+      await picgo[method]([inputPath])
+      expect(await fs.readdir(path.join(baseDir, 'piclistTemp'))).toEqual([])
+    }
+
+    await expectDistinctImages(uploaded)
+    for (const [index, inputPath] of inputPaths.entries()) {
+      expect(await fs.readFile(inputPath)).toEqual(inputBuffers[index])
+    }
+  })
+
+  it('cleans processed files when the lifecycle is called directly', async () => {
+    await new Lifecycle(picgo).start([inputPaths[0]])
+
+    expect(uploaded).toHaveLength(1)
+    expect(await fs.readdir(path.join(baseDir, 'piclistTemp'))).toEqual([])
+  })
+
+  it('can reuse the same input array after processed files have been cleaned', async () => {
+    const inputs = [...inputPaths]
+    await picgo.uploadReturnCtx(inputs)
+    await picgo.uploadReturnCtx(inputs)
+
+    expect(inputs).toEqual(inputPaths)
+    expect(uploaded).toHaveLength(4)
+    await expectDistinctImages(uploaded.slice(2))
+  })
+
+  it.each(['beforeTransform', 'upload', 'afterUpload'] as const)(
+    'cleans processed files after a failure during %s',
+    async stage => {
+      const failure = new Error('Synthetic lifecycle failure')
+      const handle = vi.fn(async () => {
+        throw failure
+      })
+      if (stage === 'upload') {
+        vi.spyOn(picgo.helper.uploader.get('test')!, 'handle').mockImplementation(handle)
+      } else {
+        picgo.helper[stage === 'beforeTransform' ? 'beforeTransformPlugins' : 'afterUploadPlugins'].register('fail', {
+          handle,
+        })
+      }
+      const failed = vi.fn()
+      picgo.on('failed', failed)
+
+      for (const debug of [true, false]) {
+        picgo.setConfig({ debug })
+        const pending = picgo.uploadReturnCtx([inputPaths[0]])
+        if (debug) {
+          await expect(pending).rejects.toThrow(failure)
+        } else {
+          await expect(pending).resolves.toHaveProperty('ctx')
+        }
+        expect(failed).toHaveBeenLastCalledWith(failure)
+        expect(await fs.readdir(path.join(baseDir, 'piclistTemp'))).toEqual([])
+      }
+      expect(handle).toHaveBeenCalledTimes(2)
+    },
+  )
+
+  it('cleans empty processing directories when all inputs are missing', async () => {
+    await picgo.uploadReturnCtx([path.join(baseDir, 'missing.png')])
+
+    expect(uploaded).toEqual([])
+    expect(await fs.readdir(path.join(baseDir, 'piclistTemp'))).toEqual([])
+  })
+
+  it('waits for all hooks to settle before cleaning files when one hook fails', async () => {
+    const failure = new Error('Synthetic hook failure')
+    let hookFinished = false
+    const cleanupStates: boolean[] = []
+    const remove = fs.remove.bind(fs)
+    vi.spyOn(fs, 'remove').mockImplementation(async tempDir => {
+      cleanupStates.push(hookFinished)
+      await remove(tempDir)
+    })
+    picgo.helper.afterUploadPlugins.register('fail', {
+      handle: async () => {
+        throw failure
+      },
+    })
+    picgo.helper.afterUploadPlugins.register('read-after-yield', {
+      handle: async ctx => {
+        await new Promise<void>(resolve => setImmediate(resolve))
+        expect(await fs.readFile(ctx.output[0].filePath!)).toEqual(ctx.output[0].buffer)
+        hookFinished = true
+      },
+    })
+
+    await expect(picgo.uploadReturnCtx([inputPaths[0]])).rejects.toThrow(failure)
+
+    expect(cleanupStates).toEqual([true])
+    expect(await fs.readdir(path.join(baseDir, 'piclistTemp'))).toEqual([])
+  })
+
+  it('reports cleanup failures without replacing the upload result or error', async () => {
+    const warn = vi.spyOn(picgo.log, 'warn')
+    const remove = vi.spyOn(fs, 'remove').mockRejectedValue(new Error('Synthetic cleanup failure'))
+
+    const result = await picgo.uploadReturnCtx([inputPaths[0]])
+    expect(result.ctx?.output).toHaveLength(1)
+
+    const failure = new Error('Synthetic upload failure')
+    vi.spyOn(picgo.helper.uploader.get('test')!, 'handle').mockRejectedValue(failure)
+    await expect(picgo.uploadReturnCtx([inputPaths[1]])).rejects.toThrow(failure)
+
+    expect(remove).toHaveBeenCalledTimes(2)
+    expect(warn.mock.calls.filter(([message]) => message === 'Failed to clean up processed upload files')).toHaveLength(
+      2,
+    )
+  })
+
+  it.each([
+    { mode: 'shared', fail: false },
+    { mode: 'seperate', fail: false },
+    { mode: 'shared', fail: true },
+    { mode: 'seperate', fail: true },
+  ])('keeps files through secondary upload ($mode, fail=$fail) then cleans them', async ({ mode, fail }) => {
+    picgo.setConfig({
+      'settings.enableSecondUploader': true,
+      'settings.secondPicBedMode': mode,
+      'picBed.secondUploader': 'backup',
+      'picBed.secondUploaderConfig': { _id: 'backup' },
+    })
+    const backup = vi.fn(async (ctx: IPicGo) => {
+      const item = ctx.output[0]
+      expect(await fs.readFile(item.filePath!)).toEqual(item.buffer)
+      expect((await sharp(item.buffer!).metadata()).width).toBe(4)
+      if (fail) throw new Error('Synthetic secondary failure')
+    })
+    picgo.helper.uploader.register('backup', { handle: backup })
+    const afterUpload = vi.fn(async (ctx: IPicGo) => {
+      expect(await fs.readFile(ctx.output[0].filePath!)).toEqual(ctx.output[0].buffer)
+    })
+    picgo.helper.afterUploadPlugins.register('read-processed-file', { handle: afterUpload })
+    await fs.outputFile(
+      path.join(baseDir, 'scripts', 'afterUpload', 'read-processed-file.js'),
+      `async function main(ctx) {
+        const image = await fs.readFile(ctx.output[0].filePath)
+        ctx.output[0].scriptReadBytes = image.length
+      }`,
+    )
+
+    const result = await picgo.uploadReturnCtx([inputPaths[0]])
+
+    expect(backup).toHaveBeenCalledTimes(1)
+    expect(result.ctx?.output[0].scriptReadBytes).toBeGreaterThan(0)
+    if (fail) {
+      expect(result.backupCtx).toBeUndefined()
+    } else {
+      expect(result.backupCtx?.output[0].scriptReadBytes).toBeGreaterThan(0)
+    }
+    expect(afterUpload).toHaveBeenCalledTimes(fail ? 1 : 2)
+    expect(await fs.readdir(path.join(baseDir, 'piclistTemp'))).toEqual([])
+  })
+
+  it('cleans only the completed upload while another upload is still using its files', async () => {
+    const tempRoot = path.join(baseDir, 'piclistTemp')
+    const unrelatedFile = path.join(tempRoot, 'unrelated.txt')
+    await fs.outputFile(unrelatedFile, 'keep')
+    let ready!: () => void
+    let release!: () => void
+    const started = new Promise<void>(resolve => (ready = resolve))
+    const resume = new Promise<void>(resolve => (release = resolve))
+    let pendingFile = ''
+    picgo.helper.beforeTransformPlugins.register('pause-first-upload', {
+      handle: async ctx => {
+        if (ctx.rawInput[0] === inputPaths[0]) {
+          pendingFile = ctx.input[0]
+          ready()
+          await resume
+          expect((await sharp(await fs.readFile(pendingFile)).metadata()).width).toBe(4)
+        }
+      },
+    })
+
+    const pending = picgo.uploadReturnCtx([inputPaths[0]])
+    try {
+      await started
+      await picgo.uploadReturnCtx([inputPaths[1]])
+      expect(await fs.pathExists(pendingFile)).toBe(true)
+      expect(await fs.readdir(tempRoot)).toHaveLength(2)
+    } finally {
+      release()
+      await pending
+    }
+
+    expect(await fs.readdir(tempRoot)).toEqual(['unrelated.txt'])
+    expect(await fs.readFile(unrelatedFile, 'utf8')).toBe('keep')
+  })
+
   it('preserves different URL images with the same basename', async () => {
     const urls = ['https://example.invalid/a/photo.png', 'https://example.invalid/b/photo.png']
     vi.spyOn(picgo.Request, 'request').mockImplementation((async ({ url }: { url: string }) => ({

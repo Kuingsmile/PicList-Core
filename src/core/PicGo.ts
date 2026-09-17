@@ -325,10 +325,15 @@ export class PicGo extends EventEmitter implements IPicGo {
   }
 
   async uploadReturnCtx(input?: any[], options?: IUploadOptions): Promise<IUploadResultWithBackup> {
-    return this.uploadConfig.run(this.getUploadConfig(options), () => this.uploadReturnCtxWithConfig(input))
+    return this.uploadConfig.run(this.getUploadConfig(options), () =>
+      this.lifecycle.withTempFileCleanup(tempDirs => this.uploadReturnCtxWithConfig(input, tempDirs)),
+    )
   }
 
-  private async uploadReturnCtxWithConfig(input?: any[]): Promise<IUploadResultWithBackup> {
+  private async uploadReturnCtxWithConfig(
+    input: any[] | undefined,
+    tempDirs: string[],
+  ): Promise<IUploadResultWithBackup> {
     const ctxResult: IUploadResultWithBackup = { ctx: this, backupCtx: undefined }
     if (this.configPath === '') {
       this.log.error('No config file found, please check your config file path')
@@ -367,7 +372,7 @@ export class PicGo extends EventEmitter implements IPicGo {
     // upload the default picbed first
     if (!(input === undefined || input.length === 0)) {
       initialUploadType = 'file'
-      ctxP = await this.lifecycle.start(input, false)
+      ctxP = await this.lifecycle.start(input, false, tempDirs)
       ctxResult.ctx = ctxP
     } else {
       initialUploadType = 'clipboard'
@@ -390,7 +395,7 @@ export class PicGo extends EventEmitter implements IPicGo {
         } else {
           this.once(IBuildInEvent.FAILED, cleanup)
           this.once(IBuildInEvent.FINISHED, cleanup)
-          ctxP = await this.lifecycle.start([imgPath], false)
+          ctxP = await this.lifecycle.start([imgPath], false, tempDirs)
           ctxResult.ctx = ctxP
         }
       } catch (e) {
@@ -418,9 +423,13 @@ export class PicGo extends EventEmitter implements IPicGo {
             this.once(IBuildInEvent.FAILED, cleanupForSecond)
             this.once(IBuildInEvent.FINISHED, cleanupForSecond)
           }
-          return this.lifecycle.start(initialUploadType === 'file' ? rawInput : [getClipboardResult.imgPath], false)
+          return this.lifecycle.start(
+            initialUploadType === 'file' ? rawInput : [getClipboardResult.imgPath],
+            false,
+            tempDirs,
+          )
         } else {
-          return this.lifecycle.start(ctxP.processedInput, true)
+          return this.lifecycle.start(ctxP.processedInput, true, tempDirs)
         }
       })
     } catch (e: any) {

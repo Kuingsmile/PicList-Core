@@ -194,7 +194,27 @@ export class Lifecycle extends EventEmitter {
   }
 
   // Main lifecycle methods
-  async start(input: any[], skipProcess = false): Promise<IPicGo> {
+  async withTempFileCleanup<T>(action: (tempDirs: string[]) => Promise<T>): Promise<T> {
+    const tempDirs: string[] = []
+    try {
+      return await action(tempDirs)
+    } finally {
+      await Promise.all(
+        tempDirs.map(async tempDir => {
+          try {
+            await fs.remove(tempDir)
+          } catch (_error) {
+            this.ctx.log.warn('Failed to clean up processed upload files')
+          }
+        }),
+      )
+    }
+  }
+
+  async start(input: any[], skipProcess = false, tempDirs?: string[]): Promise<IPicGo> {
+    // Secondary uploads share ownership until all upload hooks and scripts finish.
+    if (!tempDirs) return this.withTempFileCleanup(dirs => this.start(input, skipProcess, dirs))
+
     const ctx = createContext(this.ctx)
     try {
       if (!Array.isArray(input)) throw new Error('Input must be an array.')
@@ -205,14 +225,14 @@ export class Lifecycle extends EventEmitter {
         return await this.handleSkipProcess(ctx)
       }
 
-      return await this.executeLifecycle(ctx)
+      return await this.executeLifecycle(ctx, tempDirs)
     } catch (e: any) {
       return this.handleError(ctx, e)
     }
   }
 
   private initializeContext(ctx: IPicGo, input: any[]): void {
-    ctx.input = input
+    ctx.input = [...input]
     ctx.output = [] as IImgInfo[]
     ctx.processedInput = [] as any[]
     ctx.rawInputPath = [] as string[]
@@ -231,10 +251,10 @@ export class Lifecycle extends EventEmitter {
     return ctx
   }
 
-  private async executeLifecycle(ctx: IPicGo): Promise<IPicGo> {
+  private async executeLifecycle(ctx: IPicGo, tempDirs: string[]): Promise<IPicGo> {
     const handler = new ScriptHandler(ctx)
     await handler.refreshCache()
-    await this.preprocess(ctx)
+    await this.preprocess(ctx, tempDirs)
     await handler.runStage('preProcess')
     await this.beforeTransform(ctx)
     await handler.runStage('beforeTransform')
@@ -265,7 +285,7 @@ export class Lifecycle extends EventEmitter {
   }
 
   // Processing methods
-  private async preprocess(ctx: IPicGo): Promise<IPicGo> {
+  private async preprocess(ctx: IPicGo, tempDirs: string[]): Promise<IPicGo> {
     const { compressOptions, watermarkOptions } = this.getProcessingOptions(ctx)
     const skipExtensions = this.getSkipExtensions(ctx)
 
@@ -275,7 +295,7 @@ export class Lifecycle extends EventEmitter {
 
     if (compressOptions || watermarkOptions) {
       const tempFilePath = path.join(ctx.baseDir, 'piclistTemp')
-      await this.processImages(ctx, tempFilePath, compressOptions, watermarkOptions, skipExtensions)
+      await this.processImages(ctx, tempFilePath, compressOptions, watermarkOptions, skipExtensions, tempDirs)
     } else {
       this.initializeRawInputPaths(ctx)
     }
@@ -294,9 +314,11 @@ export class Lifecycle extends EventEmitter {
     compressOptions: Undefinable<IBuildInCompressOptions>,
     watermarkOptions: Undefinable<IBuildInWaterMarkOptions>,
     skipExtensions: Set<string>,
+    tempDirs: string[],
   ): Promise<void> {
     await fs.ensureDir(tempFilePath)
     const uploadTempPath = await fs.mkdtemp(path.join(tempFilePath, 'upload-'))
+    tempDirs.push(uploadTempPath)
     const res = await Promise.allSettled(
       ctx.input.map(async (item: string, index: number) => {
         // Isolate each input while preserving its basename for transformers and uploaders.
@@ -603,7 +625,7 @@ export class Lifecycle extends EventEmitter {
     const pluginNames = lifeCyclePlugins.getIdList()
     const lifeCycleName = lifeCyclePlugins.getName()
 
-    await Promise.all(
+    const results = await Promise.allSettled(
       plugins.map(async (plugin: IPlugin, index: number) => {
         try {
           ctx.log.info(`${lifeCycleName}: ${pluginNames[index]} running`)
@@ -614,6 +636,9 @@ export class Lifecycle extends EventEmitter {
         }
       }),
     )
+    // All hooks must stop using processed files before the upload can clean them up.
+    const failure = results.find(result => result.status === 'rejected')
+    if (failure?.status === 'rejected') throw failure.reason
     return ctx
   }
 }
