@@ -55,7 +55,8 @@ export class PluginHandler implements IPluginHandler {
       // 2. install local pacage
       const result = await this.execCommand('install', fullNameList, this.ctx.baseDir, options, env)
       if (!result.code) {
-        for (const item of fullNameList) {
+        // Load installed packages by name, without version suffixes or local source paths.
+        for (const item of pkgNameList) {
           await this.ctx.pluginLoader.registerPlugin(item)
         }
         this.ctx.log.success(this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_INSTALL_SUCCESS'))
