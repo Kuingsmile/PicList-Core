@@ -272,7 +272,8 @@ export async function imageCompress(
     return await image.toBuffer()
   } catch (error: any) {
     logger.error(`Image process error: ${error}`)
-    return img
+    // Let the lifecycle retain the original input instead of saving it with the requested output extension.
+    throw error
   }
 }
 

@@ -229,6 +229,54 @@ describe('Lifecycle preprocessing isolation', () => {
     expect(ctx?.rawInputPath).toEqual([inputPaths[0], inputPaths[0]])
   })
 
+  it.each(['local', 'url'])(
+    'keeps the original PNG filename and MIME type when %s SVG conversion fails',
+    async source => {
+      picgo.setConfig({ 'buildIn.compress': { isConvert: true, convertFormat: 'svg' } })
+      const input = source === 'local' ? inputPaths[0] : 'https://example.invalid/photo.png'
+      if (source === 'url') {
+        vi.spyOn(picgo.Request, 'request').mockResolvedValue({
+          data: inputBuffers[0],
+          headers: { 'content-type': 'image/png' },
+        })
+      }
+
+      const { ctx } = await picgo.uploadReturnCtx([input])
+
+      expect(uploaded).toHaveLength(1)
+      expect(uploaded[0]).toMatchObject({ fileName: 'photo.png', extname: '.png', mimeType: 'image/png' })
+      expect(uploaded[0].buffer).toEqual(inputBuffers[0])
+      expect((await sharp(uploaded[0].buffer!).metadata()).format).toBe('png')
+      expect(ctx?.rawInputPath).toEqual([input])
+    },
+  )
+
+  it('preserves a failed input while converting the other images in the batch', async () => {
+    picgo.setConfig({ 'buildIn.compress': { isConvert: true, convertFormat: 'jpg' } })
+    const invalidInput = inputBuffers[0].subarray(0, 24)
+    await fs.writeFile(inputPaths[0], invalidInput)
+
+    const { ctx } = await picgo.uploadReturnCtx([...inputPaths])
+
+    expect(uploaded).toHaveLength(2)
+    expect(uploaded[0]).toMatchObject({ fileName: 'photo.png', extname: '.png', mimeType: 'image/png' })
+    expect(uploaded[0].buffer).toEqual(invalidInput)
+    expect(uploaded[1]).toMatchObject({ fileName: 'photo.jpg', extname: '.jpg', mimeType: 'image/jpeg' })
+    expect((await sharp(uploaded[1].buffer!).metadata()).format).toBe('jpeg')
+    expect(ctx?.rawInputPath).toEqual([inputPaths[0], inputPaths[1].replace(/\.png$/, '.jpg')])
+  })
+
+  it('updates the filename and MIME type after successful JPEG conversion', async () => {
+    picgo.setConfig({ 'buildIn.compress': { isConvert: true, convertFormat: 'jpg' } })
+
+    const { ctx } = await picgo.uploadReturnCtx([inputPaths[0]])
+
+    expect(uploaded).toHaveLength(1)
+    expect(uploaded[0]).toMatchObject({ fileName: 'photo.jpg', extname: '.jpg', mimeType: 'image/jpeg' })
+    expect((await sharp(uploaded[0].buffer!).metadata()).format).toBe('jpeg')
+    expect(ctx?.rawInputPath).toEqual([inputPaths[0].replace(/\.png$/, '.jpg')])
+  })
+
   it.each([
     { format: '{filename}', processing: 'none' },
     { format: '{localFolder}/{filename}', processing: 'none' },
