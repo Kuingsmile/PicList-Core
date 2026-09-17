@@ -88,6 +88,16 @@ yarn add piclist -D
 
 你可以使用Docker运行PicList-Core。
 
+#### 从源码构建
+
+```bash
+docker build -t piclist:local .
+docker run --rm piclist:local node -p "require('/usr/local/lib/node_modules/piclist/package.json').version"
+```
+
+构建使用固定版本的 Node 22 镜像，按照 `yarn.lock` 安装依赖，运行类型检查和测试后打包当前源码。
+运行镜像安装该压缩包及锁定版本的生产依赖。构建和发布流程都会在发布前检查镜像中安装的包版本是否与当前源码的 `package.json` 一致。
+
 #### docker run
 
 将`./piclist`更改为你自己的路径，该路径是放置`config.json`文件的位置，并将`piclist123456`更改为你自己的密钥。

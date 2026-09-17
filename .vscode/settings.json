@@ -9,12 +9,6 @@
   "eslint.run": "onSave",
   "eslint.format.enable": true,
   "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact", "json", "jsonc", "json5"],
-  "explorer.fileNesting.enabled": true,
-  "explorer.fileNesting.expand": false,
-  "explorer.fileNesting.patterns": {
-    "package.json": "yarn.lock, package-lock.json, pnpm-lock.yaml, .npmrc, renovate.json",
-    "tsconfig.json": "tsconfig.*.json"
-  },
   "files.associations": {
     "**/bin/picgo": "javascript",
     "**/bin/picgo-server": "javascript"

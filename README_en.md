@@ -89,6 +89,17 @@ yarn add piclist -D
 
 You can use docker to run PicList-Core.
 
+#### Build from a checkout
+
+```bash
+docker build -t piclist:local .
+docker run --rm piclist:local node -p "require('/usr/local/lib/node_modules/piclist/package.json').version"
+```
+
+The build uses a pinned Node 22 image, installs dependencies from `yarn.lock`, runs the type check and tests, and packs the
+checkout. The runtime installs that tarball with its locked production dependencies. Both the build and release workflow
+check the installed package version against the checkout's `package.json` before publishing.
+
 #### docker run
 
 Change the `./piclist` to your own path, this path is where you put your `config.json` file, and change the `piclist123456` to your own secret key.
