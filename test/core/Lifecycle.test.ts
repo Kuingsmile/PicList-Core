@@ -3,9 +3,13 @@ import path from 'node:path'
 
 import fs from 'fs-extra'
 import sharp from 'sharp'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { Lifecycle } from '../../src/core/Lifecycle'
+import { PicGo } from '../../src/core/PicGo'
+import type { IImgInfo, IPicGo } from '../../src/types'
+import { IBusEvent } from '../../src/utils/enum'
+import { eventBus } from '../../src/utils/eventBus'
 
 describe('Lifecycle', () => {
   const baseDirs: string[] = []
@@ -105,5 +109,123 @@ describe('Lifecycle', () => {
     expect(ctx.rawInputPath[0]).toBe(path.join(baseDirs[0], 'image-without-extension.jpg'))
     expect(ctx.input[0]).toBe(path.join(tempFilePath, 'image-without-extension.jpg'))
     expect(metadata.format).toBe('jpeg')
+  })
+})
+
+describe('Lifecycle preprocessing isolation', () => {
+  let baseDir: string
+  let picgo: PicGo
+  let inputPaths: string[]
+  let inputBuffers: Buffer[]
+  let uploaded: IImgInfo[]
+  let listeners: Set<(...args: any[]) => void>
+
+  beforeEach(async () => {
+    listeners = new Set(eventBus.listeners(IBusEvent.CONFIG_CHANGE))
+    baseDir = await fs.mkdtemp(path.join(os.tmpdir(), 'piclist-preprocessing-'))
+    await fs.writeJson(path.join(baseDir, 'config.json'), {
+      silent: true,
+      debug: true,
+      picBed: { current: 'test', uploader: 'test', test: { _id: 'test' } },
+      picgoPlugins: {},
+      buildIn: { compress: { isReSizeByPercent: true, reSizePercent: 50 } },
+    })
+    picgo = await PicGo.create(path.join(baseDir, 'config.json'))
+    uploaded = []
+    picgo.helper.uploader.register('test', {
+      handle: async ctx => {
+        uploaded.push(...ctx.output.map(item => ({ ...item })))
+      },
+    })
+    inputPaths = ['a', 'b'].map(folder => path.join(baseDir, folder, 'photo.png'))
+    inputBuffers = await Promise.all(
+      ['red', 'blue'].map(background =>
+        sharp({ create: { width: 8, height: 6, channels: 3, background } })
+          .png()
+          .toBuffer(),
+      ),
+    )
+    await Promise.all(inputPaths.map((inputPath, index) => fs.outputFile(inputPath, inputBuffers[index])))
+  })
+
+  afterEach(async () => {
+    vi.restoreAllMocks()
+    for (const listener of eventBus.listeners(IBusEvent.CONFIG_CHANGE)) {
+      if (!listeners.has(listener)) eventBus.removeListener(IBusEvent.CONFIG_CHANGE, listener)
+    }
+    await fs.remove(baseDir)
+  })
+
+  async function expectDistinctImages(images: IImgInfo[]): Promise<void> {
+    expect(images).toHaveLength(2)
+    expect(images[0].buffer!.equals(images[1].buffer!)).toBe(false)
+    expect(new Set(images.map(item => item.filePath)).size).toBe(2)
+    for (const [index, item] of images.entries()) {
+      const { data, info } = await sharp(item.buffer!).removeAlpha().raw().toBuffer({ resolveWithObject: true })
+      expect(info).toMatchObject({ width: 4, height: 3, channels: 3 })
+      expect([...data.subarray(0, 3)]).toEqual(index === 0 ? [255, 0, 0] : [0, 0, 255])
+    }
+  }
+
+  it.each([undefined, '{uuid}', '{localFolder}/{filename}'])(
+    'preserves distinct same-name images through upload with rename format %s',
+    async format => {
+      if (format) picgo.saveConfig({ 'buildIn.rename': { enable: true, format } })
+
+      const { ctx } = await picgo.uploadReturnCtx([...inputPaths])
+
+      await expectDistinctImages(uploaded)
+      expect(ctx?.rawInputPath).toEqual(inputPaths)
+      if (format === '{uuid}') {
+        expect(new Set(uploaded.map(item => item.fileName)).size).toBe(2)
+        for (const item of uploaded) expect(item.fileName).toMatch(/^[a-f\d]{32}\.png$/)
+      } else {
+        expect(uploaded.map(item => item.fileName)).toEqual(
+          format ? ['a/photo.png', 'b/photo.png'] : ['photo.png', 'photo.png'],
+        )
+      }
+    },
+  )
+
+  it('isolates concurrent uploads before either transformer reads the processed files', async () => {
+    let release!: () => void
+    let arrivals = 0
+    const ready = new Promise<void>(resolve => (release = resolve))
+    picgo.helper.beforeTransformPlugins.register('wait-for-both-uploads', {
+      handle: async () => {
+        if (++arrivals === 2) release()
+        await ready
+      },
+    })
+
+    const results = await Promise.all(inputPaths.map(inputPath => picgo.uploadReturnCtx([inputPath])))
+
+    await expectDistinctImages(results.map(result => result.ctx!.processedInput[0]))
+    expect(uploaded).toHaveLength(2)
+  })
+
+  it('preserves different URL images with the same basename', async () => {
+    const urls = ['https://example.invalid/a/photo.png', 'https://example.invalid/b/photo.png']
+    vi.spyOn(picgo, 'request', 'get').mockReturnValue((async ({ url }: { url: string }) => ({
+      data: inputBuffers[urls.indexOf(url)],
+      headers: { 'content-type': 'image/png' },
+    })) as IPicGo['request'])
+
+    await picgo.uploadReturnCtx(urls)
+
+    await expectDistinctImages(uploaded)
+    expect(uploaded.map(item => item.fileName)).toEqual(['photo.png', 'photo.png'])
+  })
+
+  it('isolates images whose output names collide after format conversion', async () => {
+    const otherPath = path.join(baseDir, 'a', 'photo.webp')
+    await fs.outputFile(otherPath, await sharp(inputBuffers[1]).webp({ lossless: true }).toBuffer())
+    picgo.saveConfig({ 'buildIn.compress.isConvert': true, 'buildIn.compress.convertFormat': 'png' })
+
+    const { ctx } = await picgo.uploadReturnCtx([inputPaths[0], otherPath])
+
+    await expectDistinctImages(uploaded)
+    expect(uploaded.map(item => item.fileName)).toEqual(['photo.png', 'photo.png'])
+    expect(ctx?.rawInputPath).toEqual([inputPaths[0], inputPaths[0]])
   })
 })

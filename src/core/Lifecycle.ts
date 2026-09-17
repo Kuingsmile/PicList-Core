@@ -295,9 +295,14 @@ export class Lifecycle extends EventEmitter {
     watermarkOptions: Undefinable<IBuildInWaterMarkOptions>,
     skipExtensions: Set<string>,
   ): Promise<void> {
+    await fs.ensureDir(tempFilePath)
+    const uploadTempPath = await fs.mkdtemp(path.join(tempFilePath, 'upload-'))
     const res = await Promise.allSettled(
       ctx.input.map(async (item: string, index: number) => {
-        await this.processImage(item, index, ctx, tempFilePath, compressOptions, watermarkOptions, skipExtensions)
+        // Isolate each input while preserving its basename for transformers and uploaders.
+        const inputTempPath = path.join(uploadTempPath, index.toString())
+        await fs.ensureDir(inputTempPath)
+        await this.processImage(item, index, ctx, inputTempPath, compressOptions, watermarkOptions, skipExtensions)
       }),
     )
     for (const item of res) {
@@ -473,14 +478,10 @@ export class Lifecycle extends EventEmitter {
     let newExt = compressOptions?.isConvert ? getConvertedFormat(compressOptions, extension) : extension
     newExt = newExt.startsWith('.') ? newExt : `.${newExt}`
 
-    const tempFile = itemIsUrl
-      ? path.join(tempFilePath, `${this.getFileBaseName(info)}${newExt}`)
-      : path.join(tempFilePath, `${path.basename(item, extension)}${newExt}`)
+    const fileName = itemIsUrl ? `${this.getFileBaseName(info)}${newExt}` : `${path.basename(item, extension)}${newExt}`
+    const tempFile = path.join(tempFilePath, fileName)
 
-    ctx.rawInputPath[index] = path.join(
-      path.dirname(item),
-      itemIsUrl ? path.basename(tempFile) : `${path.basename(item, extension)}${newExt}`,
-    )
+    ctx.rawInputPath[index] = path.join(path.dirname(item), fileName)
 
     fs.writeFileSync(tempFile, transformedBuffer)
     ctx.input[index] = tempFile
