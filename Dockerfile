@@ -8,7 +8,8 @@ ENV HUSKY=0
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile --non-interactive --network-timeout 300000
 COPY . .
-RUN yarn typecheck \
+# Invoke TypeScript directly: older release tags do not have a typecheck script.
+RUN yarn tsc --noEmit \
     && yarn test \
     && yarn build \
     && mkdir /package \

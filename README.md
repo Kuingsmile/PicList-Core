@@ -98,6 +98,31 @@ docker run --rm piclist:local node -p "require('/usr/local/lib/node_modules/picl
 构建使用固定版本的 Node 22 镜像，按照 `yarn.lock` 安装依赖，运行类型检查和测试后打包当前源码。
 运行镜像安装该压缩包及锁定版本的生产依赖。构建和发布流程都会在发布前检查镜像中安装的包版本是否与当前源码的 `package.json` 一致。
 
+#### 使用 GitHub Actions 构建和下载镜像
+
+打开 **Actions → Build Docker Image → Run workflow**，选择要测试的分支（通常为 `dev`）。将 `tag` 留空，即可构建该分支在触发时的最新提交；
+也可以输入已有的 Git 标签（例如 `v2.4.2`）来构建发布版本。分支构建使用 `sha-<12 位提交哈希>` 作为镜像标签和构建产物文件名的一部分。
+推送标签不会自动触发此工作流。GitHub 的自定义下拉选项是静态的，因此这里使用可选的文本输入指定标签，再显式检出对应源码；两个架构使用同一个解析后的源码提交。
+Dockerfile 和 `.dockerignore` 使用工作流所在提交的版本，避免历史 Dockerfile 安装最新 npm 包而不是构建指定标签的源码。
+大小报告会同时记录源码提交和构建配置提交。
+
+保持 `enable_push` 未勾选，即可在不配置 Docker Hub 凭据、不发布镜像的情况下构建。AMD64 在 `ubuntu-24.04`
+上构建和测试，ARM64 在 `ubuntu-24.04-arm` 上原生构建和测试，无需 QEMU；两个架构使用独立的构建缓存。运行摘要会显示各
+`.tar.gz` 镜像压缩包的大小和下载链接。构建产物保留 14 天，包含镜像压缩包、`SHA256SUMS`
+和大小报告。此处统计的是下载文件的压缩大小，可能与 Docker Hub 显示的压缩层大小不同。
+
+下载并解压对应架构的构建产物后，即可导入本地 Docker（将示例标签替换为 Git 标签或生成的 `sha-…` 镜像标签）：
+
+```bash
+sha256sum -c SHA256SUMS
+docker load --input piclist-v2.4.2-linux-amd64.tar.gz
+docker run --rm kuingsmile/piclist:v2.4.2-amd64 picgo --version
+```
+
+需要发布时勾选 `enable_push`。两个架构均通过验证后，工作流直接发布已验证的镜像为 `<image-tag>-amd64` 和
+`<image-tag>-arm64`，并合并为多架构 `<image-tag>`，不会重新构建。仅在需要将 `latest` 更新到该版本时勾选
+`update_latest`。发布使用仓库密钥 `DOCKERHUB_USERNAME` 和 `DOCKERHUB_ACCESS_TOKEN`。
+
 #### docker run
 
 将`./piclist`更改为你自己的路径，该路径是放置`config.json`文件的位置，并将`piclist123456`更改为你自己的密钥。

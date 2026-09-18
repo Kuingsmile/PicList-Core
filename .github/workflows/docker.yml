@@ -1,72 +1,238 @@
-name: Build and Push Docker Image
+name: Build Docker Image
+run-name: Docker ${{ inputs.tag || github.ref_name }} (push=${{ inputs.enable_push }})
 
 on:
-  push:
-    tags:
-      - '*'
   workflow_dispatch:
     inputs:
+      tag:
+        description: 'Optional Git tag; leave blank to build the selected branch commit'
+        required: false
+        type: string
       enable_push:
-        description: 'Enable push to Docker Hub'
-        required: true
-        type: choice
-        options:
-          - 'true'
-          - 'false'
-        default: 'false'
+        description: 'Publish verified images to Docker Hub'
+        type: boolean
+        default: false
+      update_latest:
+        description: 'Also update latest when publishing'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ inputs.tag || github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE_NAME: kuingsmile/piclist
+  SOURCE_TAG: ${{ inputs.tag }}
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
+  prepare:
+    name: Resolve build source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      commit: ${{ steps.source.outputs.commit }}
+      image_tag: ${{ steps.source.outputs.image_tag }}
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v7
+      - name: Validate tag
+        if: ${{ inputs.tag != '' }}
+        run: |
+          # Leave six characters for the architecture suffix in Docker tags.
+          if [[ ! "$SOURCE_TAG" =~ ^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,121}$ || "$SOURCE_TAG" == latest ]]; then
+            echo '::error::Use a Docker-compatible Git tag of at most 122 characters; latest is reserved.'
+            exit 1
+          fi
+          git check-ref-format "refs/tags/$SOURCE_TAG"
 
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
+      - name: Checkout selected source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.sha }}
+          persist-credentials: false
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v4
+      - name: Resolve commit and image tag for both architectures
+        id: source
+        run: |
+          commit="$(git rev-parse HEAD)"
+          image_tag="${SOURCE_TAG:-sha-${commit:0:12}}"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          echo "image_tag=$image_tag" >> "$GITHUB_OUTPUT"
 
-    - name: Build Docker Image for Verification
-      uses: docker/build-push-action@v7
-      with:
-        context: .
-        file: ./Dockerfile
-        load: true
-        tags: piclist:verify
-        platforms: linux/amd64
+  build:
+    name: Build linux/${{ matrix.arch }}
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    env:
+      ARCH: ${{ matrix.arch }}
+      IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
+      SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
+      RECIPE_COMMIT: ${{ github.sha }}
+    steps:
+      - name: Checkout resolved source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          path: source
+          persist-credentials: false
 
-    - name: Verify Installed Package Version
-      run: |
-        expected_version="$(node -p "require('./package.json').version")"
-        installed_version="$(docker run --rm piclist:verify node -p "require('/usr/local/lib/node_modules/piclist/package.json').version")"
-        test "$installed_version" = "$expected_version"
-        test "$(docker run --rm piclist:verify picgo --version)" = "$expected_version"
-        docker run --rm piclist:verify node /usr/local/bin/picgo-server --help
+      # Historical Dockerfiles installed the latest npm release instead of source.
+      - name: Checkout build recipe from workflow revision
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          path: build-recipe
+          sparse-checkout: |
+            Dockerfile
+            .dockerignore
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
 
-    - name: Login to Docker Hub
-      if: github.event.inputs.enable_push == 'true' || startsWith(github.ref, 'refs/tags/')
-      uses: docker/login-action@v4
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+      - name: Apply build context exclusions
+        run: cp build-recipe/.dockerignore source/.dockerignore
 
-    - name: Build and Push Docker Image
-      uses: docker/build-push-action@v7
-      with:
-        context: .
-        file: ./Dockerfile
-        push: ${{ github.event.inputs.enable_push == 'true' || startsWith(github.ref, 'refs/tags/') }}
-        tags: kuingsmile/piclist:latest
-        platforms: linux/amd64,linux/arm64
+      # Each platform builds and runs on its own native runner; no QEMU needed.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
-    - name: Build and Push Docker Image with Tag
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: docker/build-push-action@v7
-      with:
-        context: .
-        file: ./Dockerfile
-        push: true
-        tags: kuingsmile/piclist:${{ github.ref_name }}
-        platforms: linux/amd64,linux/arm64
+      - name: Build and load image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./source
+          file: ./build-recipe/Dockerfile
+          platforms: linux/${{ matrix.arch }}
+          load: true
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}-${{ matrix.arch }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ needs.prepare.outputs.commit }}
+            org.opencontainers.image.version=${{ env.IMAGE_TAG }}
+          cache-from: type=gha,scope=piclist-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=piclist-${{ matrix.arch }}
+
+      - name: Verify image on native runner
+        run: |
+          image="$IMAGE_NAME:$IMAGE_TAG-$ARCH"
+          test "$(docker image inspect "$image" --format '{{.Os}}/{{.Architecture}}')" = "linux/$ARCH"
+          expected_version="$(node -p "require('./source/package.json').version")"
+          installed_version="$(docker run --rm "$image" node -p "require('/usr/local/lib/node_modules/piclist/package.json').version")"
+          test "$installed_version" = "$expected_version"
+          test "$(docker run --rm "$image" picgo --version)" = "$expected_version"
+          docker run --rm "$image" node /usr/local/bin/picgo-server --help
+
+      - name: Compress image and report size
+        run: |
+          image="$IMAGE_NAME:$IMAGE_TAG-$ARCH"
+          output_dir="$RUNNER_TEMP/docker-image"
+          archive="piclist-$IMAGE_TAG-linux-$ARCH.tar.gz"
+          mkdir -p "$output_dir"
+          docker image save "$image" | gzip -n -6 > "$output_dir/$archive"
+          gzip -t "$output_dir/$archive"
+          cd "$output_dir"
+          sha256sum "$archive" > SHA256SUMS
+          compressed_bytes="$(stat -c %s "$archive")"
+          compressed_mib="$(awk -v bytes="$compressed_bytes" 'BEGIN { printf "%.2f", bytes / 1048576 }')"
+          {
+            printf '### linux/%s\n\n' "$ARCH"
+            printf 'Image tag: `%s`; source commit: `%s`\n\n' "$IMAGE_TAG" "$SOURCE_COMMIT"
+            printf 'Build recipe commit: `%s`\n\n' "$RECIPE_COMMIT"
+            printf '| Archive | Compressed bytes | Compressed MiB |\n'
+            printf '| --- | ---: | ---: |\n'
+            printf '| `%s` | %s | %s |\n\n' "$archive" "$compressed_bytes" "$compressed_mib"
+            printf 'This is the gzip-compressed Docker archive size; Docker Hub layer sizes may differ.\n\n'
+            printf 'After downloading and extracting the artifact:\n\n'
+            printf '```bash\nsha256sum -c SHA256SUMS\ndocker load --input %s\n' "$archive"
+            printf 'docker run --rm %s picgo --version\n```\n' "$image"
+          } > size-summary.md
+          cat size-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload downloadable image
+        id: artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: piclist-${{ env.IMAGE_TAG }}-linux-${{ matrix.arch }}
+          path: ${{ runner.temp }}/docker-image/
+          if-no-files-found: error
+          # The image is already compressed; avoid compressing it again.
+          compression-level: 0
+          retention-days: 14
+
+      - name: Link download in summary
+        env:
+          ARTIFACT_URL: ${{ steps.artifact.outputs.artifact-url }}
+        run:
+          printf '\n[Download linux/%s image](%s) (retained for 14 days).\n' "$ARCH" "$ARTIFACT_URL" >>
+          "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    name: Publish verified images
+    needs: [prepare, build]
+    if: ${{ inputs.enable_push }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
+    # Serialize releases so simultaneous runs cannot race when updating latest.
+    concurrency:
+      group: dockerhub-piclist-publish
+      cancel-in-progress: false
+    steps:
+      - name: Download verified images
+        uses: actions/download-artifact@v8
+        with:
+          pattern: piclist-${{ env.IMAGE_TAG }}-linux-*
+          path: ${{ runner.temp }}/docker-images
+
+      - name: Verify checksums and load both images
+        run: |
+          for arch in amd64 arm64; do
+            artifact_dir="$RUNNER_TEMP/docker-images/piclist-$IMAGE_TAG-linux-$arch"
+            (cd "$artifact_dir" && sha256sum -c SHA256SUMS)
+            docker load --input "$artifact_dir/piclist-$IMAGE_TAG-linux-$arch.tar.gz"
+            test "$(docker image inspect "$IMAGE_NAME:$IMAGE_TAG-$arch" --format '{{.Os}}/{{.Architecture}}')" = "linux/$arch"
+          done
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+
+      - name: Push verified images and create multi-platform tag
+        env:
+          UPDATE_LATEST: ${{ inputs.update_latest }}
+        run: |
+          sources=()
+          for arch in amd64 arm64; do
+            image="$IMAGE_NAME:$IMAGE_TAG-$arch"
+            docker push "$image"
+            digest_ref="$(docker image inspect "$image" --format '{{index .RepoDigests 0}}')"
+            sources+=("$digest_ref")
+          done
+          # Publish the exact images that passed verification, without rebuilding.
+          docker buildx imagetools create --tag "$IMAGE_NAME:$IMAGE_TAG" "${sources[@]}"
+          docker buildx imagetools inspect "$IMAGE_NAME:$IMAGE_TAG"
+          printf 'Published `%s:%s` for linux/amd64 and linux/arm64.\n' "$IMAGE_NAME" "$IMAGE_TAG" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$UPDATE_LATEST" == true ]]; then
+            docker buildx imagetools create --tag "$IMAGE_NAME:latest" "${sources[@]}"
+            printf '\nAlso updated `%s:latest`.\n' "$IMAGE_NAME" >> "$GITHUB_STEP_SUMMARY"
+          fi

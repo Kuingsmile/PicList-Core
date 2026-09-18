@@ -100,6 +100,36 @@ The build uses a pinned Node 22 image, installs dependencies from `yarn.lock`, r
 checkout. The runtime installs that tarball with its locked production dependencies. Both the build and release workflow
 check the installed package version against the checkout's `package.json` before publishing.
 
+#### Build and download an image with GitHub Actions
+
+Open **Actions → Build Docker Image → Run workflow** and select the branch to test (normally `dev`). Leave `tag` blank
+to build that branch's latest commit at dispatch time, or enter an existing Git tag (for example, `v2.4.2`) to build a
+release. Branch builds use `sha-<12-character-commit>` as the image tag and in artifact filenames. Tag pushes do not
+trigger this workflow. GitHub's custom choices are static, so an optional tag is entered as text and checked out
+explicitly; both builds use the same resolved source commit. The Dockerfile and
+`.dockerignore` come from the workflow revision, because historical Dockerfiles installed the latest npm release rather
+than the tagged source. Both source and build recipe commits appear in the size report.
+
+Leave `enable_push` unchecked to build without Docker Hub credentials or publishing. AMD64 builds and tests run on
+`ubuntu-24.04`; ARM64 builds and tests run natively on `ubuntu-24.04-arm`, without QEMU. Each platform has its own build
+cache. The run summary shows each `.tar.gz` archive's compressed size and download link. Artifacts are retained for 14
+days and contain the image archive, `SHA256SUMS`, and a size report. This measures the downloadable archive, which can
+differ from Docker Hub's compressed layer size.
+
+Download and extract the artifact for your architecture, then load it locally (replace the example tag with your Git
+tag or generated `sha-…` image tag):
+
+```bash
+sha256sum -c SHA256SUMS
+docker load --input piclist-v2.4.2-linux-amd64.tar.gz
+docker run --rm kuingsmile/piclist:v2.4.2-amd64 picgo --version
+```
+
+To publish, check `enable_push`. After both platforms pass verification, the workflow publishes those same images as
+`<image-tag>-amd64` and `<image-tag>-arm64` and combines them under the multi-platform `<image-tag>`, without rebuilding. Check
+`update_latest` only when you also want to move `latest` to this release. Publishing uses the repository secrets
+`DOCKERHUB_USERNAME` and `DOCKERHUB_ACCESS_TOKEN`.
+
 #### docker run
 
 Change the `./piclist` to your own path, this path is where you put your `config.json` file, and change the `piclist123456` to your own secret key.
