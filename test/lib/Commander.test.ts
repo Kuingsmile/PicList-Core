@@ -41,6 +41,7 @@ describe('CLI help translations', () => {
     const help = program.helpInformation()
 
     for (const description of [
+      locale.CLI_INIT,
       locale.CLI_LIST,
       locale.CLI_INSTALL,
       locale.CLI_UNINSTALL,

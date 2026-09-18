@@ -4,6 +4,16 @@ import { ILocales } from './zh-CN'
 export const ZH_TW: ILocales = {
   ...TUI_ZH_TW,
   // CLI command and option descriptions
+  CLI_INIT: '互動式設定上傳圖床',
+  CLI_INIT_UPLOADER: '選擇圖床',
+  CLI_INIT_CONFIG_NAME: '設定名稱',
+  CLI_INIT_OVERWRITE: '此設定已存在。是否更新並設為預設設定？',
+  CLI_INIT_REQUIRED: '請輸入一個值。',
+  CLI_INIT_INVALID: '請輸入有效的值。',
+  CLI_INIT_CANCELLED: '已取消設定，未儲存圖床設定。',
+  CLI_INIT_SUCCESS: '圖床設定已儲存並啟用。執行 picgo upload <path> 上傳圖片。',
+  CLI_INIT_TERMINAL: '設定需要互動式終端。請在終端中執行 picgo init。',
+  CLI_INIT_FAILED: '設定失敗。請檢查圖床設定和設定檔，然後重新執行 picgo init。',
   CLI_LIST: '列出已安裝的外掛',
   CLI_INSTALL: '安裝 PicGo 外掛',
   CLI_UNINSTALL: '解除安裝 PicGo 外掛',

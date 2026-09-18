@@ -4,6 +4,16 @@ import { ILocales } from './zh-CN'
 export const EN: ILocales = {
   ...TUI_EN,
   // CLI command and option descriptions
+  CLI_INIT: 'set up an uploader interactively',
+  CLI_INIT_UPLOADER: 'Choose an uploader',
+  CLI_INIT_CONFIG_NAME: 'Configuration name',
+  CLI_INIT_OVERWRITE: 'This configuration already exists. Update it and make it the default?',
+  CLI_INIT_REQUIRED: 'Enter a value.',
+  CLI_INIT_INVALID: 'Enter a valid value.',
+  CLI_INIT_CANCELLED: 'Setup cancelled. No uploader settings were saved.',
+  CLI_INIT_SUCCESS: 'Uploader configured and selected. Run picgo upload <path> to upload an image.',
+  CLI_INIT_TERMINAL: 'Setup requires an interactive terminal. Run picgo init in a terminal.',
+  CLI_INIT_FAILED: 'Setup failed. Check the uploader settings and configuration file, then run picgo init again.',
   CLI_LIST: 'list installed plugins',
   CLI_INSTALL: 'install picgo plugin',
   CLI_UNINSTALL: 'uninstall picgo plugin',

@@ -204,6 +204,11 @@ $ picgo-server -h
 在交互式终端中运行 `picgo` 即可打开基于 Ink 的终端界面，也可以使用 `picgo tui` 显式启动。
 使用 `picgo -c /path/to/config.json` 指定配置文件。本地开发时先运行 `yarn build`，再运行 `yarn start`。
 
+首次使用也可以运行 `picgo init`，按提示选择图床、输入配置名称和图床参数。完成后，该配置会成为当前默认上传目标。
+运行 `picgo -c /path/to/config.json init` 可将设置保存到指定配置文件；默认使用 `~/.piclist/config.json`。
+同名配置会在确认后更新，其他配置和设置会保留。凭据输入会隐藏，更新已有配置时需要重新输入凭据。
+按 **Ctrl+C** 可取消设置；此命令需要交互式终端。
+
 界面支持文件/URL 和剪贴板上传、图床切换、多配置管理、第二图床、图片处理、转换器、插件、上传代理和语言设置。
 首次使用请选择 **设置上传目标（Set up a destination）** 添加图床配置。粘贴包含空格的路径时请加引号，例如
 `"C:\My Pictures\photo.png"` 或 `"/home/me/My Pictures/photo.png"`。上传进度和结果链接会显示在界面中。
@@ -243,6 +248,7 @@ Options:
   -h, --help                                    display help for command
 
 Commands:
+  init                                          set up an uploader interactively
   tui                                           open the interactive terminal interface
   list|ls                                       list installed plugins
   install|add [options] <plugins...>            install picgo plugin

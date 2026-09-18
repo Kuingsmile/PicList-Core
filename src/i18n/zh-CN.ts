@@ -2,6 +2,16 @@ import { TUI_ZH_CN } from './tui'
 export const ZH_CN = {
   ...TUI_ZH_CN,
   // CLI command and option descriptions
+  CLI_INIT: '交互式设置上传图床',
+  CLI_INIT_UPLOADER: '选择图床',
+  CLI_INIT_CONFIG_NAME: '配置名称',
+  CLI_INIT_OVERWRITE: '此配置已存在。是否更新并设为默认配置？',
+  CLI_INIT_REQUIRED: '请输入一个值。',
+  CLI_INIT_INVALID: '请输入有效的值。',
+  CLI_INIT_CANCELLED: '已取消设置，未保存图床设置。',
+  CLI_INIT_SUCCESS: '图床配置已保存并启用。运行 picgo upload <path> 上传图片。',
+  CLI_INIT_TERMINAL: '设置需要交互式终端。请在终端中运行 picgo init。',
+  CLI_INIT_FAILED: '设置失败。请检查图床设置和配置文件，然后重新运行 picgo init。',
   CLI_LIST: '列出已安装的插件',
   CLI_INSTALL: '安装 PicGo 插件',
   CLI_UNINSTALL: '卸载 PicGo 插件',

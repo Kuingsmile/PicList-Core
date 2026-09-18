@@ -3,6 +3,8 @@ import { IBuildInEvent } from '../utils/enum'
 import type { IInquirerAdapter, IInquirerQuestion } from '../utils/inquirerShim'
 import { english, type Translate, translator } from './i18n'
 
+export { isSecretQuestion } from '../utils/configPrompts'
+
 export class PromptCancelledError extends Error {
   constructor() {
     super('Cancelled. No pending form was saved.')
@@ -11,12 +13,6 @@ export class PromptCancelledError extends Error {
 
 /** Only errors created by the UI are safe to present; provider errors can contain credentials. */
 export class TuiError extends Error {}
-
-export const isSecretQuestion = (question: IInquirerQuestion): boolean =>
-  question.type === 'password' ||
-  /password|passwd|secret|token|credential|authorization|api.?key|private.?key|access.?key|^key$|^auth$/i.test(
-    question.name,
-  )
 
 export interface PromptPosition {
   current: number
