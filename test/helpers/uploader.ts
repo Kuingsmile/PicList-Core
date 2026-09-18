@@ -16,7 +16,7 @@ export function createUploader(
     getConfig: vi.fn((key: string) => (key === configKey ? structuredClone(config) : undefined)),
     request: vi.fn<(_options: IOldReqOptions) => Promise<any>>(),
     emit: vi.fn(),
-    i18n: { translate: (key: string) => key },
+    i18n: { t: (key: string) => key, translate: (key: string) => key },
     helper: { uploader: registry },
   }
   register(ctx as unknown as IPicGo)

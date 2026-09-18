@@ -30,7 +30,7 @@ const configCmd = {
     const cmd = ctx.cmd
     cmd.program
       .command('config-list')
-      .description('list all configs names for an uploader')
+      .description(ctx.i18n.t('CLI_CONFIG_LIST'))
       .argument('<uploader>')
       .action((uploader: string) => {
         try {
@@ -54,7 +54,7 @@ const configCmd = {
 
     cmd.program
       .command('config-use')
-      .description('set a config as default for an uploader')
+      .description(ctx.i18n.t('CLI_CONFIG_USE'))
       .argument('<uploader>')
       .argument('<configName>')
       .action((uploader: string, configName: string) => {
@@ -73,7 +73,7 @@ const configCmd = {
 
     cmd.program
       .command('config-remove')
-      .description('remove a config for an uploader')
+      .description(ctx.i18n.t('CLI_CONFIG_REMOVE'))
       .argument('<uploader>')
       .argument('<configName>')
       .action((uploader: string, configName: string) => {
@@ -108,7 +108,7 @@ const configCmd = {
 
     cmd.program
       .command('config-rename')
-      .description('rename a config for an uploader')
+      .description(ctx.i18n.t('CLI_CONFIG_RENAME'))
       .argument('<uploader>')
       .argument('<oldName>')
       .argument('<newName>')
@@ -127,7 +127,7 @@ const configCmd = {
 
     cmd.program
       .command('config-show')
-      .description('show details of a config')
+      .description(ctx.i18n.t('CLI_CONFIG_SHOW'))
       .argument('<uploader>')
       .argument('[configName]')
       .action((uploader: string, configName: string | undefined) => {

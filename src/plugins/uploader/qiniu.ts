@@ -7,9 +7,9 @@ import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig } from './helper'
 import { buildInUploaderNames, createField } from './utils'
 
-const messageGetter = (ctx: IPicGo, key: ILocalesKey) => ({
+const messageGetter = (ctx: IPicGo, key: Extract<ILocalesKey, `PICBED_QINIU_MESSAGE_${string}`>) => ({
   get message() {
-    return ctx.i18n.translate<ILocalesKey>(key)
+    return ctx.i18n.t(key)
   },
 })
 
@@ -64,7 +64,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         img.imgUrl = `${baseUrl}/${body.key as string}${urlOptions}`
       } else {
         ctx.emit(IBuildInEvent.NOTIFICATION, {
-          title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
+          title: ctx.i18n.t('UPLOAD_FAILED'),
           body: body.msg,
         })
         ctx.log.error('qiniu error', body)
@@ -78,7 +78,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       if (err.response) {
         const error = err.response.body
         ctx.emit(IBuildInEvent.NOTIFICATION, {
-          title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
+          title: ctx.i18n.t('UPLOAD_FAILED'),
           body: error.error,
         })
       }
@@ -140,7 +140,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.qiniu, {
     get name() {
-      return ctx.i18n.translate<ILocalesKey>('PICBED_QINIU')
+      return ctx.i18n.t('PICBED_QINIU')
     },
     handle,
     config,

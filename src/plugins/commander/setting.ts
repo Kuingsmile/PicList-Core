@@ -1,4 +1,3 @@
-import { ILocalesKey } from '../../i18n/zh-CN'
 import { IPicGo, IPluginConfig, IStringKeyMap } from '../../types'
 import compress from '../beforetransformer/compress'
 import skipProcess from '../beforetransformer/skipProcess'
@@ -9,10 +8,10 @@ import { uploaderTranslators } from './utils'
 
 // Built-in modules configuration mapping
 const BUILDIN_MODULES = {
-  compress: { config: compress.config, key: 'BUILDIN_COMPRESS' as ILocalesKey },
-  watermark: { config: watermark.config, key: 'BUILDIN_WATERMARK' as ILocalesKey },
-  rename: { config: rename.config, key: 'BUILDIN_RENAME' as ILocalesKey },
-  skipProcess: { config: skipProcess.config, key: 'BUILDIN_SKIPPROCESS' as ILocalesKey },
+  compress: { config: compress.config, key: 'BUILDIN_COMPRESS' },
+  watermark: { config: watermark.config, key: 'BUILDIN_WATERMARK' },
+  rename: { config: rename.config, key: 'BUILDIN_RENAME' },
+  skipProcess: { config: skipProcess.config, key: 'BUILDIN_SKIPPROCESS' },
 } as const
 
 type BuildinModuleName = keyof typeof BUILDIN_MODULES
@@ -126,7 +125,7 @@ export const handleBuildinModule = async (
 
   // Show selection prompt
   const choices = Object.entries(BUILDIN_MODULES).map(([value, { key }]) => ({
-    name: ctx.i18n.translate<ILocalesKey>(key),
+    name: ctx.i18n.t(key),
     value,
   }))
 
@@ -227,9 +226,7 @@ const setting = {
       .argument('[name]')
       .argument('[configName]')
       .argument('[uploaderName]')
-      .description(
-        'configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader and buildin, configName is optional (defaults to "Default"). For secondUploader, name and configName select an existing uploader config; omitted values are prompted. For buildin module, uploaderName is the uploader name to which the buildin module config will be linked.',
-      )
+      .description(ctx.i18n.t('CLI_SET'))
       .action((module: string, name: string, configName?: string, uploaderName?: string) => {
         return (async () => {
           try {

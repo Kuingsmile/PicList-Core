@@ -2,7 +2,6 @@ import path from 'node:path'
 
 import axios from 'axios'
 
-import { ILocalesKey } from '../../i18n/zh-CN'
 import { IAlistConfig, IAlistTokenStore, IFullResponse, IOldReqOptions, IPicGo, IPluginConfig } from '../../types'
 import { getSha256 } from '../../utils/common/hash'
 import { IBuildInEvent } from '../../utils/enum'
@@ -65,8 +64,8 @@ const postOptions = (url: string, token: string, fileName: string, filePath: str
 const handleResError = (ctx: IPicGo, res: IFullResponse): void => {
   if (res.statusCode !== 200 || res.body.code !== 200 || res.body.message !== 'success') {
     ctx.emit(IBuildInEvent.NOTIFICATION, {
-      title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-      body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS_AND_NETWORK'),
+      title: ctx.i18n.t('UPLOAD_FAILED'),
+      body: ctx.i18n.t('CHECK_SETTINGS_AND_NETWORK'),
       text: res.body.message,
     })
     throw new Error(res.body.message)
@@ -166,37 +165,37 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   return [
     createField(ctx, 'alist', 'url', 'input', userConfig.url || '', true, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_URL')
+        return ctx.i18n.t('PICBED_ALIST_MESSAGE_URL')
       },
     }),
     createField(ctx, 'alist', 'token', 'input', userConfig.token || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_TOKEN')
+        return ctx.i18n.t('PICBED_ALIST_MESSAGE_TOKEN')
       },
     }),
     createField(ctx, 'alist', 'username', 'input', userConfig.username || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_USERNAME')
+        return ctx.i18n.t('PICBED_ALIST_MESSAGE_USERNAME')
       },
     }),
     createField(ctx, 'alist', 'password', 'input', userConfig.password || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_PASSWORD')
+        return ctx.i18n.t('PICBED_ALIST_MESSAGE_PASSWORD')
       },
     }),
     createField(ctx, 'alist', 'uploadPath', 'input', userConfig.uploadPath || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_UPLOAD_PATH')
+        return ctx.i18n.t('PICBED_ALIST_MESSAGE_UPLOAD_PATH')
       },
     }),
     createField(ctx, 'alist', 'webPath', 'input', userConfig.webPath || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_WEB_PATH')
+        return ctx.i18n.t('PICBED_ALIST_MESSAGE_WEB_PATH')
       },
     }),
     createField(ctx, 'alist', 'customUrl', 'input', userConfig.customUrl || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_MESSAGE_CUSTOMURL')
+        return ctx.i18n.t('PICBED_ALIST_MESSAGE_CUSTOMURL')
       },
     }),
   ]
@@ -205,7 +204,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.alistplist, {
     get name() {
-      return ctx.i18n.translate<ILocalesKey>('PICBED_ALIST_PLIST')
+      return ctx.i18n.t('PICBED_ALIST_PLIST')
     },
     handle,
     config,

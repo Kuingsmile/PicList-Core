@@ -25,8 +25,7 @@ const openTui = async () => {
   await startTui(picgo)
 }
 
-picgo.cmd.program.command('tui').description('open the interactive terminal interface').action(openTui)
-picgo.cmd.program.addHelpCommand()
+picgo.cmd.program.command('tui').description(picgo.i18n.t('CLI_TUI')).action(openTui)
 picgo.cmd.program.action(async () => {
   if (process.stdin.isTTY && process.stdout.isTTY && !picgo.getConfig('silent')) {
     await openTui()

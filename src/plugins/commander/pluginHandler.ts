@@ -3,27 +3,26 @@ import { IPicGo, IPlugin } from '../../types'
 type actionFunc = (plugins: string[], program: any) => void
 
 const createCommand = (
-  cmd: any,
+  ctx: IPicGo,
   command: string,
   description: string,
   alias: string,
   action: actionFunc,
   options?: { proxy: boolean; registry: boolean },
 ): void => {
-  let program = cmd.program.command(command).description(description).alias(alias)
+  let program = ctx.cmd.program.command(command).description(description).alias(alias)
   if (options?.proxy) {
-    program = program.option('-p, --proxy <proxy>', 'Add proxy for installing plugins')
+    program = program.option('-p, --proxy <proxy>', ctx.i18n.t('CLI_OPTION_PLUGIN_PROXY'))
   }
   if (options?.registry) {
-    program = program.option('-r, --registry <registry>', 'Choose a registry for installing plugins')
+    program = program.option('-r, --registry <registry>', ctx.i18n.t('CLI_OPTION_PLUGIN_REGISTRY'))
   }
   program.action(action)
 }
 
 const pluginHandler: IPlugin = {
   handle: (ctx: IPicGo) => {
-    const cmd = ctx.cmd
-    createCommand(cmd, 'list', 'list installed plugins', 'ls', () => {
+    createCommand(ctx, 'list', ctx.i18n.t('CLI_LIST'), 'ls', () => {
       ctx.pluginHandler
         .getList()
         .then(plugins => {
@@ -41,9 +40,9 @@ const pluginHandler: IPlugin = {
         })
     })
     createCommand(
-      cmd,
+      ctx,
       'install <plugins...>',
-      'install picgo plugin',
+      ctx.i18n.t('CLI_INSTALL'),
       'add',
       (plugins: string[], program: any) => {
         const { proxy, registry } = program
@@ -54,15 +53,15 @@ const pluginHandler: IPlugin = {
       },
       { proxy: true, registry: true },
     )
-    createCommand(cmd, 'uninstall <plugins...>', 'uninstall picgo plugin', 'rm', (plugins: string[]) => {
+    createCommand(ctx, 'uninstall <plugins...>', ctx.i18n.t('CLI_UNINSTALL'), 'rm', (plugins: string[]) => {
       ctx.pluginHandler.uninstall(plugins).catch(e => {
         ctx.log.error(e)
       })
     })
     createCommand(
-      cmd,
+      ctx,
       'update <plugins...>',
-      'update picgo plugin',
+      ctx.i18n.t('CLI_UPDATE'),
       'up',
       (plugins: string[], program: any) => {
         const { proxy, registry } = program

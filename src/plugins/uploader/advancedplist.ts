@@ -2,7 +2,6 @@ import path from 'node:path'
 
 import fs from 'fs-extra'
 
-import { ILocalesKey } from '../../i18n/zh-CN'
 import { IAdvancedPlistConfig, IOldReqOptions, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { runScript } from '../../utils/runScripts'
@@ -97,7 +96,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       img.imgUrl = advancedplistConfig.customPrefix ? advancedplistConfig.customPrefix + imageUrl : imageUrl
     } else {
       ctx.emit(IBuildInEvent.NOTIFICATION, {
-        title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
+        title: ctx.i18n.t('UPLOAD_FAILED'),
         body: body.message,
       })
       console.error('AdvancedPlist upload failed:', body)
@@ -120,13 +119,13 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     name,
     type,
     get prefix() {
-      return ctx.i18n.translate<ILocalesKey>(`PICBED_ADVANCEDPLIST_${name.toUpperCase()}` as ILocalesKey)
+      return ctx.i18n.translate(`PICBED_ADVANCEDPLIST_${name.toUpperCase()}`)
     },
     get alias() {
-      return ctx.i18n.translate<ILocalesKey>(`PICBED_ADVANCEDPLIST_${name.toUpperCase()}` as ILocalesKey)
+      return ctx.i18n.translate(`PICBED_ADVANCEDPLIST_${name.toUpperCase()}`)
     },
     get message() {
-      return ctx.i18n.translate<ILocalesKey>(`PICBED_ADVANCEDPLIST_MESSAGE_${name.toUpperCase()}` as ILocalesKey)
+      return ctx.i18n.translate(`PICBED_ADVANCEDPLIST_MESSAGE_${name.toUpperCase()}`)
     },
     default: userConfig[name as keyof IAdvancedPlistConfig] || defaultValue,
     required,
@@ -149,7 +148,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.advancedplist, {
     get name() {
-      return ctx.i18n.translate<ILocalesKey>('PICBED_ADVANCEDPLIST')
+      return ctx.i18n.t('PICBED_ADVANCEDPLIST')
     },
     handle,
     config,

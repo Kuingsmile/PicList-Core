@@ -1,6 +1,5 @@
 import { spawn } from 'cross-spawn'
 
-import { ILocalesKey } from '../i18n/zh-CN'
 import {
   IPicGo,
   IPluginHandler,
@@ -59,9 +58,9 @@ export class PluginHandler implements IPluginHandler {
         for (const item of pkgNameList) {
           await this.ctx.pluginLoader.registerPlugin(item)
         }
-        this.ctx.log.success(this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_INSTALL_SUCCESS'))
+        this.ctx.log.success(this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_INSTALL_SUCCESS'))
         this.ctx.emit('installSuccess', {
-          title: this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_INSTALL_SUCCESS'),
+          title: this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_INSTALL_SUCCESS'),
           body: [...pkgNameList, ...installedPlugins],
         })
         const res: IPluginHandlerResult<true> = {
@@ -70,13 +69,13 @@ export class PluginHandler implements IPluginHandler {
         }
         return res
       } else {
-        const err = this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_INSTALL_FAILED_REASON', {
+        const err = this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_INSTALL_FAILED_REASON', {
           code: `${result.code}`,
           data: result.data,
         })
         this.ctx.log.error(err)
         this.ctx.emit('installFailed', {
-          title: this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_INSTALL_FAILED'),
+          title: this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_INSTALL_FAILED'),
           body: err,
         })
         const res: IPluginHandlerResult<false> = {
@@ -86,10 +85,10 @@ export class PluginHandler implements IPluginHandler {
         return res
       }
     } else if (installedPlugins.length === 0) {
-      const err = this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_UNINSTALL_FAILED_VALID')
+      const err = this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_UNINSTALL_FAILED_VALID')
       this.ctx.log.error(err)
       this.ctx.emit('installFailed', {
-        title: this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_INSTALL_FAILED'),
+        title: this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_INSTALL_FAILED'),
         body: err,
       })
       const res: IPluginHandlerResult<false> = {
@@ -98,9 +97,9 @@ export class PluginHandler implements IPluginHandler {
       }
       return res
     } else {
-      this.ctx.log.success(this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_INSTALL_SUCCESS'))
+      this.ctx.log.success(this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_INSTALL_SUCCESS'))
       this.ctx.emit('installSuccess', {
-        title: this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_INSTALL_SUCCESS'),
+        title: this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_INSTALL_SUCCESS'),
         body: [...pkgNameList, ...installedPlugins],
       })
       const res: IPluginHandlerResult<true> = {
@@ -124,9 +123,9 @@ export class PluginHandler implements IPluginHandler {
         pkgNameList.forEach((pluginName: string) => {
           this.ctx.pluginLoader.unregisterPlugin(pluginName)
         })
-        this.ctx.log.success(this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_UNINSTALL_SUCCESS'))
+        this.ctx.log.success(this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_UNINSTALL_SUCCESS'))
         this.ctx.emit('uninstallSuccess', {
-          title: this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_UNINSTALL_SUCCESS'),
+          title: this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_UNINSTALL_SUCCESS'),
           body: pkgNameList,
         })
         const res: IPluginHandlerResult<true> = {
@@ -135,13 +134,13 @@ export class PluginHandler implements IPluginHandler {
         }
         return res
       } else {
-        const err = this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_UNINSTALL_FAILED_REASON', {
+        const err = this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_UNINSTALL_FAILED_REASON', {
           code: `${result.code}`,
           data: result.data,
         })
         this.ctx.log.error(err)
         this.ctx.emit('uninstallFailed', {
-          title: this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_UNINSTALL_FAILED'),
+          title: this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_UNINSTALL_FAILED'),
           body: err,
         })
         const res: IPluginHandlerResult<false> = {
@@ -151,10 +150,10 @@ export class PluginHandler implements IPluginHandler {
         return res
       }
     } else {
-      const err = this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_UNINSTALL_FAILED_VALID')
+      const err = this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_UNINSTALL_FAILED_VALID')
       this.ctx.log.error(err)
       this.ctx.emit('uninstallFailed', {
-        title: this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_UNINSTALL_FAILED'),
+        title: this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_UNINSTALL_FAILED'),
         body: err,
       })
       const res: IPluginHandlerResult<false> = {
@@ -179,9 +178,9 @@ export class PluginHandler implements IPluginHandler {
       // npm update will use the package.json's name
       const result = await this.execCommand('update', pkgNameList, this.ctx.baseDir, options, env)
       if (!result.code) {
-        this.ctx.log.success(this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_UPDATE_SUCCESS'))
+        this.ctx.log.success(this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_UPDATE_SUCCESS'))
         this.ctx.emit('updateSuccess', {
-          title: this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_UPDATE_SUCCESS'),
+          title: this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_UPDATE_SUCCESS'),
           body: pkgNameList,
         })
         const res: IPluginHandlerResult<true> = {
@@ -190,13 +189,13 @@ export class PluginHandler implements IPluginHandler {
         }
         return res
       } else {
-        const err = this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_UPDATE_FAILED_REASON', {
+        const err = this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_UPDATE_FAILED_REASON', {
           code: `${result.code}`,
           data: result.data,
         })
         this.ctx.log.error(err)
         this.ctx.emit('updateFailed', {
-          title: this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_UPDATE_FAILED'),
+          title: this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_UPDATE_FAILED'),
           body: err,
         })
         const res: IPluginHandlerResult<false> = {
@@ -206,10 +205,10 @@ export class PluginHandler implements IPluginHandler {
         return res
       }
     } else {
-      const err = this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_UPDATE_FAILED_VALID')
+      const err = this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_UPDATE_FAILED_VALID')
       this.ctx.log.error(err)
       this.ctx.emit('updateFailed', {
-        title: this.ctx.i18n.translate<ILocalesKey>('PLUGIN_HANDLER_PLUGIN_UPDATE_FAILED'),
+        title: this.ctx.i18n.t('PLUGIN_HANDLER_PLUGIN_UPDATE_FAILED'),
         body: err,
       })
       const res: IPluginHandlerResult<false> = {

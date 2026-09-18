@@ -299,3 +299,27 @@ picgo.upload(['/xxx/xxx.jpg'])
 // 从剪贴板上传图片
 picgo.upload()
 ```
+
+#### 插件中的国际化
+
+`ctx.i18n.t()` 在 TypeScript 中检查内置翻译键和 `${placeholder}` 参数，解构后也会使用当前语言：
+
+```ts
+const { t } = ctx.i18n
+t('UPLOAD_FAILED')
+t('UPLOAD_FAILED_REASON', { code: 403 })
+```
+
+插件可以继续使用 `addLocale()` 和 `translate()` 处理自定义或动态生成的翻译键，无需修改现有调用：
+
+```js
+ctx.i18n.addLocale('zh-CN', { PIC_MIGRATER_CHOOSE_FILE: '[ZH] Choose File' })
+ctx.i18n.addLocale('en', { PIC_MIGRATER_CHOOSE_FILE: 'Choose File' })
+ctx.i18n.translate('PIC_MIGRATER_CHOOSE_FILE')
+```
+
+`addLocale()` 合并已有语言的翻译，新增语言请使用 `addLanguage()`。两种翻译方法都会读取更新后的翻译，并在消息缺失或为空时返回翻译键。
+仍然支持 `i18n-cli/*.yml` 自定义语言文件，注册的翻译仅作用于当前 PicGo 实例。
+
+CLI 命令和选项的说明也会使用配置的语言。运行 `picgo i18n zh-CN`（或 `zh-TW` / `en`），然后查看 `picgo --help` 或
+`picgo install --help`。自定义语言可以覆盖 `CLI_*` 翻译键。

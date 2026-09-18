@@ -2,7 +2,6 @@ import crypto from 'node:crypto'
 
 import mime from 'mime'
 
-import { ILocalesKey } from '../../i18n/zh-CN'
 import { IOldReqOptionsWithFullResponse, IPicGo, IPluginConfig, IUpyunConfig } from '../../types'
 import { getMd5, safeParse } from '../../utils/common'
 import { IBuildInEvent } from '../../utils/enum'
@@ -113,16 +112,16 @@ const handleUploadError = (ctx: IPicGo, err: any): void => {
 
   if (isUploadFailure) {
     ctx.emit(IBuildInEvent.NOTIFICATION, {
-      title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-      body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS'),
+      title: ctx.i18n.t('UPLOAD_FAILED'),
+      body: ctx.i18n.t('CHECK_SETTINGS'),
     })
   } else {
     const errorBody = safeParse<{ code: string }>(err.error)
     const errorCode = typeof errorBody === 'object' && errorBody ? errorBody.code : errorBody || 'Unknown error'
 
     ctx.emit(IBuildInEvent.NOTIFICATION, {
-      title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-      body: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED_REASON', { code: errorCode }),
+      title: ctx.i18n.t('UPLOAD_FAILED'),
+      body: ctx.i18n.t('UPLOAD_FAILED_REASON', { code: errorCode }),
       text: 'http://docs.upyun.com/api/errno/',
     })
   }
@@ -135,34 +134,34 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     createField(ctx, 'upyun', 'bucket', 'input', userConfig.bucket || '', true),
     createField(ctx, 'upyun', 'operator', 'input', userConfig.operator || '', true, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_OPERATOR')
+        return ctx.i18n.t('PICBED_UPYUN_MESSAGE_OPERATOR')
       },
     }),
     createField(ctx, 'upyun', 'password', 'input', userConfig.password || '', true, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_PASSWORD')
+        return ctx.i18n.t('PICBED_UPYUN_MESSAGE_PASSWORD')
       },
     }),
     createField(ctx, 'upyun', 'url', 'input', userConfig.url || '', true, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_URL')
+        return ctx.i18n.t('PICBED_UPYUN_MESSAGE_URL')
       },
     }),
     createField(ctx, 'upyun', 'options', 'input', userConfig.options || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_OPTIONS')
+        return ctx.i18n.t('PICBED_UPYUN_MESSAGE_OPTIONS')
       },
     }),
     createField(ctx, 'upyun', 'path', 'input', userConfig.path || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_PATH')
+        return ctx.i18n.t('PICBED_UPYUN_MESSAGE_PATH')
       },
     }),
     createField(ctx, 'upyun', 'antiLeechToken', 'input', userConfig.antiLeechToken || '', false),
     createField(ctx, 'upyun', 'expireTime', 'input', userConfig.expireTime || '', false),
     createField(ctx, 'upyun', 'endpoint', 'input', userConfig.endpoint || DEFAULT_ENDPOINT, false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN_MESSAGE_ENDPOINT')
+        return ctx.i18n.t('PICBED_UPYUN_MESSAGE_ENDPOINT')
       },
     }),
   ]
@@ -171,7 +170,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.upyun, {
     get name() {
-      return ctx.i18n.translate<ILocalesKey>('PICBED_UPYUN')
+      return ctx.i18n.t('PICBED_UPYUN')
     },
     handle,
     config,

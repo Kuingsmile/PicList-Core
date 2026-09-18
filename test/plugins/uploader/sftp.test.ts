@@ -52,7 +52,7 @@ function createUploader(baseDir: string, config: ISftpPlistConfig, output: IImgI
     output,
     getConfig: () => ({ ...config }),
     emit: vi.fn(),
-    i18n: { translate: (key: string) => key },
+    i18n: { t: (key: string) => key, translate: (key: string) => key },
     helper: {
       uploader: {
         register: (_name: string, plugin: { handle: typeof handle }) => {

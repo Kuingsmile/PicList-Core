@@ -54,7 +54,7 @@ describe('plugin installation', () => {
       getConfig: vi.fn(),
       saveConfig: vi.fn(),
       log: { success: vi.fn(), error: vi.fn(), warn: vi.fn() },
-      i18n: { translate: (key: string) => key },
+      i18n: { t: (key: string) => key, translate: (key: string) => key },
     }) as unknown as IPicGo
     ctx.pluginLoader = new PluginLoader(ctx)
     const events: string[] = []
@@ -83,7 +83,7 @@ describe('plugin operations embedded in the TUI', () => {
       getConfig: vi.fn(),
       log: { success: vi.fn(), error: vi.fn() },
       pluginLoader: { unregisterPlugin: vi.fn() },
-      i18n: { translate: (key: string) => key },
+      i18n: { t: (key: string) => key, translate: (key: string) => key },
     }) as unknown as IPicGo
     return { ctx, child, handler: new PluginHandler(ctx) }
   }

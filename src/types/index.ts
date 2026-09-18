@@ -1,6 +1,8 @@
+import type { TypedTranslate } from '@piclist/i18n'
 import { Command } from 'commander'
 import { FormatEnum, GravityEnum } from 'sharp'
 
+import type { ILocalesKey, ZH_CN } from '../i18n/zh-CN'
 import type { ConfigManager } from '../utils/configManager'
 import type { IInquirerAdapter } from '../utils/inquirerShim'
 import { IRequestPromiseOptions } from './oldRequest'
@@ -649,9 +651,18 @@ export interface IConfigChangePayload<T> {
 
 export type ILocale = Record<string, any>
 
+declare const typedTranslate: TypedTranslate<typeof ZH_CN>
+
+/** The v3 call signature, with a guaranteed string from our key fallback. */
+export type I18nTranslate = <Key extends ILocalesKey>(...args: Parameters<typeof typedTranslate<Key>>) => string
+
 export interface II18nManager {
   /**
-   * translate text
+   * translate a built-in message with checked keys and placeholder arguments
+   */
+  readonly t: I18nTranslate
+  /**
+   * translate dynamic keys, including locales registered by plugins
    */
   translate: <T extends string>(key: T, args?: IStringKeyMap<string>) => string
   /**

@@ -3,6 +3,32 @@ import { ILocales } from './zh-CN'
 
 export const EN: ILocales = {
   ...TUI_EN,
+  // CLI command and option descriptions
+  CLI_LIST: 'list installed plugins',
+  CLI_INSTALL: 'install picgo plugin',
+  CLI_UNINSTALL: 'uninstall picgo plugin',
+  CLI_UPDATE: 'update picgo plugin',
+  CLI_CONFIG_LIST: 'list all configs names for an uploader',
+  CLI_CONFIG_USE: 'set a config as default for an uploader',
+  CLI_CONFIG_REMOVE: 'remove a config for an uploader',
+  CLI_CONFIG_RENAME: 'rename a config for an uploader',
+  CLI_CONFIG_SHOW: 'show details of a config',
+  CLI_SET:
+    'configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader and buildin, configName is optional (defaults to "Default"). For secondUploader, name and configName select an existing uploader config; omitted values are prompted. For buildin module, uploaderName is the uploader name to which the buildin module config will be linked.',
+  CLI_UPLOAD: 'upload, go go go',
+  CLI_USE: 'use modules of picgo',
+  CLI_I18N: 'change language, zh-CN, zh-TW, en',
+  CLI_TUI: 'open the interactive terminal interface',
+  CLI_HELP: 'display help for command',
+  CLI_OPTION_VERSION: 'output the version number',
+  CLI_OPTION_DEBUG: 'debug mode',
+  CLI_OPTION_SILENT: 'silent mode',
+  CLI_OPTION_CONFIG: 'set config path',
+  CLI_OPTION_PROXY: 'set proxy for uploading',
+  CLI_OPTION_PLUGIN_PROXY: 'Add proxy for installing plugins',
+  CLI_OPTION_PLUGIN_REGISTRY: 'Choose a registry for installing plugins',
+  CLI_OPTION_HELP: 'display help for command',
+
   UPLOAD_FAILED: 'Upload failed',
   CHECK_SETTINGS: 'Please check your settings',
   CHECK_SETTINGS_AND_NETWORK: 'Please check your settings and network',

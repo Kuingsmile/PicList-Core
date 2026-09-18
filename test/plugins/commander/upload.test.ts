@@ -12,6 +12,7 @@ describe('upload CLI inputs', () => {
   let baseDir: string
   let ctx: {
     cmd: { program: Command }
+    i18n: { t: (key: string) => string }
     uploadReturnCtx: ReturnType<typeof vi.fn>
     log: { warn: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> }
   }
@@ -22,6 +23,7 @@ describe('upload CLI inputs', () => {
     baseDir = await fs.mkdtemp(path.join(os.tmpdir(), 'piclist-upload-cli-'))
     ctx = {
       cmd: { program: new Command() },
+      i18n: { t: (key: string) => key },
       uploadReturnCtx: vi.fn().mockResolvedValue({}),
       log: { warn: vi.fn(), error: vi.fn() },
     }

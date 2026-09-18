@@ -6,7 +6,7 @@ const i18n: IPlugin = {
     cmd.program
       .command('i18n')
       .argument('[lang]')
-      .description('change language, zh-CN, zh-TW, en')
+      .description(ctx.i18n.t('CLI_I18N'))
       .action(async (lang: string = '') => {
         const list = ctx.i18n.getLanguageList()
         if (!lang) {

@@ -31,6 +31,25 @@ export async function upload(picgo: PicGo, options: IUploadOptions): Promise<IIm
 
 export const requestOptions: IRequestPromiseOptions = { method: 'GET' }
 
+export function translations(ctx: IPicGo, pluginKey: string): string {
+  const { t } = ctx.i18n
+  const message: string = t('UPLOAD_FAILED_REASON', { code: 403 })
+  t('UPLOAD_FAILED')
+  t('PLUGIN_HANDLER_PLUGIN_INSTALL_FAILED_REASON', { code: 1, data: 'Failed' })
+  ctx.i18n.addLocale('en', { PIC_MIGRATER_CHOOSE_FILE: 'Choose File' })
+  ctx.i18n.translate(pluginKey)
+  ctx.i18n.translate<'PIC_MIGRATER_CHOOSE_FILE'>('PIC_MIGRATER_CHOOSE_FILE')
+  // @ts-expect-error Unknown built-in keys must not become any in published declarations.
+  t('UPLOAD_FAIELD')
+  // @ts-expect-error Placeholder arguments are required.
+  t('UPLOAD_FAILED_REASON')
+  // @ts-expect-error Both code and data must be supplied.
+  t('PLUGIN_HANDLER_PLUGIN_INSTALL_FAILED_REASON', { code: 1 })
+  // @ts-expect-error Dynamic plugin keys use translate().
+  t(pluginKey)
+  return message
+}
+
 // These directives fail if broken declarations silently turn the API into any.
 // @ts-expect-error getMd5 requires a string or binary input.
 PicGoUtils.getMd5(123)

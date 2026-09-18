@@ -1,5 +1,7 @@
 import { Command } from 'commander'
 
+import { EN } from '../i18n/en'
+import type { ILocalesKey } from '../i18n/zh-CN'
 import commanders from '../plugins/commander'
 import { ICommander, IPicGo, IPlugin } from '../types'
 import { createInquirerAdapter, IInquirerAdapter } from '../utils/inquirerShim'
@@ -26,14 +28,18 @@ export class Commander implements ICommander {
   }
 
   init(): void {
+    // init() may also be called before PicGo.create() has initialized i18n.
+    const t = this.ctx.i18n?.t ?? ((key: ILocalesKey) => EN[key])
     this.program
-      .version(process.env.PICGO_VERSION, '-v, --version')
-      .option('-d, --debug', 'debug mode', () => {
+      .version(process.env.PICGO_VERSION, '-v, --version', t('CLI_OPTION_VERSION'))
+      .helpOption('-h, --help', t('CLI_OPTION_HELP'))
+      .helpCommand('help [command]', t('CLI_HELP'))
+      .option('-d, --debug', t('CLI_OPTION_DEBUG'), () => {
         this.ctx.setConfig({
           debug: true,
         })
       })
-      .option('-s, --silent', 'silent mode', () => {
+      .option('-s, --silent', t('CLI_OPTION_SILENT'), () => {
         this.ctx.setConfig({
           silent: true,
         })

@@ -1,6 +1,32 @@
 import { TUI_ZH_CN } from './tui'
 export const ZH_CN = {
   ...TUI_ZH_CN,
+  // CLI command and option descriptions
+  CLI_LIST: '列出已安装的插件',
+  CLI_INSTALL: '安装 PicGo 插件',
+  CLI_UNINSTALL: '卸载 PicGo 插件',
+  CLI_UPDATE: '更新 PicGo 插件',
+  CLI_CONFIG_LIST: '列出图床的所有配置名称',
+  CLI_CONFIG_USE: '设置图床的默认配置',
+  CLI_CONFIG_REMOVE: '删除图床的配置',
+  CLI_CONFIG_RENAME: '重命名图床的配置',
+  CLI_CONFIG_SHOW: '显示配置详情',
+  CLI_SET:
+    '配置 PicGo 模块：uploader|secondUploader|transformer|plugin|buildin。uploader 和 buildin 的 configName 可选（默认为 "Default"）。secondUploader 的 name 和 configName 用于选择已有图床配置，省略时将交互式询问。buildin 的 uploaderName 指定要关联内置模块配置的图床名称。',
+  CLI_UPLOAD: '上传图片',
+  CLI_USE: '选择使用的 PicGo 模块',
+  CLI_I18N: '切换语言，zh-CN、zh-TW、en',
+  CLI_TUI: '打开交互式终端界面',
+  CLI_HELP: '显示命令帮助',
+  CLI_OPTION_VERSION: '显示版本号',
+  CLI_OPTION_DEBUG: '调试模式',
+  CLI_OPTION_SILENT: '静默模式',
+  CLI_OPTION_CONFIG: '设置配置文件路径',
+  CLI_OPTION_PROXY: '设置上传代理',
+  CLI_OPTION_PLUGIN_PROXY: '设置安装插件时使用的代理',
+  CLI_OPTION_PLUGIN_REGISTRY: '选择安装插件时使用的镜像源',
+  CLI_OPTION_HELP: '显示命令帮助',
+
   UPLOAD_FAILED: '上传失败',
   CHECK_SETTINGS: '请检查你的配置项是否正确',
   CHECK_SETTINGS_AND_NETWORK: '请检查你的配置项以及网络',
@@ -332,7 +358,7 @@ export const ZH_CN = {
   PLUGIN_HANDLER_PLUGIN_UPDATE_FAILED: '插件更新失败',
   PLUGIN_HANDLER_PLUGIN_UPDATE_FAILED_REASON: '插件更新失败，失败码为${code}，错误日志为 \n ${data}',
   PLUGIN_HANDLER_PLUGIN_UPDATE_FAILED_VALID: '插件更新失败，请输入合法插件名',
-}
+} as const
 
 export type ILocalesKey = keyof typeof ZH_CN
-export type ILocales = typeof ZH_CN
+export type ILocales = Record<ILocalesKey, string>

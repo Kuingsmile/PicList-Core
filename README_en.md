@@ -309,3 +309,29 @@ picgo.upload(['/xxx/xxx.jpg'])
 // upload a picture from clipboard
 picgo.upload()
 ```
+
+#### Translations in plugins
+
+`ctx.i18n.t()` checks built-in message keys and `${placeholder}` arguments in TypeScript. It can be destructured and
+continues to use the current language:
+
+```ts
+const { t } = ctx.i18n
+t('UPLOAD_FAILED')
+t('UPLOAD_FAILED_REASON', { code: 403 })
+```
+
+Plugins can keep using `addLocale()` and `translate()` for custom or dynamically generated keys without changes:
+
+```js
+ctx.i18n.addLocale('zh-CN', { PIC_MIGRATER_CHOOSE_FILE: '[ZH] Choose File' })
+ctx.i18n.addLocale('en', { PIC_MIGRATER_CHOOSE_FILE: 'Choose File' })
+ctx.i18n.translate('PIC_MIGRATER_CHOOSE_FILE')
+```
+
+`addLocale()` merges into an existing language; use `addLanguage()` to register a new language. Both translation APIs
+observe locale updates and return the key for missing or empty messages. Custom `i18n-cli/*.yml` files remain supported,
+and locale registrations are scoped to each PicGo instance.
+
+CLI command and option descriptions use the configured language too. Run `picgo i18n en` (or `zh-CN` / `zh-TW`), then
+`picgo --help` or `picgo install --help`. Custom locales can override the `CLI_*` translation keys.

@@ -2,7 +2,6 @@ import crypto from 'node:crypto'
 
 import mime from 'mime'
 
-import { ILocalesKey } from '../../i18n/zh-CN'
 import { IAliyunConfig, IOldReqOptionsWithFullResponse, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig, getImageBuffer } from './helper'
@@ -67,8 +66,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     return ctx
   } catch (err: any) {
     ctx.emit(IBuildInEvent.NOTIFICATION, {
-      title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-      body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS'),
+      title: ctx.i18n.t('UPLOAD_FAILED'),
+      body: ctx.i18n.t('CHECK_SETTINGS'),
     })
     throw err
   }
@@ -82,27 +81,27 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     createField(ctx, 'alicloud', 'bucket', 'input', userConfig.bucket || '', true),
     createField(ctx, 'alicloud', 'area', 'input', userConfig.area || '', true, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_AREA')
+        return ctx.i18n.t('PICBED_ALICLOUD_MESSAGE_AREA')
       },
     }),
     createField(ctx, 'alicloud', 'path', 'input', userConfig.path || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_PATH')
+        return ctx.i18n.t('PICBED_ALICLOUD_MESSAGE_PATH')
       },
     }),
     createField(ctx, 'alicloud', 'webPath', 'input', userConfig.webPath || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_WEBPATH')
+        return ctx.i18n.t('PICBED_ALICLOUD_MESSAGE_WEBPATH')
       },
     }),
     createField(ctx, 'alicloud', 'customUrl', 'input', userConfig.customUrl || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_CUSTOMURL')
+        return ctx.i18n.t('PICBED_ALICLOUD_MESSAGE_CUSTOMURL')
       },
     }),
     createField(ctx, 'alicloud', 'options', 'input', userConfig.options || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD_MESSAGE_OPTIONS')
+        return ctx.i18n.t('PICBED_ALICLOUD_MESSAGE_OPTIONS')
       },
     }),
   ]
@@ -111,7 +110,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.aliyun, {
     get name() {
-      return ctx.i18n.translate<ILocalesKey>('PICBED_ALICLOUD')
+      return ctx.i18n.t('PICBED_ALICLOUD')
     },
     handle,
     config,

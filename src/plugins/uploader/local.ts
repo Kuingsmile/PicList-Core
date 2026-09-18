@@ -9,9 +9,9 @@ import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
-const messageGetter = (ctx: IPicGo, key: ILocalesKey) => ({
+const messageGetter = (ctx: IPicGo, key: Extract<ILocalesKey, `PICBED_LOCAL_MESSAGE_${string}`>) => ({
   get message() {
-    return ctx.i18n.translate<ILocalesKey>(key)
+    return ctx.i18n.t(key)
   },
 })
 
@@ -49,7 +49,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       img.galleryPath = `http://localhost:36699/local/${encodePath(img.fileName).replace(/^\//, '')}`
     } catch (e: any) {
       ctx.emit(IBuildInEvent.NOTIFICATION, {
-        title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
+        title: ctx.i18n.t('UPLOAD_FAILED'),
         body: 'failed to upload image',
       })
       throw new Error(`Failed to upload image: ${e}`, { cause: e })
@@ -98,7 +98,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.local, {
     get name() {
-      return ctx.i18n.translate<ILocalesKey>('PICBED_LOCAL')
+      return ctx.i18n.t('PICBED_LOCAL')
     },
     handle,
     config,

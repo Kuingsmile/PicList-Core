@@ -2,7 +2,6 @@ import crypto from 'node:crypto'
 
 import mime from 'mime'
 
-import { ILocalesKey } from '../../i18n/zh-CN'
 import { IOldReqOptionsWithFullResponse, IPicGo, IPluginConfig, ITcyunConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig, getImageBuffer } from './helper'
@@ -106,7 +105,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
       const options = postOptions(tcYunOptions, img.fileName, signature, imageBuffer, ctx.GUI_VERSION || ctx.VERSION)
       const res = await ctx.request(options).catch((err: Error) => ({
         statusCode: 400,
-        body: { msg: ctx.i18n.translate<ILocalesKey>('AUTH_FAILED'), err },
+        body: { msg: ctx.i18n.t('AUTH_FAILED'), err },
       }))
       const body = useV4 && typeof res === 'string' ? JSON.parse(res) : res
       if (body.statusCode === 400) {
@@ -141,8 +140,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
       try {
         const body = JSON.parse(err.error)
         ctx.emit(IBuildInEvent.NOTIFICATION, {
-          title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-          body: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED_REASON', { code: body.code }),
+          title: ctx.i18n.t('UPLOAD_FAILED'),
+          body: ctx.i18n.t('UPLOAD_FAILED_REASON', { code: body.code }),
           text: 'https://cloud.tencent.com/document/product/436/8432',
         })
       } catch (_e) {
@@ -163,48 +162,48 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     createField(ctx, 'TENCENTCLOUD', 'bucket', 'input', userConfig.bucket || '', true),
     createField(ctx, 'TENCENTCLOUD', 'appId', 'input', userConfig.appId || '', true, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_APPID')
+        return ctx.i18n.t('PICBED_TENCENTCLOUD_MESSAGE_APPID')
       },
     }),
     createField(ctx, 'TENCENTCLOUD', 'area', 'input', userConfig.area || '', true, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_AREA')
+        return ctx.i18n.t('PICBED_TENCENTCLOUD_MESSAGE_AREA')
       },
     }),
     createField(ctx, 'TENCENTCLOUD', 'endpoint', 'input', userConfig.endpoint || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_ENDPOINT')
+        return ctx.i18n.t('PICBED_TENCENTCLOUD_MESSAGE_ENDPOINT')
       },
     }),
     createField(ctx, 'TENCENTCLOUD', 'path', 'input', userConfig.path || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_PATH')
+        return ctx.i18n.t('PICBED_TENCENTCLOUD_MESSAGE_PATH')
       },
     }),
     createField(ctx, 'TENCENTCLOUD', 'webPath', 'input', userConfig.webPath || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_WEBPATH')
+        return ctx.i18n.t('PICBED_TENCENTCLOUD_MESSAGE_WEBPATH')
       },
     }),
     createField(ctx, 'TENCENTCLOUD', 'customUrl', 'input', userConfig.customUrl || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_CUSTOMURL')
+        return ctx.i18n.t('PICBED_TENCENTCLOUD_MESSAGE_CUSTOMURL')
       },
     }),
     createField(ctx, 'TENCENTCLOUD', 'options', 'input', userConfig.options || '', false, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_MESSAGE_OPTIONS')
+        return ctx.i18n.t('PICBED_TENCENTCLOUD_MESSAGE_OPTIONS')
       },
     }),
     createField(ctx, 'TENCENTCLOUD', 'slim', 'confirm', !!userConfig.slim, false, undefined, {
       get confirmText() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SLIM_CONFIRM')
+        return ctx.i18n.t('PICBED_TENCENTCLOUD_SLIM_CONFIRM')
       },
       get cancelText() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SLIM_CANCEL')
+        return ctx.i18n.t('PICBED_TENCENTCLOUD_SLIM_CANCEL')
       },
       get tips() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD_SLIM_TIP')
+        return ctx.i18n.t('PICBED_TENCENTCLOUD_SLIM_TIP')
       },
     }),
   ]
@@ -213,7 +212,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.tcyun, {
     get name() {
-      return ctx.i18n.translate<ILocalesKey>('PICBED_TENCENTCLOUD')
+      return ctx.i18n.t('PICBED_TENCENTCLOUD')
     },
     handle,
     config,

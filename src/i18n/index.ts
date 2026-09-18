@@ -1,40 +1,39 @@
 import path from 'node:path'
 
-import { I18n, ObjectAdapter } from '@piclist/i18n'
+import { createTypedI18n, ObjectAdapter, type TypedI18n } from '@piclist/i18n'
 import fs from 'fs-extra'
 import { ensureDirSync, pathExistsSync } from 'fs-extra/esm'
 import { load } from 'js-yaml'
-import { merge } from 'lodash-es'
+import { cloneDeep, merge } from 'lodash-es'
 
-import { II18nManager, IPicGo, IStringKeyMap } from '../types'
+import { I18nTranslate, II18nManager, ILocale, IPicGo, IStringKeyMap } from '../types'
 import { EN } from './en'
-import { ILocales, ILocalesKey, ZH_CN } from './zh-CN'
+import { ILocalesKey, ZH_CN } from './zh-CN'
 import { ZH_TW } from './zh-TW'
 
-type ILocale = Record<string, any>
-
-const languageList: IStringKeyMap<IStringKeyMap<string>> = {
-  'zh-CN': ZH_CN,
-  'zh-TW': ZH_TW,
-  en: EN,
-}
-
 class I18nManager implements II18nManager {
-  private readonly i18n: I18n
+  private readonly i18n: TypedI18n<typeof ZH_CN>
   private readonly objectAdapter: ObjectAdapter
   private readonly ctx: IPicGo
+  private readonly languageList: IStringKeyMap<ILocale> = cloneDeep({
+    'zh-CN': ZH_CN,
+    'zh-TW': ZH_TW,
+    en: EN,
+  })
+
   constructor(ctx: IPicGo) {
     this.ctx = ctx
-    this.objectAdapter = new ObjectAdapter(languageList)
+    this.objectAdapter = new ObjectAdapter(this.languageList)
+    this.loadOutterI18n()
     let language = this.ctx.getConfig<string>('settings.language') || 'zh-CN'
-    if (!languageList[language]) {
+    if (!this.objectAdapter.getLocale(language)) {
       language = 'zh-CN' // use default
     }
-    this.i18n = new I18n({
+    this.i18n = createTypedI18n({
       adapter: this.objectAdapter,
       defaultLanguage: language,
+      schema: ZH_CN,
     })
-    this.loadOutterI18n()
   }
 
   private loadOutterI18n(): void {
@@ -47,8 +46,8 @@ class I18nManager implements II18nManager {
         const i18nFilePath = path.join(i18nFolder, file.name)
         const i18nFile = fs.readFileSync(i18nFilePath, 'utf8')
         try {
-          const i18nFileObj = load(i18nFile) as ILocales
-          languageList[file.name.replace(/\.yml$/, '')] = i18nFileObj
+          const i18nFileObj = load(i18nFile) as ILocale
+          this.objectAdapter.setLocale(file.name.replace(/\.yml$/, ''), i18nFileObj)
         } catch (e) {
           console.error(e)
         }
@@ -63,6 +62,8 @@ class I18nManager implements II18nManager {
     }
     return i18nFolder
   }
+
+  readonly t: I18nTranslate = (...args) => this.i18n.t(...args) || args[0]
 
   translate<T extends string>(key: ILocalesKey | T, args?: IStringKeyMap<string>): string {
     return this.i18n.translate(key, args) || key
@@ -80,7 +81,7 @@ class I18nManager implements II18nManager {
     if (!originLocales) {
       return false
     }
-    const newLocales = merge(originLocales, locales)
+    const newLocales = merge({}, originLocales, locales)
     this.objectAdapter.setLocale(language, newLocales)
     return true
   }
@@ -90,13 +91,12 @@ class I18nManager implements II18nManager {
     if (originLocales) {
       return false
     }
-    this.objectAdapter.setLocale(language, locales)
-    languageList[language] = locales
+    this.objectAdapter.setLocale(language, cloneDeep(locales))
     return true
   }
 
   getLanguageList(): string[] {
-    return Object.keys(languageList)
+    return Object.keys(this.languageList)
   }
 }
 

@@ -1,4 +1,3 @@
-import { ILocalesKey } from '../../i18n/zh-CN'
 import { IPicGo } from '../../types'
 
 export function formatPathHelper({
@@ -65,14 +64,10 @@ export const createField = (
       name,
       type,
       get prefix() {
-        return ctx.i18n.translate<ILocalesKey>(
-          `${i18nPrefix}_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey,
-        )
+        return ctx.i18n.translate(`${i18nPrefix}_${picBedName.toUpperCase()}_${name.toUpperCase()}`)
       },
       get alias() {
-        return ctx.i18n.translate<ILocalesKey>(
-          `${i18nPrefix}_${picBedName.toUpperCase()}_${name.toUpperCase()}` as ILocalesKey,
-        )
+        return ctx.i18n.translate(`${i18nPrefix}_${picBedName.toUpperCase()}_${name.toUpperCase()}`)
       },
       default: defaultValue,
       required,

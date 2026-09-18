@@ -1,4 +1,3 @@
-import { ILocalesKey } from '../../i18n/zh-CN'
 import { IOldReqOptions, IPicGo, IPluginConfig, ISmmsConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig, getImageBuffer } from './helper'
@@ -36,7 +35,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     if (body.code !== 200 && body.message !== 'success') {
       const errorMsg = body.message || 'Upload failed'
       ctx.emit(IBuildInEvent.NOTIFICATION, {
-        title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
+        title: ctx.i18n.t('UPLOAD_FAILED'),
         body: errorMsg,
       })
       throw new Error(errorMsg)
@@ -54,7 +53,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   return [
     createField(ctx, 'SMMS', 'token', 'input', userConfig.token || '', true, undefined, {
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_SMMS_MESSAGE_TOKEN')
+        return ctx.i18n.t('PICBED_SMMS_MESSAGE_TOKEN')
       },
     }),
   ]
@@ -63,7 +62,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.smms, {
     get name() {
-      return ctx.i18n.translate<ILocalesKey>('PICBED_SMMS')
+      return ctx.i18n.t('PICBED_SMMS')
     },
     handle,
     config,

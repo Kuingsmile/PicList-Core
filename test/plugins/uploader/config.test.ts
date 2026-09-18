@@ -16,6 +16,10 @@ function getRegisteredConfigFields(
 } {
   let plugin: any
   const translatedKeys: string[] = []
+  const translate = (key: string) => {
+    translatedKeys.push(key)
+    return key
+  }
   const ctx = {
     getConfig: (key: string) => (key === configKey ? userConfig : undefined),
     helper: {
@@ -26,10 +30,8 @@ function getRegisteredConfigFields(
       },
     },
     i18n: {
-      translate: (key: string) => {
-        translatedKeys.push(key)
-        return key
-      },
+      t: translate,
+      translate,
     },
   }
 

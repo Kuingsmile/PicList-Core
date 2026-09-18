@@ -6,9 +6,9 @@ import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
-const messageGetter = (ctx: IPicGo, key: ILocalesKey) => ({
+const messageGetter = (ctx: IPicGo, key: Extract<ILocalesKey, `PICBED_GITHUB_MESSAGE_${string}`>) => ({
   get message() {
-    return ctx.i18n.translate<ILocalesKey>(key)
+    return ctx.i18n.t(key)
   },
 })
 
@@ -94,8 +94,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     return ctx
   } catch (err: any) {
     ctx.emit(IBuildInEvent.NOTIFICATION, {
-      title: ctx.i18n.translate<ILocalesKey>('UPLOAD_FAILED'),
-      body: ctx.i18n.translate<ILocalesKey>('CHECK_SETTINGS_AND_NETWORK'),
+      title: ctx.i18n.t('UPLOAD_FAILED'),
+      body: ctx.i18n.t('CHECK_SETTINGS_AND_NETWORK'),
     })
     throw err
   }
@@ -162,7 +162,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.github, {
     get name() {
-      return ctx.i18n.translate<ILocalesKey>('PICBED_GITHUB')
+      return ctx.i18n.t('PICBED_GITHUB')
     },
     handle,
     config,

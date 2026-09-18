@@ -9,7 +9,7 @@ const upload: IPlugin = {
   handle: (ctx: IPicGo) => {
     ctx.cmd.program
       .command('upload')
-      .description('upload, go go go')
+      .description(ctx.i18n.t('CLI_UPLOAD'))
       .argument('[input...]')
       .alias('u')
       .action((input: string[]) => {

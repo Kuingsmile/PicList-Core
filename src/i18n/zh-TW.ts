@@ -3,6 +3,32 @@ import { ILocales } from './zh-CN'
 
 export const ZH_TW: ILocales = {
   ...TUI_ZH_TW,
+  // CLI command and option descriptions
+  CLI_LIST: '列出已安裝的外掛',
+  CLI_INSTALL: '安裝 PicGo 外掛',
+  CLI_UNINSTALL: '解除安裝 PicGo 外掛',
+  CLI_UPDATE: '更新 PicGo 外掛',
+  CLI_CONFIG_LIST: '列出圖床的所有設定名稱',
+  CLI_CONFIG_USE: '設定圖床的預設設定',
+  CLI_CONFIG_REMOVE: '刪除圖床的設定',
+  CLI_CONFIG_RENAME: '重新命名圖床的設定',
+  CLI_CONFIG_SHOW: '顯示設定詳情',
+  CLI_SET:
+    '設定 PicGo 模組：uploader|secondUploader|transformer|plugin|buildin。uploader 和 buildin 的 configName 可省略（預設為 "Default"）。secondUploader 的 name 和 configName 用於選擇已有圖床設定，省略時將互動式詢問。buildin 的 uploaderName 指定要關聯內建模組設定的圖床名稱。',
+  CLI_UPLOAD: '上傳圖片',
+  CLI_USE: '選擇使用的 PicGo 模組',
+  CLI_I18N: '切換語言，zh-CN、zh-TW、en',
+  CLI_TUI: '開啟互動式終端介面',
+  CLI_HELP: '顯示命令說明',
+  CLI_OPTION_VERSION: '顯示版本號碼',
+  CLI_OPTION_DEBUG: '偵錯模式',
+  CLI_OPTION_SILENT: '靜默模式',
+  CLI_OPTION_CONFIG: '設定設定檔路徑',
+  CLI_OPTION_PROXY: '設定上傳代理伺服器',
+  CLI_OPTION_PLUGIN_PROXY: '設定安裝外掛時使用的代理伺服器',
+  CLI_OPTION_PLUGIN_REGISTRY: '選擇安裝外掛時使用的套件來源',
+  CLI_OPTION_HELP: '顯示命令說明',
+
   UPLOAD_FAILED: '上傳失敗',
   CHECK_SETTINGS: '請檢查你的設定是否正確',
   CHECK_SETTINGS_AND_NETWORK: '請檢查你的設定及網路',

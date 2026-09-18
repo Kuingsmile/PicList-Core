@@ -3,7 +3,6 @@
 
 import https from 'node:https'
 
-import { ILocalesKey } from '../../i18n/zh-CN'
 import { ILskyConfig, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig, getImageBuffer } from './helper'
@@ -136,13 +135,13 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       type: 'list',
       default: userConfig.version || 'V1',
       get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_VERSION')
+        return ctx.i18n.t('PICBED_LSKY_VERSION')
       },
       get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_VERSION')
+        return ctx.i18n.t('PICBED_LSKY_VERSION')
       },
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_MESSAGE_VERSION')
+        return ctx.i18n.t('PICBED_LSKY_MESSAGE_VERSION')
       },
       choices: ['V1', 'V2'],
       required: true,
@@ -151,13 +150,13 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       name: 'host',
       type: 'input',
       get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_HOST')
+        return ctx.i18n.t('PICBED_LSKY_HOST')
       },
       get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_HOST')
+        return ctx.i18n.t('PICBED_LSKY_HOST')
       },
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_MESSAGE_HOST')
+        return ctx.i18n.t('PICBED_LSKY_MESSAGE_HOST')
       },
       default: userConfig.host || '',
       required: true,
@@ -166,13 +165,13 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       name: 'token',
       type: 'input',
       get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_TOKEN')
+        return ctx.i18n.t('PICBED_LSKY_TOKEN')
       },
       get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_TOKEN')
+        return ctx.i18n.t('PICBED_LSKY_TOKEN')
       },
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_MESSAGE_TOKEN')
+        return ctx.i18n.t('PICBED_LSKY_MESSAGE_TOKEN')
       },
       default: userConfig.token,
       required: true,
@@ -183,13 +182,13 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       default: userConfig.strategyId,
       required: false,
       get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_STRATEGY_ID')
+        return ctx.i18n.t('PICBED_LSKY_STRATEGY_ID')
       },
       get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_STRATEGY_ID')
+        return ctx.i18n.t('PICBED_LSKY_STRATEGY_ID')
       },
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_MESSAGE_STRATEGY_ID')
+        return ctx.i18n.t('PICBED_LSKY_MESSAGE_STRATEGY_ID')
       },
     },
     {
@@ -198,13 +197,13 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       default: userConfig.albumId,
       required: false,
       get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_ALBUM_ID')
+        return ctx.i18n.t('PICBED_LSKY_ALBUM_ID')
       },
       get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_ALBUM_ID')
+        return ctx.i18n.t('PICBED_LSKY_ALBUM_ID')
       },
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_MESSAGE_ALBUM_ID')
+        return ctx.i18n.t('PICBED_LSKY_MESSAGE_ALBUM_ID')
       },
     },
     {
@@ -223,13 +222,13 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
       ],
       required: false,
       get prefix() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_PERMISSION')
+        return ctx.i18n.t('PICBED_LSKY_PERMISSION')
       },
       get alias() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_PERMISSION')
+        return ctx.i18n.t('PICBED_LSKY_PERMISSION')
       },
       get message() {
-        return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_MESSAGE_PERMISSION')
+        return ctx.i18n.t('PICBED_LSKY_MESSAGE_PERMISSION')
       },
     },
   ]
@@ -239,7 +238,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.lskyplist, {
     get name() {
-      return ctx.i18n.translate<ILocalesKey>('PICBED_LSKY_PLIST')
+      return ctx.i18n.t('PICBED_LSKY_PLIST')
     },
     handle,
     config,

@@ -7,7 +7,7 @@ const use: IPlugin = {
     cmd.program
       .command('use')
       .argument('[module]')
-      .description('use modules of picgo')
+      .description(ctx.i18n.t('CLI_USE'))
       .action((module: string) => {
         ;(async () => {
           try {
