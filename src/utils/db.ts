@@ -1,16 +1,13 @@
 import { JSONStore } from '@piclist/store'
-interface IJSON {
-  [propsName: string]: string | number | IJSON
-}
 
 import { IConfig, IPicGo } from '../types'
 
 class DB {
   private readonly ctx: IPicGo
-  private readonly db: JSONStore
+  private readonly db: JSONStore<IConfig>
   constructor(ctx: IPicGo) {
     this.ctx = ctx
-    this.db = new JSONStore(this.ctx.configPath)
+    this.db = new JSONStore<IConfig>(this.ctx.configPath)
 
     if (!this.db.has('picBed')) {
       try {
@@ -39,13 +36,13 @@ class DB {
     this.read(true)
   }
 
-  read(flush?: boolean): IJSON {
-    return this.db.read(flush)
+  read(flush?: boolean): IConfig {
+    return flush ? this.db.refresh() : this.db.read()
   }
 
   getSingle(key = ''): any {
     if (key === '') {
-      return this.db.read(true)
+      return this.db.refresh()
     }
     this.read(true)
     return this.db.get(key)
@@ -61,7 +58,6 @@ class DB {
   }
 
   set(key: string, value: any): void {
-    this.read(true)
     this.db.set(key, value)
   }
 
@@ -71,14 +67,11 @@ class DB {
   }
 
   unset(key: string, value: any): boolean {
-    this.read(true)
     return this.db.unset(key, value)
   }
 
   saveConfig(config: Partial<IConfig>): void {
-    Object.keys(config).forEach((name: string) => {
-      this.set(name, config[name])
-    })
+    this.db.setMany(config)
   }
 
   removeConfig(config: IConfig): void {
