@@ -1,3 +1,43 @@
+# :tada: 3.0.0-alpha.0 (2026-09-19)
+
+### :sparkles: Features
+
+* add picgo init ([bd77281](https://github.com/Kuingsmile/PicList-Core/commit/bd77281))
+* add secondary uploader functionality with configuration management ([5162a29](https://github.com/Kuingsmile/PicList-Core/commit/5162a29))
+* docker releases reproducible ([dd1ee56](https://github.com/Kuingsmile/PicList-Core/commit/dd1ee56))
+* improve first-run setup and everyday TUI actions ([ec7102e](https://github.com/Kuingsmile/PicList-Core/commit/ec7102e))
+* isolate upload configurations to prevent overlap during concurrent uploads ([9899c29](https://github.com/Kuingsmile/PicList-Core/commit/9899c29))
+* support cli/tui dualmode ([5b2d5da](https://github.com/Kuingsmile/PicList-Core/commit/5b2d5da))
+* typeScript compatibility for package consumers ([008cfed](https://github.com/Kuingsmile/PicList-Core/commit/008cfed))
+* update i18n, cli now support change language ([343ae8e](https://github.com/Kuingsmile/PicList-Core/commit/343ae8e))
+* update piclist/store api ([0aee9e4](https://github.com/Kuingsmile/PicList-Core/commit/0aee9e4))
+* **custom:** validate that every expected output  has a non-empty string imgurl ([a7b421c](https://github.com/Kuingsmile/PicList-Core/commit/a7b421c))
+
+### :bug: Bug Fixes
+
+* add runtime config ([fbc3c7e](https://github.com/Kuingsmile/PicList-Core/commit/fbc3c7e))
+* concurrent SFTP uploads share connections and temporary files ([29161c9](https://github.com/Kuingsmile/PicList-Core/commit/29161c9))
+* enhance isNeedCompress to support format conversion overrides ([45bcb04](https://github.com/Kuingsmile/PicList-Core/commit/45bcb04))
+* failed conversion produces incorrectly labelled files ([8ca2aff](https://github.com/Kuingsmile/PicList-Core/commit/8ca2aff))
+* fix alist credentials leak across uploader configurations ([b685dad](https://github.com/Kuingsmile/PicList-Core/commit/b685dad))
+* fix an security issue of sftp inject ([da083e1](https://github.com/Kuingsmile/PicList-Core/commit/da083e1))
+* fix unauthorized uploads can write unlimited temporary files ([cbb5e5b](https://github.com/Kuingsmile/PicList-Core/commit/cbb5e5b))
+* isolate concurrent uploads to prevent file name collisions ([1a69eed](https://github.com/Kuingsmile/PicList-Core/commit/1a69eed))
+* missing batch input causes incorrect filenames ([1b0b341](https://github.com/Kuingsmile/PicList-Core/commit/1b0b341))
+* only fallback to clipboard upload when file is not supplied ([0737946](https://github.com/Kuingsmile/PicList-Core/commit/0737946))
+* private S3 download URLs lose their authorization ([3d28be3](https://github.com/Kuingsmile/PicList-Core/commit/3d28be3))
+* processed upload files accumulate indefinitely during a session ([deafdf1](https://github.com/Kuingsmile/PicList-Core/commit/deafdf1))
+* update plugin installation logic to load installed packages by name ([e59b2f5](https://github.com/Kuingsmile/PicList-Core/commit/e59b2f5))
+
+### :package: Chore
+
+* change node version ([8fbd70c](https://github.com/Kuingsmile/PicList-Core/commit/8fbd70c))
+* optimize tsconfig and rollup config ([9071e69](https://github.com/Kuingsmile/PicList-Core/commit/9071e69))
+* remove agents.md ([684f397](https://github.com/Kuingsmile/PicList-Core/commit/684f397))
+* update docker workflow ([d857a29](https://github.com/Kuingsmile/PicList-Core/commit/d857a29))
+* update node-bump-version to v3 ([d7fc766](https://github.com/Kuingsmile/PicList-Core/commit/d7fc766))
+* update vscode setting ([3cfe005](https://github.com/Kuingsmile/PicList-Core/commit/3cfe005))
+* **custom:** update eslint and prettier config ([3bcbee3](https://github.com/Kuingsmile/PicList-Core/commit/3bcbee3))
 ##  (2026-06-12)
 
 * :bug: Fix(custom): fix several issues related with heif input and output 22ba40c
