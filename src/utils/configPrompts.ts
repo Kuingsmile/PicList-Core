@@ -1,11 +1,16 @@
 import type { IInquirerQuestion } from './inquirerShim'
 
+/** Identifies password fields and credential-like question names for masked display and redaction. */
 export const isSecretQuestion = (question: IInquirerQuestion): boolean =>
   question.type === 'password' ||
   /password|passwd|secret|token|credential|authorization|api.?key|private.?key|access.?key|^key$|^auth$/i.test(
     question.name,
   )
 
+/**
+ * Treats missing values, whitespace-only strings, and empty arrays as empty while preserving false and
+ * zero.
+ */
 export const isEmptyValue = (value: unknown): boolean =>
   value === undefined ||
   value === null ||

@@ -14,14 +14,19 @@ import { setCurrentPluginName } from './LifecyclePlugins'
  */
 export class PluginLoader implements IPluginLoader {
   private readonly ctx: IPicGo
+  /** Names of enabled plugins registered with the current client. */
   private list: string[] = []
+  /** Discovered plugin names, including plugins disabled in configuration. */
   private readonly fullList = new Set<string>()
+  /** Instantiated plugin interfaces cached by package or registration name. */
   private readonly pluginMap = new Map<string, IPicGoPluginInterface>()
+  /** Initializes plugin state and ensures the user plugin package manifest exists. */
   constructor(ctx: IPicGo) {
     this.ctx = ctx
     this.init()
   }
 
+  /** Creates a package manifest in the client base directory for local npm plugin management. */
   private init(): void {
     const packagePath = path.join(this.ctx.baseDir, 'package.json')
     if (!fs.existsSync(packagePath)) {
@@ -36,6 +41,7 @@ export class PluginLoader implements IPluginLoader {
   }
 
   // get plugin entry
+  /** Resolves a plugin relative to the user directory, falling back to its node_modules path. */
   private resolvePlugin(ctx: IPicGo, name: string): string {
     try {
       return resolve.sync(name, { basedir: ctx.baseDir })
@@ -45,6 +51,11 @@ export class PluginLoader implements IPluginLoader {
   }
 
   // load all third party plugin
+  /**
+   * Discovers installed PicGo plugins from the user manifest and registers enabled entries.
+   *
+   * @returns False when the user node_modules directory does not exist.
+   */
   async load(): Promise<boolean> {
     const pluginDir = path.join(this.ctx.baseDir, 'node_modules/')
     // Thanks to hexo -> https://github.com/hexojs/hexo/blob/master/lib/hexo/load_plugins.js
@@ -66,6 +77,16 @@ export class PluginLoader implements IPluginLoader {
     return true
   }
 
+  /**
+   * Registers an installed package or an explicitly supplied plugin factory.
+   *
+   * @remarks
+   * Installed packages respect persisted enablement and save their enabled state. Supplied factories
+   * register without saving enablement. Failures are logged, notified, and removed from loader caches.
+   *
+   * @param name - Package name or runtime registration name.
+   * @param plugin - Optional factory to use instead of importing an installed package.
+   */
   async registerPlugin(name: string, plugin?: IPicGoPlugin): Promise<void> {
     if (!name || typeof name !== 'string') {
       this.ctx.log.warn('Please provide valid plugin')
@@ -109,6 +130,7 @@ export class PluginLoader implements IPluginLoader {
     }
   }
 
+  /** Removes a plugin's cached interface, owned lifecycle handlers, commands, and saved enablement. */
   unregisterPlugin(name: string): void {
     this.list = this.list.filter((item: string) => item !== name)
     this.fullList.delete(name)
@@ -124,6 +146,11 @@ export class PluginLoader implements IPluginLoader {
   }
 
   // get plugin by name
+  /**
+   * Returns a cached plugin interface or imports and instantiates its installed package.
+   *
+   * @throws If the plugin cannot be resolved, imported, or instantiated.
+   */
   async getPlugin(name: string): Promise<IPicGoPluginInterface | undefined> {
     if (this.pluginMap.has(name)) {
       return this.pluginMap.get(name)

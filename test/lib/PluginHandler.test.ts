@@ -75,6 +75,9 @@ describe('plugin installation', () => {
 })
 
 describe('plugin operations embedded in the TUI', () => {
+  /**
+   * Creates a mock npm child process and client for observing stream suppression and operation events.
+   */
   const setup = () => {
     const child = Object.assign(new EventEmitter(), { stdout: new PassThrough(), stderr: new PassThrough() })
     vi.mocked(spawn).mockReturnValue(child as any)

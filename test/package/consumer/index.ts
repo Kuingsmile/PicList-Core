@@ -21,6 +21,7 @@ export const constructors = { Commander, Lifecycle, LifecyclePlugins, Logger, Pl
 export const sameConstructor: typeof PicGo = DeepPicGo
 export const digest: string = PicGoUtils.getMd5('consumer')
 
+/** Exercises public and deep-import upload contracts during packaged declaration type checking. */
 export async function upload(picgo: PicGo, options: IUploadOptions): Promise<IImgInfo[] | Error> {
   const context: IPicGo = picgo
   const deepContext: DeepIPicGo = context
@@ -31,6 +32,7 @@ export async function upload(picgo: PicGo, options: IUploadOptions): Promise<IIm
 
 export const requestOptions: IRequestPromiseOptions = { method: 'GET' }
 
+/** Checks packaged translation declarations retain key validation and dynamic plugin-key support. */
 export function translations(ctx: IPicGo, pluginKey: string): string {
   const { t } = ctx.i18n
   const message: string = t('UPLOAD_FAILED_REASON', { code: 403 })

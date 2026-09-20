@@ -1,6 +1,15 @@
 import { IConfigItem, IPicGo } from '../../types'
 import { uploaderTranslators } from './utils'
 
+/**
+ * Prompts for secondary-upload enablement, destination, profile, and processing mode.
+ *
+ * @param ctx - Client whose settings and prompt adapter are used.
+ * @param uploaderName - Optional uploader type to select without prompting for it.
+ * @param configName - Optional saved profile name to select without prompting for it.
+ * @returns Whether secondary settings were saved or disabled; false for an unavailable uploader or
+ * profile.
+ */
 export const handleSecondUploader = async (
   ctx: IPicGo,
   uploaderName?: string,

@@ -10,6 +10,7 @@ import { ILogArgvType, ILogArgvTypeWithError, ILogColor, ILogger, IPicGo, Undefi
 import { forceNumber, isDev } from '../utils/common'
 import { ILogType } from '../utils/enum'
 
+/** Writes timestamped console and file logs according to the client's current logging settings. */
 export class Logger implements ILogger {
   private readonly level = {
     [ILogType.success]: 'green',
@@ -25,6 +26,7 @@ export class Logger implements ILogger {
     this.ctx = ctx
   }
 
+  /** Filters by silence and level, prints immediately, then schedules file rotation and persistence. */
   private handleLog(type: ILogType, ...msg: ILogArgvTypeWithError[]): void {
     this.logLevel = this.ctx.getConfig('settings.logLevel')
     if (!this.ctx.getConfig<Undefinable<string>>('silent') && this.checkLogLevel(type, this.logLevel)) {
@@ -49,6 +51,7 @@ export class Logger implements ILogger {
     }
   }
 
+  /** Compares the log size with the configured limit in MiB, defaulting to 10 MiB. */
   private checkLogFileIsLarge(logPath: string): {
     isLarge: boolean
     logFileSize?: number
@@ -67,6 +70,7 @@ export class Logger implements ILogger {
     return { isLarge: false }
   }
 
+  /** Deletes and recreates an existing log file after it exceeds the configured size limit. */
   private recreateLogFile(logPath: string): void {
     if (fs.existsSync(logPath)) {
       fs.unlinkSync(logPath)
@@ -74,6 +78,7 @@ export class Logger implements ILogger {
     }
   }
 
+  /** Appends a timestamped entry, serializing objects and including stacks for error messages. */
   private handleWriteLog(logPath: string, type: string, ...msg: ILogArgvTypeWithError[]): void {
     try {
       let log = `${dayjs().format('YYYY-MM-DD HH:mm:ss')} [PicList ${type.toUpperCase()}] `
@@ -94,6 +99,10 @@ export class Logger implements ILogger {
     }
   }
 
+  /**
+   * Accepts all levels by default, or matches a configured level or list containing the requested
+   * level.
+   */
   private checkLogLevel(type: string, level: undefined | string | string[]): boolean {
     if (level === undefined || level === 'all') return true
     if (Array.isArray(level)) {
@@ -118,6 +127,7 @@ export class Logger implements ILogger {
     this.handleLog(ILogType.warn, ...msg)
   }
 
+  /** Emits an info-level log only when the process runs in development mode. */
   debug(...msg: ILogArgvType[]): void {
     if (isDev()) {
       this.handleLog(ILogType.info, ...msg)

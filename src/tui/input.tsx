@@ -4,7 +4,9 @@ import stringWidth from 'string-width'
 
 import { theme } from './theme'
 
+/** Splits input into grapheme clusters so cursor movement and deletion preserve combined characters. */
 const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+/** Returns user-perceived characters rather than individual UTF-16 code units. */
 const characters = (value: string) => [...segmenter.segment(value)].map(item => item.segment)
 
 /** Keep the cursor in view without wrapping or changing the underlying pasted value. */
@@ -80,6 +82,7 @@ export function TextField({
     },
     { isActive: focus },
   )
+  /** Terminal-safe visible characters or mask glyphs, kept separate from the original editable value. */
   const display = chars.map(
     char =>
       mask ||

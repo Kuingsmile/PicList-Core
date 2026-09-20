@@ -7,6 +7,7 @@ export default defineConfig({
     {
       name: 'script-as-string',
       enforce: 'pre',
+      /** Exposes bundled clipboard scripts as string modules when testing source imports. */
       transform(code, id) {
         if (!/\.(?:applescript|ps1|sh)$/.test(id)) return null
         return { code: `export default ${JSON.stringify(code)}`, map: null }

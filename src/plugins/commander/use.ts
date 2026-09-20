@@ -2,6 +2,9 @@ import { ICLIConfigs, IPicGo, IPlugin, IStringKeyMap, Undefinable } from '../../
 import { uploaderTranslators } from './utils'
 
 const use: IPlugin = {
+  /**
+   * Registers interactive selection of the default uploader, transformer, and enabled plugin packages.
+   */
   handle: async (ctx: IPicGo) => {
     const cmd = ctx.cmd
     cmd.program

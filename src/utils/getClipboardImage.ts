@@ -19,6 +19,7 @@ import { CLIPBOARD_IMAGE_FOLDER } from './static'
 
 export type Platform = 'darwin' | 'win32' | 'win10' | 'linux' | 'wsl'
 
+/** Selects the clipboard backend, distinguishing WSL and Windows 10 from their host platform names. */
 const getCurrentPlatform = (): Platform => {
   const platform = process.platform
   if (isWsl) return 'wsl'
@@ -31,6 +32,7 @@ const getCurrentPlatform = (): Platform => {
   }
 }
 
+/** Bundled extraction scripts indexed by the clipboard backend selected at runtime. */
 const platform2ScriptContent: Record<Platform, string> = {
   darwin: macClipboardScript,
   win32: windowsClipboardScript,
@@ -51,11 +53,13 @@ const platform2ScriptFilename: Record<Platform, string> = {
   wsl: 'wsl.sh',
 }
 
+/** Ensures the client-owned clipboard image cache directory exists. */
 function createImageFolder(ctx: IPicGo): void {
   const imagePath = path.join(ctx.baseDir, CLIPBOARD_IMAGE_FOLDER)
   ensureDirSync(imagePath)
 }
 
+/** Removes one matching pair of surrounding single or double quotes from a pasted path. */
 const stripEnclosingQuotes = (value: string): string => {
   if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
     return value.slice(1, -1).trim()
@@ -64,6 +68,7 @@ const stripEnclosingQuotes = (value: string): string => {
   return value
 }
 
+/** Accepts exactly one nonempty clipboard line after trimming and removing surrounding quotes. */
 const getSingleClipboardTextLine = (value: string): string | undefined => {
   const lines = value
     .trim()
@@ -74,6 +79,7 @@ const getSingleClipboardTextLine = (value: string): string | undefined => {
   return lines.length === 1 ? lines[0] : undefined
 }
 
+/** Checks for an existing absolute file path, returning false for missing or inaccessible files. */
 const isExistingAbsoluteFile = (filePath: string): boolean => {
   if (!path.isAbsolute(filePath)) return false
 
@@ -84,6 +90,7 @@ const isExistingAbsoluteFile = (filePath: string): boolean => {
   }
 }
 
+/** Decodes percent escapes, returning undefined when a clipboard path contains malformed escapes. */
 const decodeFilePath = (filePath: string): string | undefined => {
   try {
     return decodeURIComponent(filePath)
@@ -92,6 +99,7 @@ const decodeFilePath = (filePath: string): string | undefined => {
   }
 }
 
+/** Accepts an existing absolute path directly or after percent decoding. */
 const getExistingClipboardFilePath = (filePath: string): string | undefined => {
   if (isExistingAbsoluteFile(filePath)) return filePath
 
@@ -103,6 +111,7 @@ const getExistingClipboardFilePath = (filePath: string): string | undefined => {
 
 const isWindowsAbsolutePath = (filePath: string): boolean => /^[a-zA-Z]:[\\/]/.test(filePath) || /^\\\\/.test(filePath)
 
+/** Extracts Windows drive or UNC paths from file URLs before WSL path conversion. */
 const getFileUrlPathForWsl = (fileUrl: URL): string | undefined => {
   let pathname
 
@@ -121,6 +130,7 @@ const getFileUrlPathForWsl = (fileUrl: URL): string | undefined => {
   }
 }
 
+/** Converts a file URL into a native path, handling Windows file URLs specially under WSL. */
 const fileUrlToLocalPath = (value: string, platform: Platform): string | undefined => {
   let fileUrl
 
@@ -144,6 +154,7 @@ const fileUrlToLocalPath = (value: string, platform: Platform): string | undefin
   }
 }
 
+/** Runs a clipboard helper without a shell and returns UTF-8 stdout, or an empty string on failure. */
 const execFileText = async (command: string, args: string[]): Promise<string> => {
   return await new Promise<string>(resolve => {
     execFile(command, args, { encoding: 'utf8', windowsHide: true }, (error, stdout) => {
@@ -154,6 +165,7 @@ const execFileText = async (command: string, args: string[]): Promise<string> =>
   })
 }
 
+/** Reads raw clipboard text through PowerShell with UTF-8 output. */
 const getWindowsClipboardText = async (command = 'powershell'): Promise<string> => {
   const script = [
     '[console]::OutputEncoding = New-Object System.Text.UTF8Encoding',
@@ -172,6 +184,7 @@ const getWindowsClipboardText = async (command = 'powershell'): Promise<string> 
   ])
 }
 
+/** Reads text with the platform clipboard helper, selecting Wayland or X11 tools on Linux. */
 const getClipboardText = async (platform: Platform): Promise<string> => {
   switch (platform) {
     case 'darwin':
@@ -201,12 +214,14 @@ const getClipboardText = async (platform: Platform): Promise<string> => {
   }
 }
 
+/** Converts Windows absolute paths with wslpath, retaining the input when conversion yields no output. */
 const convertWindowsPathToWsl = async (filePath: string): Promise<string> => {
   if (!isWindowsAbsolutePath(filePath)) return filePath
 
   return (await execFileText('wslpath', ['-u', '-a', filePath])).trim() || filePath
 }
 
+/** Resolves clipboard file URLs and converts Windows paths when running under WSL. */
 const normalizeClipboardFilePath = async (filePath: string, platform: Platform): Promise<string> => {
   let normalizedPath = fileUrlToLocalPath(filePath, platform) || filePath
 
@@ -217,6 +232,10 @@ const normalizeClipboardFilePath = async (filePath: string, platform: Platform):
   return normalizedPath
 }
 
+/**
+ * Resolves a single pasted clipboard path to an existing local file when image extraction is
+ * unavailable.
+ */
 const getClipboardTextFilePath = async (platform: Platform): Promise<string | undefined> => {
   const clipboardText = await getClipboardText(platform)
   let filePath = getSingleClipboardTextLine(clipboardText)
@@ -229,11 +248,19 @@ const getClipboardTextFilePath = async (platform: Platform): Promise<string | un
   return getExistingClipboardFilePath(filePath)
 }
 
+/** Recognizes missing-tool sentinel messages emitted by the Linux clipboard script. */
 const isLinuxClipboardToolMissing = (platform: Platform, imgPath: string): boolean => {
   return platform === 'linux' && ['no xclip', 'no wl-clipboard', 'no xclip or wl-clipboard'].includes(imgPath)
 }
 
 // Thanks to vs-picgo: https://github.com/Spades-S/vs-picgo/blob/master/src/extension.ts
+/**
+ * Extracts a clipboard image or resolves a clipboard file path using platform-specific helpers.
+ *
+ * @returns The selected path and whether it belongs to the user and must be retained; imgPath may be
+ * `no image`.
+ * @throws If required Linux clipboard tools are missing or the returned image path does not exist.
+ */
 const getClipboardImage = async (ctx: IPicGo): Promise<IClipboardImage> => {
   createImageFolder(ctx)
   // add an clipboard image folder to control the image cache file

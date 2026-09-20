@@ -14,6 +14,7 @@ function createMockCtx(initialConfig: Record<string, any> = {}): IPicGo {
     return path.split('.').reduce((acc, key) => acc?.[key], obj)
   }
 
+  /** Applies a dotted-path update to the in-memory fixture store, creating missing parent objects. */
   function setByPath(obj: any, path: string, value: any): void {
     const keys = path.split('.')
     const last = keys.pop()!
@@ -279,6 +280,7 @@ describe('ConfigManager', () => {
   // --- getConfigByName ---
 
   describe('secondary uploader synchronization', () => {
+    /** Points secondary-upload settings at a selected fixture profile for synchronization tests. */
     const selectSecondary = (uploader: string, config: IConfigItem, enabled = true) => {
       ctx.saveConfig({
         'picBed.secondUploader': uploader,

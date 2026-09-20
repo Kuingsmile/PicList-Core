@@ -2,6 +2,7 @@ import { IPicGo, IPlugin } from '../../types'
 
 type actionFunc = (plugins: string[], program: any) => void
 
+/** Registers a plugin-management command with its alias and optional npm proxy/registry flags. */
 const createCommand = (
   ctx: IPicGo,
   command: string,
@@ -21,6 +22,7 @@ const createCommand = (
 }
 
 const pluginHandler: IPlugin = {
+  /** Registers CLI commands for listing, installing, uninstalling, and updating plugin packages. */
   handle: (ctx: IPicGo) => {
     createCommand(ctx, 'list', ctx.i18n.t('CLI_LIST'), 'ls', () => {
       ctx.pluginHandler

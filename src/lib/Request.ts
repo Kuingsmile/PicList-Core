@@ -20,6 +20,7 @@ import type {
 import { IBusEvent } from '../utils/enum'
 import { eventBus } from '../utils/eventBus'
 
+/** Default compatibility agent restricted to TLS 1.2 with certificate verification disabled. */
 const httpsAgent = new https.Agent({
   maxVersion: 'TLSv1.2',
   minVersion: 'TLSv1.2',
@@ -27,6 +28,7 @@ const httpsAgent = new https.Agent({
 })
 
 // thanks for https://github.dev/request/request/blob/master/index.js
+/** Appends a multipart value, unpacking legacy value/options descriptors when supplied. */
 function appendFormData(form: FormData, key: string, data: any): void {
   if (typeof data === 'object' && 'value' in data && 'options' in data) {
     form.append(key, data.value, data.options)
@@ -35,6 +37,10 @@ function appendFormData(form: FormData, key: string, data: any): void {
   }
 }
 
+/**
+ * Converts legacy proxy, multipart, body, and query options into Axios options and marks legacy
+ * requests.
+ */
 function requestInterceptor(options: IOldReqOptions | AxiosRequestConfig): AxiosRequestConfig & {
   __isOldOptions?: boolean
 } {
@@ -103,6 +109,7 @@ function requestInterceptor(options: IOldReqOptions | AxiosRequestConfig): Axios
   return opt
 }
 
+/** Adds request-compatible statusCode and body aliases to an Axios response. */
 function responseInterceptor(response: AxiosResponse): IFullResponse {
   return {
     ...response,
@@ -111,6 +118,7 @@ function responseInterceptor(response: AxiosResponse): IFullResponse {
   }
 }
 
+/** Rejects with normalized request metadata and a legacy-compatible response body. */
 function responseErrorHandler(error: any) {
   const errorObj = {
     method: error?.config?.method?.toUpperCase() || '',
@@ -127,10 +135,14 @@ function responseErrorHandler(error: any) {
   return Promise.reject(errorObj)
 }
 
+/** HTTP adapter that preserves legacy request options while using Axios and live proxy settings. */
 export class Request implements IRequest {
   private readonly ctx: IPicGo
+  /** Cached proxy setting updated by configuration-change events. */
   private proxy: Undefinable<string> = ''
+  /** Mutable Axios defaults applied to each request before call-specific options are merged. */
   options: AxiosRequestConfig<any> = {}
+  /** Loads proxy settings and subscribes to later configuration changes. */
   constructor(ctx: IPicGo) {
     this.ctx = ctx
     this.init()
@@ -148,6 +160,7 @@ export class Request implements IRequest {
     })
   }
 
+  /** Seeds the cached proxy from the client configuration. */
   private init(): void {
     const proxy = this.ctx.getConfig<Undefinable<string>>('picBed.proxy')
     if (proxy) {
@@ -155,6 +168,10 @@ export class Request implements IRequest {
     }
   }
 
+  /**
+   * Converts the configured proxy URL to Axios options, or disables proxying for an absent or invalid
+   * URL.
+   */
   private handleProxy(): AxiosRequestConfig['proxy'] | false {
     if (this.proxy) {
       try {
@@ -172,6 +189,16 @@ export class Request implements IRequest {
   }
 
   // #64 dynamic get proxy value
+  /**
+   * Executes a request using current proxy settings and legacy-option compatibility.
+   *
+   * @param options - Axios or legacy request options; resolveWithFullResponse selects response
+   * metadata.
+   * @returns The response body or full response according to the supplied options.
+   * @remarks
+   * Legacy requests without a json option stringify the response body. Failures reject with normalized
+   * request metadata rather than the original Axios error.
+   */
   request<
     T,
     U extends (IRequestConfig<U> extends IOldReqOptions

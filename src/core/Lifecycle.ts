@@ -52,6 +52,7 @@ const MESSAGES = {
   DOWNLOAD_TTF_SKIP: 'Download ttf file failed, skip add watermark',
 } as const
 
+/** Lifecycle progress percentages, with a negative sentinel indicating failure. */
 const PROGRESS = {
   START: 0,
   TRANSFORM: 30,
@@ -60,6 +61,7 @@ const PROGRESS = {
   FAILED: -1,
 } as const
 
+/** Archive extensions excluded from image processing unless a configured list overrides them. */
 const DEFAULT_SKIP_EXTENSIONS = ['zip', 'rar', '7z', 'tar', 'gz', 'tar.gz', 'tar.bz2', 'tar.xz']
 const TTF_FILE_URL = 'https://release.piclist.cn/simhei.ttf'
 const DEFAULT_UPLOADER = 'smms'
@@ -67,12 +69,14 @@ const DEFAULT_UPLOADER = 'smms'
 const getBuildInListItem = (buildInList: IBuildInListItem[], id: string): IBuildInListItem | undefined =>
   buildInList.find(item => item.id === id)
 
+/** Selects uploader-specific exclusions before global exclusions, falling back to archive defaults. */
 const resolveSkipProcessExtList = (idSpecificExtList?: string, globalExtList?: string): string[] => {
   if (idSpecificExtList) return idSpecificExtList.split(',').map((item: string) => item.trim())
   if (globalExtList) return globalExtList.split(',').map((item: string) => item.trim())
   return DEFAULT_SKIP_EXTENSIONS
 }
 
+/** Normalizes configured extensions into lowercase, dot-prefixed values for exact membership checks. */
 const createSkipExtensionSet = (extensions: string[]): Set<string> =>
   new Set(
     extensions.map((item: string) => {
@@ -81,16 +85,19 @@ const createSkipExtensionSet = (extensions: string[]): Set<string> =>
     }),
   )
 
+/** Uses the filename extension when present, otherwise identifies supported image bytes. */
 const getLocalFileExtension = (filePath: string, fileBuffer: Buffer): string => {
   const extFromPath = path.extname(filePath)
   if (extFromPath) return extFromPath
   return getImageTypeByMagicNumber(fileBuffer) || extFromPath
 }
 
+/** Coordinates preprocessing, plugin stages, upload events, and temporary-file ownership. */
 export class Lifecycle extends EventEmitter {
   private readonly ctx: IPicGo
   ttfPath: string
 
+  /** Binds the lifecycle to its client and prepares image-processing directories. */
   constructor(ctx: IPicGo) {
     super()
     this.ctx = ctx
@@ -98,6 +105,7 @@ export class Lifecycle extends EventEmitter {
     this.initializeDirs()
   }
 
+  /** Creates image staging directories and clears processed files when secondary uploads are disabled. */
   private initializeDirs(): void {
     ensureDirSync(path.join(this.ctx.baseDir, 'imgTemp'))
     const enableSecondUploader = this.ctx.getConfig<Undefinable<boolean>>('settings.enableSecondUploader') || false
@@ -106,6 +114,7 @@ export class Lifecycle extends EventEmitter {
     }
   }
 
+  /** Ensures the default watermark font exists, returning false and logging when download fails. */
   private async downloadTTF(): Promise<boolean> {
     try {
       ensureDirSync(path.dirname(this.ttfPath))
@@ -122,6 +131,9 @@ export class Lifecycle extends EventEmitter {
     }
   }
 
+  /**
+   * Combines global and uploader-profile processing options and normalizes format-conversion mappings.
+   */
   private getProcessingOptions(ctx: IPicGo): {
     compressOptions: Undefinable<IBuildInCompressOptions>
     watermarkOptions: Undefinable<IBuildInWaterMarkOptions>
@@ -166,6 +178,7 @@ export class Lifecycle extends EventEmitter {
     return { compressOptions: treatedCompressOptions, watermarkOptions: treatedWatermarkOptions }
   }
 
+  /** Resolves the selected uploader and profile, falling back to the legacy selector and then SM.MS. */
   getUploaderType(ctx: IPicGo): {
     picBed: string
     id: string
@@ -180,6 +193,7 @@ export class Lifecycle extends EventEmitter {
     return { picBed, id, config: picBedConfig }
   }
 
+  /** Builds the effective image-processing exclusion set for the selected uploader profile. */
   private getSkipExtensions(ctx: IPicGo): Set<string> {
     const skipProcessGlobal = ctx.getConfig<Undefinable<IBuildInSkipProcessOptions>>('buildIn.skipProcess') || {}
     const buildInList = ctx.getConfig<Undefinable<IBuildInListItem[]>>('buildIn.list') || ([] as IBuildInListItem[])
@@ -194,6 +208,13 @@ export class Lifecycle extends EventEmitter {
   }
 
   // Main lifecycle methods
+  /**
+   * Runs an action and removes its registered temporary directories even when it fails.
+   *
+   * @param action - Receives a mutable directory list; append only directories owned by this
+   * operation.
+   * @returns The action result; cleanup failures are logged without replacing it.
+   */
   async withTempFileCleanup<T>(action: (tempDirs: string[]) => Promise<T>): Promise<T> {
     const tempDirs: string[] = []
     try {
@@ -211,6 +232,16 @@ export class Lifecycle extends EventEmitter {
     }
   }
 
+  /**
+   * Runs an upload lifecycle using a derived context and returns its resulting state.
+   *
+   * @param input - Inputs for the configured transformer, or processed image records when skipping
+   * processing.
+   * @param skipProcess - Reuses processed records and runs only upload and after-upload stages.
+   * @param tempDirs - Optional shared directory list whose caller owns cleanup; omitted for automatic
+   * cleanup.
+   * @returns The derived context, including partial output on failure unless debug mode rethrows.
+   */
   async start(input: any[], skipProcess = false, tempDirs?: string[]): Promise<IPicGo> {
     // Secondary uploads share ownership until all upload hooks and scripts finish.
     if (!tempDirs) return this.withTempFileCleanup(dirs => this.start(input, skipProcess, dirs))
@@ -231,6 +262,7 @@ export class Lifecycle extends EventEmitter {
     }
   }
 
+  /** Resets per-upload arrays and snapshots original inputs on a derived context. */
   private initializeContext(ctx: IPicGo, input: any[]): void {
     ctx.input = [...input]
     ctx.output = [] as IImgInfo[]
@@ -239,6 +271,7 @@ export class Lifecycle extends EventEmitter {
     ctx.rawInput = cloneDeep(input)
   }
 
+  /** Uploads already processed records and runs upload and after-upload scripts and hooks. */
   private async handleSkipProcess(ctx: IPicGo): Promise<IPicGo> {
     const handler = new ScriptHandler(ctx)
     await handler.refreshCache()
@@ -251,6 +284,7 @@ export class Lifecycle extends EventEmitter {
     return ctx
   }
 
+  /** Runs processing, transformation, renaming, upload, and corresponding script stages in order. */
   private async executeLifecycle(ctx: IPicGo, tempDirs: string[]): Promise<IPicGo> {
     const handler = new ScriptHandler(ctx)
     await handler.refreshCache()
@@ -272,6 +306,7 @@ export class Lifecycle extends EventEmitter {
     return ctx
   }
 
+  /** Emits failure events and logs the error, rethrowing only when debug mode is enabled. */
   private handleError(ctx: IPicGo, error: any): IPicGo {
     ctx.log.warn(IBuildInEvent.FAILED)
     ctx.emit(IBuildInEvent.UPLOAD_PROGRESS, PROGRESS.FAILED)
@@ -285,6 +320,7 @@ export class Lifecycle extends EventEmitter {
   }
 
   // Processing methods
+  /** Resolves processing settings, announces progress, and prepares processed files or source paths. */
   private async preprocess(ctx: IPicGo, tempDirs: string[]): Promise<IPicGo> {
     const { compressOptions, watermarkOptions } = this.getProcessingOptions(ctx)
     const skipExtensions = this.getSkipExtensions(ctx)
@@ -302,12 +338,14 @@ export class Lifecycle extends EventEmitter {
     return ctx
   }
 
+  /** Retains original input paths when no image-processing pass is required. */
   private initializeRawInputPaths(ctx: IPicGo): void {
     for (const item of ctx.input) {
       ctx.rawInputPath.push(item)
     }
   }
 
+  /** Processes inputs concurrently in isolated temporary directories and logs individual failures. */
   private async processImages(
     ctx: IPicGo,
     tempFilePath: string,
@@ -334,6 +372,10 @@ export class Lifecycle extends EventEmitter {
     }
   }
 
+  /**
+   * Loads a local or remote input, applies eligible processing, and replaces its path when bytes
+   * change.
+   */
   private async processImage(
     item: string,
     index: number,
@@ -380,6 +422,11 @@ export class Lifecycle extends EventEmitter {
     }
   }
 
+  /**
+   * Applies compression before watermarking, or strips EXIF when no prior step produced output.
+   *
+   * @returns Processed bytes, or undefined when processing produced no replacement.
+   */
   private async applyProcessing(
     fileBuffer: Buffer,
     extension: string,
@@ -419,6 +466,7 @@ export class Lifecycle extends EventEmitter {
     return transformedBuffer
   }
 
+  /** Ensures a font is available for text watermarks and returns undefined if font setup fails. */
   private async addWatermark(
     fileBuffer: Buffer,
     watermarkOptions: IBuildInWaterMarkOptions,
@@ -436,6 +484,7 @@ export class Lifecycle extends EventEmitter {
     return await imageAddWaterMark(fileBuffer, watermarkOptions, this.ttfPath, ctx.log)
   }
 
+  /** Compresses or converts an image, routing local HEIC and HEIF files through JPEG conversion. */
   private async compressImage(
     fileBuffer: Buffer,
     transformedBuffer: Buffer | undefined,
@@ -455,6 +504,7 @@ export class Lifecycle extends EventEmitter {
     return await imageCompress(transformedBuffer ?? fileBuffer, compressOptions, extension, ctx.log)
   }
 
+  /** Converts HEIC bytes to JPEG, stages the intermediate file, and applies compression settings. */
   private async convertHeicAndCompress(
     fileBuffer: Buffer,
     item: string,
@@ -469,6 +519,7 @@ export class Lifecycle extends EventEmitter {
     return await imageCompress(convertedBuffer, compressOptions, '.jpg', ctx.log)
   }
 
+  /** Converts HEIC to JPEG with Sharp, falling back to heic-convert if Sharp fails. */
   private async convertHeicToJpegBuffer(fileBuffer: Buffer): Promise<Buffer> {
     try {
       return await sharp(fileBuffer, { animated: true })
@@ -486,6 +537,7 @@ export class Lifecycle extends EventEmitter {
     }
   }
 
+  /** Writes processed bytes under the converted filename and updates lifecycle input and source paths. */
   private async saveProcessedImage(
     item: string,
     index: number,
@@ -509,11 +561,13 @@ export class Lifecycle extends EventEmitter {
     ctx.input[index] = tempFile
   }
 
+  /** Derives a remote image basename, falling back to the current timestamp when none is available. */
   private getFileBaseName(info: IPathTransformedImgInfo): string {
     return info.fileName ? path.basename(info.fileName, path.extname(info.fileName)) : new Date().getTime().toString()
   }
 
   // Rename functionality
+  /** Applies merged rename rules while preserving the association with each original input. */
   private async buildInRename(ctx: IPicGo): Promise<IPicGo> {
     const uploaderType = this.getUploaderType(ctx)
     const globalRenameConfig = ctx.getConfig<any>('buildIn.rename') || {}
@@ -546,11 +600,13 @@ export class Lifecycle extends EventEmitter {
     return ctx
   }
 
+  /** Awaits all registered hooks that prepare inputs before transformation. */
   private async beforeTransform(ctx: IPicGo): Promise<IPicGo> {
     await this.handlePlugins(ctx.helper.beforeTransformPlugins, ctx)
     return ctx
   }
 
+  /** Runs the selected transformer, falling back to the built-in path transformer if unavailable. */
   private async doTransform(ctx: IPicGo): Promise<IPicGo> {
     ctx.emit(IBuildInEvent.UPLOAD_PROGRESS, PROGRESS.TRANSFORM)
     const type = ctx.getConfig<Undefinable<string>>('picBed.transformer') || 'path'
@@ -568,6 +624,7 @@ export class Lifecycle extends EventEmitter {
     return ctx
   }
 
+  /** Announces upload preparation and awaits all before-upload hooks. */
   private async beforeUpload(ctx: IPicGo): Promise<IPicGo> {
     ctx.emit(IBuildInEvent.UPLOAD_PROGRESS, PROGRESS.UPLOAD)
     ctx.log.info('Before upload')
@@ -576,6 +633,7 @@ export class Lifecycle extends EventEmitter {
     return ctx
   }
 
+  /** Runs the selected uploader or SM.MS fallback and records its type on each output image. */
   private async doUpload(ctx: IPicGo): Promise<IPicGo> {
     const uploaderType = this.getUploaderType(ctx)
     let uploader = ctx.helper.uploader.get(uploaderType.picBed)
@@ -597,6 +655,7 @@ export class Lifecycle extends EventEmitter {
     return ctx
   }
 
+  /** Runs final hooks, removes image payloads, emits completion, and logs uploaded URLs. */
   private async afterUpload(ctx: IPicGo): Promise<IPicGo> {
     ctx.emit(IBuildInEvent.AFTER_UPLOAD, ctx)
     ctx.emit(IBuildInEvent.UPLOAD_PROGRESS, 100)
@@ -620,6 +679,10 @@ export class Lifecycle extends EventEmitter {
   }
 
   // Plugin handling
+  /**
+   * Runs a lifecycle stage's hooks concurrently and waits for every hook before rethrowing the first
+   * failure.
+   */
   private async handlePlugins(lifeCyclePlugins: ILifecyclePlugins, ctx: IPicGo): Promise<IPicGo> {
     const plugins = lifeCyclePlugins.getList()
     const pluginNames = lifeCyclePlugins.getIdList()

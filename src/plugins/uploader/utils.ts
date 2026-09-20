@@ -1,5 +1,6 @@
 import { IPicGo } from '../../types'
 
+/** Normalizes repeated and boundary slashes with configurable leading, trailing, and root behavior. */
 export function formatPathHelper({
   path,
   startSlash = false,
@@ -18,6 +19,7 @@ export function formatPathHelper({
   return `${startSlash ? '/' : ''}${cleanPath}${endSlash ? '/' : ''}`
 }
 
+/** Encodes individual path segments while preserving separators and collapsing repeated slashes. */
 export function encodePath(path: string): string {
   return path
     .replace(/\/{2,}/g, '/')
@@ -26,6 +28,7 @@ export function encodePath(path: string): string {
     .join('/')
 }
 
+/** Stable registry IDs shared by built-in uploaders, configuration paths, and selection UIs. */
 export const buildInUploaderNames = {
   advancedplist: 'advancedplist',
   alistplist: 'alistplist',
@@ -44,11 +47,13 @@ export const buildInUploaderNames = {
   webdavplist: 'webdavplist',
 }
 
+/** Copies property descriptors so lazy translated getters remain live on the resulting form field. */
 const applyExtraDescriptors = <T extends Record<string, any>>(field: T, extras?: any): T => {
   if (!extras) return field
   return Object.defineProperties(field, Object.getOwnPropertyDescriptors(extras))
 }
 
+/** Builds a configuration field with lazy translated labels and descriptor-preserving overrides. */
 export const createField = (
   ctx: IPicGo,
   picBedName: string,

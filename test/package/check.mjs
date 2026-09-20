@@ -8,10 +8,15 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import spawn from 'cross-spawn'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
+/** Dedicated package-consumer sandbox owned by this check and removed in its final cleanup. */
 const temporary = mkdtempSync(path.join(tmpdir(), 'piclist-package-'))
 const consumer = path.join(temporary, 'consumer')
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
 
+/**
+ * Runs npm with captured stdout and inherited stderr, asserting successful completion before returning
+ * output.
+ */
 function runNpm(args, cwd) {
   const result = spawn.sync('npm', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] })
   if (result.error) throw result.error

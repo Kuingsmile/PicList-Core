@@ -10,6 +10,7 @@ import { buildInUploaderNames, createField, encodePath, formatPathHelper } from 
 const getCurrentUTCDate = (): string => new Date().toUTCString()
 
 // generate OSS signature
+/** Signs the OSS PUT method, content type, date, and resource path with the configured secret. */
 const generateSignature = (options: IAliyunConfig, fileName: string, date: string): string => {
   const mimeType = mime.getType(fileName) || 'application/octet-stream'
   const signString = `PUT\n\n${mimeType}\n${date}\n/${options.bucket}/${options.path}${fileName}`
@@ -17,6 +18,7 @@ const generateSignature = (options: IAliyunConfig, fileName: string, date: strin
   return `OSS ${options.accessKeyId}:${signature}`
 }
 
+/** Builds a signed OSS upload request with encoded path segments and the image content type. */
 const postOptions = (
   options: IAliyunConfig,
   fileName: string,
@@ -36,6 +38,7 @@ const postOptions = (
   resolveWithFullResponse: true,
 })
 
+/** Uploads image records to OSS, assigns public URLs, and removes payloads after successful requests. */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const aliYunOptions = getAndCheckConfig<IAliyunConfig>(ctx, 'picBed.aliyun', ['accessKeyId', 'accessKeySecret'])
 
@@ -73,6 +76,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   }
 }
 
+/** Builds the Aliyun OSS configuration form using saved values and localized field labels. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IAliyunConfig>('picBed.aliyun') || {}
   return [
@@ -107,6 +111,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   ]
 }
 
+/** Registers the built-in Aliyun OSS uploader and its configuration form on the client. */
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.aliyun, {
     get name() {

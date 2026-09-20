@@ -3,6 +3,7 @@ import sharp from 'sharp'
 import type { IBuildInCompressOptions, IBuildInWaterMarkOptions, ILogger } from '../../types'
 import { forceNumber, safeParse } from './config'
 
+/** Rejects absent or empty settings and nonpositive numbers before enabling processing operations. */
 const validParam = (...params: any[]): boolean => {
   return params.every(param => {
     if (param === undefined || param === null) return false
@@ -13,6 +14,7 @@ const validParam = (...params: any[]): boolean => {
   })
 }
 
+/** Format names accepted by conversion settings before dispatching to Sharp. */
 const availableConvertFormatList = [
   'avif',
   'dz',
@@ -37,6 +39,7 @@ const availableConvertFormatList = [
   'webp',
 ]
 
+/** Recognized image extensions eligible for processing, subject to operation-specific exclusions. */
 const imageFormatList = [
   'jpg',
   'jpeg',
@@ -58,6 +61,7 @@ const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
 const riffHeader = 'RIFF'
 const webpHeader = 'WEBP'
 
+/** Bounds of an ISO base media box in the buffer used to parse it; end is exclusive. */
 interface BmffBox {
   type: string
   start: number
@@ -67,17 +71,20 @@ interface BmffBox {
   end: number
 }
 
+/** Half-open byte interval in the original image buffer. */
 interface BmffInterval {
   start: number
   end: number
 }
 
+/** One item-data extent with a stored index, base-relative offset, and byte length. */
 interface IlocExtent {
   index: number
   offset: number
   length: number
 }
 
+/** Item location metadata retaining the original construction-method field for serialization. */
 interface IlocEntry {
   itemId: number
   constructionMethod: number
@@ -87,6 +94,7 @@ interface IlocEntry {
   extents: IlocExtent[]
 }
 
+/** Parsed item locations and encoded integer widths required to rebuild an iloc box. */
 interface IlocParseResult {
   version: number
   flags: Buffer
@@ -97,6 +105,7 @@ interface IlocParseResult {
   entries: IlocEntry[]
 }
 
+/** Item-information entries retained after identifying EXIF item IDs. */
 interface IinfParseResult {
   version: number
   flags: Buffer
@@ -105,13 +114,19 @@ interface IinfParseResult {
   exifItemIds: Set<number>
 }
 
+/** EXIF byte ranges and a deferred metadata builder that accepts relocated file positions. */
 interface HeifMetaRemovalPlan {
   removedIntervals: BmffInterval[]
+  /**
+   * Rebuilds metadata after removing EXIF entries and rewrites item locations using the supplied
+   * position mapper.
+   */
   buildMeta: (shiftPosition: (position: number) => number) => Buffer | undefined
 }
 
 const validOutputFormat = (format: string): boolean => availableConvertFormatList.includes(format)
 
+/** Coerces numeric processing settings and supplies defaults, parsing JSON conversion maps if needed. */
 function formatOptions(options: IBuildInCompressOptions): IBuildInCompressOptions {
   const formatConvertObj =
     typeof options.formatConvertObj === 'string' ? safeParse(options.formatConvertObj) : options.formatConvertObj
@@ -137,6 +152,7 @@ function formatOptions(options: IBuildInCompressOptions): IBuildInCompressOption
 
 type SharpFormatOptions = NonNullable<Parameters<sharp.Sharp['toFormat']>[1]>
 
+/** Builds encoder settings, selecting AV1 compression for HEIF output. */
 function getSharpFormatOptions(format: string, quality: number): SharpFormatOptions {
   if (format === 'heif') {
     return {
@@ -150,6 +166,7 @@ function getSharpFormatOptions(format: string, quality: number): SharpFormatOpti
   }
 }
 
+/** Rounds valid lossy-quality settings into 1–100, defaulting to 100. */
 function getOutputQuality(qualityOption: number | undefined): number {
   if (validParam(qualityOption) && qualityOption! < 100) {
     return Math.min(Math.max(Math.round(qualityOption!), 1), 100)
@@ -157,6 +174,7 @@ function getOutputQuality(qualityOption: number | undefined): number {
   return 100
 }
 
+/** Scales both dimensions by the configured percentage when dimensions and percentage are available. */
 async function applyPercentResize(image: sharp.Sharp, options: IBuildInCompressOptions): Promise<sharp.Sharp> {
   if (!options.isReSizeByPercent || !validParam(options.reSizePercent)) return image
 
@@ -172,6 +190,7 @@ async function applyPercentResize(image: sharp.Sharp, options: IBuildInCompressO
   )
 }
 
+/** Applies exact dimensions or proportional single-edge resizing with optional enlargement avoidance. */
 async function applyDimensionResize(image: sharp.Sharp, options: IBuildInCompressOptions): Promise<sharp.Sharp> {
   if (options.isReSizeByPercent || !options.isReSize) return image
 
@@ -214,10 +233,12 @@ async function applyDimensionResize(image: sharp.Sharp, options: IBuildInCompres
   return image
 }
 
+/** Chooses percentage resizing before explicit-dimension resizing. */
 async function applyResizeOptions(image: sharp.Sharp, options: IBuildInCompressOptions): Promise<sharp.Sharp> {
   return options.isReSizeByPercent ? applyPercentResize(image, options) : applyDimensionResize(image, options)
 }
 
+/** Adds configured rotation, vertical flip, and horizontal flip operations to the Sharp pipeline. */
 function applyTransformOptions(image: sharp.Sharp, options: IBuildInCompressOptions): sharp.Sharp {
   if (options.isRotate && options.rotateDegree) {
     image = image.rotate(options.rotateDegree, {
@@ -233,6 +254,7 @@ function applyTransformOptions(image: sharp.Sharp, options: IBuildInCompressOpti
   return image
 }
 
+/** Selects conversion output or re-encodes the original supported format, falling back to JPEG. */
 function applyOutputFormat(
   image: sharp.Sharp,
   options: IBuildInCompressOptions,
@@ -254,6 +276,15 @@ function applyOutputFormat(
   })
 }
 
+/**
+ * Resizes, transforms, and encodes supported images according to normalized processing settings.
+ *
+ * @param img - Original image bytes.
+ * @param options - Compression, resizing, rotation, and format-conversion settings.
+ * @param rawFormat - Source extension, with or without a leading dot.
+ * @param logger - Receives processing errors before they are rethrown.
+ * @returns Processed bytes, or the original buffer for GIF and unsupported extensions.
+ */
 export async function imageCompress(
   img: Buffer,
   options: IBuildInCompressOptions,
@@ -277,14 +308,20 @@ export async function imageCompress(
   }
 }
 
+/** Lowercases an image extension and removes its dot for format comparisons. */
 const normalizeImageExt = (ext: string): string => {
   return ext.toLowerCase().replace('.', '')
 }
 
+/** Recognizes JPEG markers that carry no length-prefixed segment payload. */
 function isJpegStandaloneMarker(marker: number): boolean {
   return marker === 0x01 || marker === 0xd9 || (marker >= 0xd0 && marker <= 0xd7)
 }
 
+/**
+ * Removes EXIF-bearing APP1 segments before scan data without re-encoding pixels; malformed segments
+ * retain the input.
+ */
 function stripJpegExif(img: Buffer): Buffer {
   if (img.length < 4 || img[0] !== 0xff || img[1] !== 0xd8) return img
 
@@ -342,6 +379,10 @@ function stripJpegExif(img: Buffer): Buffer {
   return removed ? Buffer.concat(chunks) : img
 }
 
+/**
+ * Drops PNG eXIf chunks while retaining other bytes; incomplete chunk structure returns the original
+ * buffer.
+ */
 function stripPngExif(img: Buffer): Buffer {
   if (img.length < pngSignature.length + 12 || !img.subarray(0, pngSignature.length).equals(pngSignature)) return img
 
@@ -375,6 +416,7 @@ function stripPngExif(img: Buffer): Buffer {
   return img
 }
 
+/** Drops EXIF chunks and updates the RIFF length, retaining the input if chunk boundaries are invalid. */
 function stripWebpExif(img: Buffer): Buffer {
   if (
     img.length < 12 ||
@@ -414,6 +456,10 @@ function stripWebpExif(img: Buffer): Buffer {
   return output
 }
 
+/**
+ * Reads a big-endian unsigned field up to eight bytes wide; returns undefined for invalid bounds or
+ * unsafe integers.
+ */
 function readUIntOfSize(buffer: Buffer, offset: number, size: number): number | undefined {
   if (size === 0) return 0
   if (size < 0 || size > 8 || offset + size > buffer.length) return undefined
@@ -426,6 +472,10 @@ function readUIntOfSize(buffer: Buffer, offset: number, size: number): number | 
   return Number(value)
 }
 
+/**
+ * Writes a big-endian unsigned field when it fits its encoded width; returns false for unsupported
+ * values or bounds.
+ */
 function writeUIntOfSize(buffer: Buffer, offset: number, size: number, value: number): boolean {
   if (size === 0) return true
   if (size < 0 || size > 8 || offset + size > buffer.length || value < 0 || !Number.isSafeInteger(value)) return false
@@ -441,6 +491,7 @@ function writeUIntOfSize(buffer: Buffer, offset: number, size: number, value: nu
   return true
 }
 
+/** Parses a bounded box header, including extended sizes and boxes extending to the enclosing limit. */
 function readBmffBox(buffer: Buffer, offset: number, limit = buffer.length): BmffBox | undefined {
   if (offset + 8 > limit) return undefined
 
@@ -467,6 +518,10 @@ function readBmffBox(buffer: Buffer, offset: number, limit = buffer.length): Bmf
   }
 }
 
+/**
+ * Parses consecutive boxes covering exactly the supplied byte range, or returns undefined on malformed
+ * data.
+ */
 function parseBmffBoxes(buffer: Buffer, start: number, end: number): BmffBox[] | undefined {
   const boxes: BmffBox[] = []
   let offset = start
@@ -481,6 +536,7 @@ function parseBmffBoxes(buffer: Buffer, start: number, end: number): BmffBox[] |
   return offset === end ? boxes : undefined
 }
 
+/** Wraps a payload in a standard eight-byte box header with a 32-bit size. */
 function buildBmffBox(type: string, payload: Buffer): Buffer {
   const output = Buffer.alloc(8 + payload.length)
   output.writeUInt32BE(output.length, 0)
@@ -489,6 +545,10 @@ function buildBmffBox(type: string, payload: Buffer): Buffer {
   return output
 }
 
+/**
+ * Reads the item ID of an EXIF item-information entry, returning undefined for other or unsupported
+ * entries.
+ */
 function parseInfeExifItemId(entry: Buffer): number | undefined {
   const box = readBmffBox(entry, 0)
   if (!box || box.type !== 'infe' || box.end !== entry.length || box.dataStart + 12 > entry.length) return undefined
@@ -504,6 +564,10 @@ function parseInfeExifItemId(entry: Buffer): number | undefined {
   return entry.subarray(itemTypeOffset, itemTypeOffset + 4).toString('ascii') === 'Exif' ? itemId : undefined
 }
 
+/**
+ * Separates EXIF item IDs from retained item-information entries and validates the declared entry
+ * count.
+ */
 function parseIinfForExifRemoval(payload: Buffer): IinfParseResult | undefined {
   if (payload.length < 6) return undefined
 
@@ -543,6 +607,10 @@ function parseIinfForExifRemoval(payload: Buffer): IinfParseResult | undefined {
   }
 }
 
+/**
+ * Rebuilds item information with retained entries and a corrected count, failing if the count cannot
+ * be encoded.
+ */
 function buildIinfBox(plan: IinfParseResult): Buffer | undefined {
   const header = Buffer.alloc(4 + plan.countSize)
   plan.flags.copy(header, 0)
@@ -550,6 +618,7 @@ function buildIinfBox(plan: IinfParseResult): Buffer | undefined {
   return buildBmffBox('iinf', Buffer.concat([header, ...plan.keptEntries]))
 }
 
+/** Parses item locations and variable-width extents, rejecting truncated or unconsumed payload data. */
 function parseIloc(payload: Buffer): IlocParseResult | undefined {
   if (payload.length < 8) return undefined
 
@@ -632,6 +701,7 @@ function parseIloc(payload: Buffer): IlocParseResult | undefined {
   }
 }
 
+/** Resolves EXIF extents to file byte ranges; unsupported references or missing lengths abort removal. */
 function getIlocExifIntervals(parsed: IlocParseResult, exifItemIds: Set<number>): BmffInterval[] | undefined {
   if (parsed.lengthSize === 0) return undefined
 
@@ -651,6 +721,11 @@ function getIlocExifIntervals(parsed: IlocParseResult, exifItemIds: Set<number>)
   return intervals
 }
 
+/**
+ * Relocates file-based item extents after EXIF removal, preserving other reference modes.
+ *
+ * @returns Updated locations, or undefined if the encoded layout cannot represent the relocation.
+ */
 function getShiftedIlocEntry(
   parsed: IlocParseResult,
   entry: IlocEntry,
@@ -684,6 +759,7 @@ function getShiftedIlocEntry(
   }
 }
 
+/** Serializes one location entry using the original field widths, returning undefined on overflow. */
 function buildIlocEntry(parsed: IlocParseResult, entry: IlocEntry): Buffer | undefined {
   const itemIdSize = parsed.version < 2 ? 2 : 4
   const constructionMethodSize = parsed.version === 1 || parsed.version === 2 ? 2 : 0
@@ -722,6 +798,7 @@ function buildIlocEntry(parsed: IlocParseResult, entry: IlocEntry): Buffer | und
   return output
 }
 
+/** Rebuilds item locations without EXIF items and updates remaining file offsets. */
 function buildIlocBox(
   parsed: IlocParseResult,
   exifItemIds: Set<number>,
@@ -748,6 +825,11 @@ function buildIlocBox(
   return buildBmffBox('iloc', Buffer.concat([header, ...entryBuffers]))
 }
 
+/**
+ * Removes references from or to EXIF items and rebuilds surviving references.
+ *
+ * @returns Rebuilt bytes, null when no references remain, or undefined for invalid data.
+ */
 function buildIrefBox(payload: Buffer, exifItemIds: Set<number>): Buffer | null | undefined {
   if (payload.length < 4) return undefined
 
@@ -798,6 +880,7 @@ function buildIrefBox(payload: Buffer, exifItemIds: Set<number>): Buffer | null 
   return buildBmffBox('iref', Buffer.concat([payload.subarray(0, 4), ...keptReferences]))
 }
 
+/** Removes EXIF item-property associations while retaining other encoded association entries. */
 function buildIpmaBox(payload: Buffer, exifItemIds: Set<number>): Buffer | undefined {
   if (payload.length < 8) return undefined
 
@@ -836,6 +919,7 @@ function buildIpmaBox(payload: Buffer, exifItemIds: Set<number>): Buffer | undef
   return buildBmffBox('ipma', Buffer.concat([header, ...keptEntries]))
 }
 
+/** Rebuilds item properties with filtered associations and unchanged unrelated child boxes. */
 function buildIprpBox(payload: Buffer, exifItemIds: Set<number>): Buffer | undefined {
   const children = parseBmffBoxes(payload, 0, payload.length)
   if (!children) return undefined
@@ -854,6 +938,7 @@ function buildIprpBox(payload: Buffer, exifItemIds: Set<number>): Buffer | undef
   return buildBmffBox('iprp', Buffer.concat(childBuffers))
 }
 
+/** Plans EXIF item removal and defers metadata serialization until new file offsets are known. */
 function createHeifMetaRemovalPlan(img: Buffer, metaBox: BmffBox): HeifMetaRemovalPlan | undefined {
   const metaPayload = img.subarray(metaBox.dataStart, metaBox.end)
   if (metaPayload.length < 4) return undefined
@@ -878,6 +963,10 @@ function createHeifMetaRemovalPlan(img: Buffer, metaBox: BmffBox): HeifMetaRemov
 
   return {
     removedIntervals,
+    /**
+     * Rebuilds metadata after removing EXIF entries and rewrites item locations using the supplied
+     * position mapper.
+     */
     buildMeta: (shiftPosition: (position: number) => number): Buffer | undefined => {
       const childBuffers: Buffer[] = []
       for (const child of children) {
@@ -907,6 +996,7 @@ function createHeifMetaRemovalPlan(img: Buffer, metaBox: BmffBox): HeifMetaRemov
   }
 }
 
+/** Sorts byte intervals by position and rejects empty, reversed, or overlapping ranges. */
 function normalizeIntervals(intervals: BmffInterval[]): BmffInterval[] | undefined {
   const sortedIntervals = [...intervals].sort((a, b) => a.start - b.start)
   let previousEnd = -1
@@ -919,6 +1009,7 @@ function normalizeIntervals(intervals: BmffInterval[]): BmffInterval[] | undefin
   return sortedIntervals
 }
 
+/** Creates an offset mapper accounting for metadata-size changes and preceding removed EXIF ranges. */
 function createHeifPositionShift(
   metaBox: BmffBox,
   metaDelta: number,
@@ -935,10 +1026,12 @@ function createHeifPositionShift(
   }
 }
 
+/** Checks whether a removal range lies wholly inside one media-data payload. */
 function isIntervalInsideMdat(interval: BmffInterval, mdatBoxes: BmffBox[]): boolean {
   return mdatBoxes.some(mdatBox => interval.start >= mdatBox.dataStart && interval.end <= mdatBox.end)
 }
 
+/** Rebuilds a media-data box after removing its sorted, nonoverlapping EXIF ranges. */
 function stripIntervalsFromMdat(img: Buffer, mdatBox: BmffBox, intervals: BmffInterval[]): Buffer {
   const mdatIntervals = intervals.filter(interval => interval.start >= mdatBox.dataStart && interval.end <= mdatBox.end)
   if (mdatIntervals.length === 0) return Buffer.from(img.subarray(mdatBox.start, mdatBox.end))
@@ -954,6 +1047,12 @@ function stripIntervalsFromMdat(img: Buffer, mdatBox: BmffBox, intervals: BmffIn
   return buildBmffBox('mdat', Buffer.concat(payloadChunks))
 }
 
+/**
+ * Removes supported HEIF-family EXIF items and relocates remaining item data without re-encoding
+ * pixels.
+ *
+ * @returns The original buffer whenever a safe removal plan or offset rewrite cannot be constructed.
+ */
 function stripHeifExif(img: Buffer): Buffer {
   const boxes = parseBmffBoxes(img, 0, img.length)
   if (!boxes) return img
@@ -968,6 +1067,7 @@ function stripHeifExif(img: Buffer): Buffer {
   const mdatBoxes = boxes.filter(box => box.type === 'mdat')
   if (!removedIntervals || !removedIntervals.every(interval => isIntervalInsideMdat(interval, mdatBoxes))) return img
 
+  /** First serialization used to measure metadata-size changes before adjusting absolute item offsets. */
   const preliminaryMeta = removalPlan.buildMeta(position => position)
   if (!preliminaryMeta) return img
 
@@ -985,6 +1085,9 @@ function stripHeifExif(img: Buffer): Buffer {
   return Buffer.concat(outputBoxes)
 }
 
+/**
+ * Resolves per-extension conversion rules, preserving GIF and substituting JPEG for Imgur WebP output.
+ */
 export function getConvertedFormat(options: IBuildInCompressOptions | undefined, rawFormat: string): string {
   options = formatOptions(options || {})
   rawFormat = normalizeImageExt(rawFormat)
@@ -1006,6 +1109,7 @@ export function getConvertedFormat(options: IBuildInCompressOptions | undefined,
   return newFormat
 }
 
+/** Checks whether watermarking is enabled for a recognized non-SVG image extension. */
 export const isNeedAddWatermark = (
   watermarkOptions: IBuildInWaterMarkOptions | undefined,
   fileExt: string,
@@ -1016,6 +1120,9 @@ export const isNeedAddWatermark = (
   )
 }
 
+/**
+ * Checks whether normalized settings request a transform, resize, quality reduction, or format change.
+ */
 export const isNeedCompress = (compressOptions: IBuildInCompressOptions | undefined, fileExt: string): boolean => {
   if (!imageFormatList.includes(normalizeImageExt(fileExt)) || !compressOptions) return false
 
@@ -1050,6 +1157,14 @@ export const isNeedCompress = (compressOptions: IBuildInCompressOptions | undefi
   return false
 }
 
+/**
+ * Removes supported EXIF metadata without re-encoding image pixels.
+ *
+ * @param img - Original encoded image bytes.
+ * @param fileExt - Source extension, with or without a leading dot.
+ * @returns Updated bytes, or the original buffer for unsupported formats or layouts that cannot be
+ * safely rewritten.
+ */
 export const removeExif = async (img: Buffer, fileExt: string): Promise<Buffer> => {
   fileExt = normalizeImageExt(fileExt)
   if (!imageFormatList.includes(fileExt) || fileExt === 'svg') return img

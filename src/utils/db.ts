@@ -2,9 +2,14 @@ import { JSONStore } from '@piclist/store'
 
 import { IConfig, IPicGo } from '../types'
 
+/** Persistent JSON configuration storage with legacy PicGo defaults and path-based access. */
 class DB {
   private readonly ctx: IPicGo
   private readonly db: JSONStore<IConfig>
+  /**
+   * Opens the configuration store, writes missing uploader/plugin defaults, and refreshes its
+   * contents.
+   */
   constructor(ctx: IPicGo) {
     this.ctx = ctx
     this.db = new JSONStore<IConfig>(this.ctx.configPath)
@@ -36,10 +41,12 @@ class DB {
     this.read(true)
   }
 
+  /** Reads cached configuration, or refreshes it from disk when flush is true. */
   read(flush?: boolean): IConfig {
     return flush ? this.db.refresh() : this.db.read()
   }
 
+  /** Refreshes disk state before reading a path; an empty path returns the whole configuration. */
   getSingle(key = ''): any {
     if (key === '') {
       return this.db.refresh()
@@ -48,7 +55,9 @@ class DB {
     return this.db.get(key)
   }
 
+  /** Refreshes disk state and reads one configuration path. */
   get(key: string): any
+  /** Reads configuration paths in order, refreshing disk state for each lookup. */
   get(key: string[]): any[]
   get(key: string | string[] = ''): any {
     if (Array.isArray(key)) {
@@ -61,6 +70,7 @@ class DB {
     this.db.set(key, value)
   }
 
+  /** Refreshes disk state before checking whether a configuration path exists. */
   has(key: string): boolean {
     this.read(true)
     return this.db.has(key)
@@ -74,6 +84,7 @@ class DB {
     this.db.setMany(config)
   }
 
+  /** Removes the nested entries identified by each key/value pair in the supplied configuration. */
   removeConfig(config: IConfig): void {
     Object.keys(config).forEach((name: string) => {
       this.unset(name, config[name])

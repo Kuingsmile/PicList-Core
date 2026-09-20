@@ -6,6 +6,7 @@ import registerQiniuUploader from '../../../src/plugins/uploader/qiniu'
 
 type RegisterUploader = (ctx: any) => void
 
+/** Captures a registered uploader form and tracks translation-key access for lazy-label assertions. */
 function getRegisteredConfigFields(
   registerUploader: RegisterUploader,
   configKey: string,
@@ -43,6 +44,7 @@ function getRegisteredConfigFields(
   }
 }
 
+/** Projects stable form fields without reading translation getters. */
 function fieldSummary(fields: any[]): { name: string; type: string; default: any; required: boolean }[] {
   return fields.map(field => ({
     name: field.name,

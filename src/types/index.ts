@@ -7,14 +7,22 @@ import type { ConfigManager } from '../utils/configManager'
 import type { IInquirerAdapter } from '../utils/inquirerShim'
 import { IRequestPromiseOptions } from './oldRequest'
 
+/**
+ * Client and per-upload context exposed to plugins, including configuration, lifecycle data, and
+ * shared services.
+ */
 export interface IPicGo extends NodeJS.EventEmitter {
   configPath: string
   baseDir: string
   log: ILogger
   cmd: ICommander
+  /** Image records progressively populated by transformers and uploaders. */
   output: IImgInfo[]
+  /** Inputs for the current stage, potentially replaced with processed temporary paths. */
   input: any[]
+  /** Original inputs captured before lifecycle processing. */
   rawInput: any[]
+  /** Transformed records retained for secondary uploads that share preprocessing. */
   processedInput: any[]
   pluginLoader: IPluginLoader
   pluginHandler: IPluginHandler
@@ -26,21 +34,43 @@ export interface IPicGo extends NodeJS.EventEmitter {
   helper: IHelper
   VERSION: string
   GUI_VERSION?: string
+  /** Bound HTTP adapter supporting Axios and legacy request-style options. */
   request: IRequest['request']
+  /** Source paths indexed by original input position for later filename resolution. */
   rawInputPath: string[]
   i18n: II18nManager
 
+  /**
+   * Reads effective configuration, using the active upload snapshot or saved values plus runtime
+   * overrides.
+   */
   getConfig: <T>(name?: string) => T
+  /** Persists path/value settings and updates effective configuration. */
   saveConfig: (config: IStringKeyMap<any>) => void
+  /** Removes a nested setting from memory and disk unless the root is protected. */
   removeConfig: (key: string, propName: string) => void
+  /**
+   * Applies runtime or upload-local settings without persisting them and emits configuration-change
+   * events.
+   */
   setConfig: (config: IStringKeyMap<any>) => void
+  /**
+   * Removes a nested setting from runtime or upload-local configuration without persisting the change.
+   */
   unsetConfig: (key: string, propName: string) => void
+  /** Uploads transformer inputs or a clipboard image when omitted, returning primary output records. */
   upload: (input?: any[], options?: IUploadOptions) => Promise<IImgInfo[] | Error>
+  /**
+   * Uploads with optional secondary delivery and returns contexts retaining their upload
+   * configuration.
+   */
   uploadReturnCtx: (input?: any[], options?: IUploadOptions) => Promise<IUploadResultWithBackup>
+  /** Persists an uploader configuration and updates both modern and legacy default selectors. */
   changeCurrentUploader: (type: string, config: IStringKeyMap<any>) => void
 }
 
 // plugin config
+/** Configuration field schema consumed by CLI prompts, the terminal UI, and plugin hosts. */
 export interface IPluginConfig {
   name: string
   type: string
@@ -48,14 +78,18 @@ export interface IPluginConfig {
   default?: any
   alias?: string
   message?: string
+  /** Prompt prefix that may be implemented as a getter to follow language changes. */
   prefix?: string // for cli options
   [propName: string]: any
 }
 
 // for lifecycle plugins
 
+/** Named registry of lifecycle handlers with removal grouped by owning plugin package. */
 export interface ILifecyclePlugins {
+  /** Adds a unique handler and attributes it to the current registration owner. */
   register: (id: string, plugin: IPlugin) => void
+  /** Removes handlers belonging to a plugin package rather than a single handler ID. */
   unregister: (id: string) => void
   getName: () => string
   get: (id: string) => IPlugin | undefined
@@ -63,6 +97,7 @@ export interface ILifecyclePlugins {
   getIdList: () => string[]
 }
 
+/** Lifecycle registries shared by the client and its derived upload contexts. */
 export interface IHelper {
   transformer: ILifecyclePlugins
   uploader: ILifecyclePlugins
@@ -71,17 +106,28 @@ export interface IHelper {
   afterUploadPlugins: ILifecyclePlugins
 }
 
+/** Command registry paired with the CLI parser and a replaceable prompt adapter. */
 export interface ICommander extends ILifecyclePlugins {
   program: Command
   inquirer: IInquirerAdapter
 }
 
+/** Loads and caches installed or explicitly supplied plugin interfaces. */
 export interface IPluginLoader {
+  /**
+   * Registers an installed plugin or supplied factory and reports loading failures through client
+   * events.
+   */
   registerPlugin: (name: string, plugin?: IPicGoPlugin) => Promise<void>
+  /** Removes a plugin's handlers, cached interface, and persisted enablement. */
   unregisterPlugin: (name: string) => void
+  /** Returns a cached interface or imports and instantiates the installed plugin. */
   getPlugin: (name: string) => Promise<IPicGoPluginInterface | undefined>
+  /** Returns names of enabled, registered plugins. */
   getList: () => string[]
+  /** Returns discovered plugin names, including disabled plugins. */
   getFullList: () => string[]
+  /** Checks discovery membership, including disabled plugins. */
   hasPlugin: (name: string) => boolean
 }
 
@@ -89,6 +135,7 @@ export interface IRequestOld {
   request: import('axios').AxiosInstance
 }
 
+/** Legacy request-style options accepted by the Axios compatibility adapter. */
 export type IOldReqOptions = Omit<
   IRequestPromiseOptions & {
     url: string
@@ -96,33 +143,36 @@ export type IOldReqOptions = Omit<
   'auth'
 >
 
+/** Legacy options selecting response metadata together with body and statusCode aliases. */
 export type IOldReqOptionsWithFullResponse = IOldReqOptions & {
   resolveWithFullResponse: true
 }
 
+/** Legacy options selecting the decoded response body. */
 export type IOldReqOptionsWithJSON = IOldReqOptions & {
   json: true
 }
 
 /**
- * for PicGo new request api, the response will be json format
+ * Axios options selecting the full response, including data, headers, and compatibility aliases.
  */
 export type IReqOptions<T = any> = AxiosRequestConfig<T> & {
   resolveWithFullResponse: true
 }
 
 /**
- * for PicGo new request api, the response will be Buffer
+ * Full-response options requesting binary data in the response body.
  */
 export type IReqOptionsWithArrayBufferRes<T = any> = IReqOptions<T> & {
   responseType: 'arraybuffer'
 }
 
 /**
- * for PicGo new request api, the response will be just response data. (not statusCode, headers, etc.)
+ * Axios options returning only response data without status or header metadata.
  */
 export type IReqOptionsWithBodyResOnly<T = any> = AxiosRequestConfig<T>
 
+/** Axios response extended with the legacy body and statusCode aliases. */
 export type IFullResponse<T = any, U = any> = AxiosResponse<T, U> & {
   statusCode: number
   body: T
@@ -145,8 +195,10 @@ interface IRequestOptionsWithResponseTypeArrayBuffer {
 }
 
 /**
- * T is the response data type
- * U is the config type
+ * Selects the response shape from full-response, JSON, binary, and legacy request options.
+ *
+ * @typeParam T - Expected decoded response data.
+ * @typeParam U - Request options used to choose the returned shape.
  */
 export type IResponse<T, U> = U extends IRequestOptionsWithFullResponse
   ? IFullResponse<T, U>
@@ -175,9 +227,12 @@ export interface IRequestLibOnlyOptions {
   form?: Record<string, any> | string | undefined
 }
 
+/** Selects legacy or Axios option types based on the request-only fields present in the input. */
 export type IRequestConfig<T> = T extends IRequestLibOnlyOptions ? IOldReqOptions : AxiosRequestConfig
 
+/** Generic HTTP adapter whose response type follows the supplied request options. */
 export interface IRequest {
+  /** Executes a request and returns body data or response metadata according to its option flags. */
   request: <
     T,
     U extends (IRequestConfig<U> extends IOldReqOptions
@@ -192,12 +247,16 @@ export interface IRequest {
 
 export type ILogColor = 'blue' | 'green' | 'yellow' | 'red'
 
+/** Extensible image record passed through transformation, upload, and completion hooks. */
 export interface IImgInfo {
+  /** Encoded image bytes; released by uploaders or lifecycle completion after use. */
   buffer?: Buffer
+  /** Alternative base64-encoded payload used by uploaders that accept base64 input. */
   base64Image?: string
   fileName?: string
   width?: number
   height?: number
+  /** Image extension, normally including its leading dot. */
   extname?: string
   imgUrl?: string
   filePath?: string
@@ -206,6 +265,7 @@ export interface IImgInfo {
   [propName: string]: any
 }
 
+/** File or URL load result with an explicit success flag and optional failure reason in extra fields. */
 export interface IPathTransformedImgInfo extends IImgInfo {
   success: boolean
 }
@@ -502,40 +562,49 @@ export interface IConfig {
  * for an uploader/transformer/beforeTransformHandler/beforeUploadHandler/afterUploadHandler
  */
 export interface IPlugin {
+  /** Runs a lifecycle stage against its context; asynchronous handlers are awaited by the lifecycle. */
   handle: ((ctx: IPicGo) => Promise<any>) | ((ctx: IPicGo) => void)
   name?: string
+  /** Returns the configuration form for this handler using the supplied client context. */
   config?: (ctx: IPicGo) => IPluginConfig[]
   [propName: string]: any
 }
 
 export type IPluginNameType = 'simple' | 'scope' | 'normal' | 'unknown'
 
+/** Normalized plugin installation input and unversioned package identity with a validity flag. */
 export interface IPluginProcessResult {
   success: boolean
   pkgName: string
   fullName: string
 }
 
+/** npm-backed package management and plugin registration operations. */
 export interface IPluginHandler {
   getList: () => Promise<string[]>
+  /** Installs supplied names or paths and registers successful packages on the client. */
   install: (
     plugins: string[],
     options: IPluginHandlerOptions,
     env?: IProcessEnv,
   ) => Promise<IPluginHandlerResult<boolean>>
+  /** Updates resolved plugin packages and reports the operation outcome. */
   update: (
     plugins: string[],
     options: IPluginHandlerOptions,
     env?: IProcessEnv,
   ) => Promise<IPluginHandlerResult<boolean>>
+  /** Uninstalls resolved packages and removes their registered handlers on success. */
   uninstall: (plugins: string[], options?: IPluginHandlerOptions) => Promise<IPluginHandlerResult<boolean>>
 }
 
+/** Plugin operation outcome with package names on success or a message on failure. */
 export interface IPluginHandlerResult<T> {
   success: T
   body: T extends true ? string[] : string
 }
 
+/** Per-operation npm output, proxy, and registry overrides. */
 export interface IPluginHandlerOptions {
   /** Suppress npm output when embedding plugin management in a terminal UI. */
   silent?: boolean
@@ -582,11 +651,13 @@ export interface IPicGoPluginInterface {
   [propName: string]: any
 }
 
+/** Plugin-provided GUI menu action invoked with both core and host GUI APIs. */
 export interface IGuiMenuItem {
   label: string
   handle: (ctx: IPicGo, guiApi: any) => Promise<void>
 }
 
+/** Plugin-provided GUI command with a display label, command name, and shortcut key. */
 export interface ICommandItem {
   label: string
   name: string
@@ -636,14 +707,17 @@ export type ILogArgvTypeWithError = ILogArgvType | Error
 export type Nullable<T> = T | null
 export type Undefinable<T> = T | undefined
 
+/** Client logging API controlled by runtime silence, level, and development settings. */
 export interface ILogger {
   success: (...msg: ILogArgvType[]) => void
   info: (...msg: ILogArgvType[]) => void
   error: (...msg: ILogArgvTypeWithError[]) => void
   warn: (...msg: ILogArgvType[]) => void
+  /** Writes debug messages only in development mode. */
   debug: (...msg: ILogArgvType[]) => void
 }
 
+/** Configuration path and new value emitted on the internal configuration-change bus. */
 export interface IConfigChangePayload<T> {
   configName: string
   value: T
@@ -656,6 +730,7 @@ declare const typedTranslate: TypedTranslate<typeof ZH_CN>
 /** The v3 call signature, with a guaranteed string from our key fallback. */
 export type I18nTranslate = <Key extends ILocalesKey>(...args: Parameters<typeof typedTranslate<Key>>) => string
 
+/** Typed built-in and dynamic plugin translation APIs with runtime locale management. */
 export interface II18nManager {
   /**
    * translate a built-in message with checked keys and placeholder arguments
@@ -690,6 +765,10 @@ export type availableConvertFormat = keyof FormatEnum
 
 export type availableWatermarkPosition = keyof GravityEnum
 
+/**
+ * Global watermark settings with optional maps keyed by uploader type. Profile overrides take
+ * precedence.
+ */
 export interface IBuildInWaterMarkOptions {
   isAddWatermark?: boolean
   isAddWatermarkMap?: Record<string, boolean>
@@ -697,12 +776,14 @@ export interface IBuildInWaterMarkOptions {
   watermarkTypeMap?: Record<string, 'text' | 'image'>
   isFullScreenWatermark?: boolean
   isFullScreenWatermarkMap?: Record<string, boolean>
+  /** Watermark rotation in degrees. */
   watermarkDegree?: number
   watermarkDegreeMap?: Record<string, number>
   watermarkText?: string
   watermarkTextMap?: Record<string, string>
   watermarkFontPath?: string
   watermarkFontPathMap?: Record<string, string>
+  /** Watermark width as a fraction of source image width. */
   watermarkScaleRatio?: number
   watermarkScaleRatioMap?: Record<string, number>
   watermarkColor?: string
@@ -711,11 +792,13 @@ export interface IBuildInWaterMarkOptions {
   watermarkImagePathMap?: Record<string, string>
   watermarkPosition?: availableWatermarkPosition
   watermarkPositionMap?: Record<string, availableWatermarkPosition>
+  /** Image-watermark alpha on a 0–255 scale. */
   watermarkImageOpacity?: number
   watermarkImageOpacityMap?: Record<string, number>
   [propName: string]: any
 }
 
+/** Resolved watermark settings after profile, uploader-map, and global precedence is applied. */
 export interface IBuildInWaterMarkOptionsTreated {
   isAddWatermark?: boolean
   watermarkType?: 'text' | 'image'
@@ -731,7 +814,9 @@ export interface IBuildInWaterMarkOptionsTreated {
   [propName: string]: any
 }
 
+/** Global image-processing settings and optional uploader-keyed maps, overridden by profile settings. */
 export interface IBuildInCompressOptions {
+  /** Encoder quality; values below 100 request quality reduction. */
   quality?: number
   qualityMap?: Record<string, number>
   isConvert?: boolean
@@ -744,12 +829,14 @@ export interface IBuildInCompressOptions {
   reSizeWidthMap?: Record<string, number>
   reSizeHeight?: number
   reSizeHeightMap?: Record<string, number>
+  /** Uses the longer source edge for height-only proportional resizing. */
   longEdgeAsHeight?: boolean
   longEdgeAsHeightMap?: Record<string, boolean>
   skipReSizeOfSmallImg?: boolean
   skipReSizeOfSmallImgMap?: Record<string, boolean>
   isReSizeByPercent?: boolean
   isReSizeByPercentMap?: Record<string, boolean>
+  /** Percentage of original image dimensions used for proportional resizing. */
   reSizePercent?: number
   reSizePercentMap?: Record<string, number>
   isRotate?: boolean
@@ -762,11 +849,13 @@ export interface IBuildInCompressOptions {
   isFlipMap?: Record<string, boolean>
   isFlop?: boolean
   isFlopMap?: Record<string, boolean>
+  /** Source-extension to output-format mapping, supplied as an object or JSON string. */
   formatConvertObj?: any
   formatConvertObjMap?: Record<string, any>
   [propName: string]: any
 }
 
+/** Resolved compression settings after profile, uploader-map, and global precedence is applied. */
 export interface IBuildInCompressOptionsTreated {
   quality?: number
   isConvert?: boolean
@@ -787,11 +876,15 @@ export interface IBuildInCompressOptionsTreated {
   [propName: string]: any
 }
 
+/** Extension exclusions that bypass built-in image processing. */
 export interface IBuildInSkipProcessOptions {
+  /** Comma-separated extensions; matching is case-insensitive and accepts optional leading dots. */
   skipProcessExtList?: string
 }
 
+/** Processing overrides associated with a saved uploader profile ID. */
 export interface IBuildInListItem {
+  /** ID of the saved uploader profile to which these processing overrides apply. */
   id: string
   compress?: Partial<IBuildInCompressOptionsTreated>
   watermark?: Partial<IBuildInWaterMarkOptionsTreated>
@@ -806,6 +899,7 @@ export interface IBuildInListItem {
   manualRename?: boolean
 }
 
+/** Per-call uploader/profile selection that leaves persisted defaults unchanged. */
 export interface IUploadOptions {
   /** Select an uploader for this upload only, without changing saved defaults. */
   picBed?: string
@@ -813,11 +907,14 @@ export interface IUploadOptions {
   configName?: string
 }
 
+/** Primary and optional secondary lifecycle contexts returned after upload processing. */
 export interface IUploadResultWithBackup {
   ctx?: IPicGo
+  /** Secondary upload context when one was produced; absent when disabled, skipped, or rejected. */
   backupCtx?: IPicGo
 }
 
+/** Lifecycle stage names shared with script integrations, including GUI-only stages. */
 export type IScriptLifecycle =
   | 'onSoftwareOpen'
   | 'onSoftwareClose'
@@ -831,8 +928,10 @@ export type IScriptLifecycle =
   | 'onUploadFailure'
   | 'onGalleryRemove'
 
+/** Persisted Alist login token cache scoped to a server and credential identity. */
 export interface IAlistTokenStore {
   token: string
+  /** Token refresh timestamp in milliseconds since the Unix epoch. */
   refreshedAt: number
   /** Identifies the server and login credentials; absent in legacy caches. */
   cacheKey?: string

@@ -5,6 +5,7 @@ import { readJSONSync } from 'fs-extra/esm'
 
 import type { ILogger, IPluginNameType } from '../../types'
 
+/** Classifies plugin package names, scoped names, shorthand names, and path-like inputs. */
 export const getPluginNameType = (name: string): IPluginNameType => {
   if (/^@[^/]+\/picgo-plugin-/.test(name)) {
     return 'scope'
@@ -16,6 +17,10 @@ export const getPluginNameType = (name: string): IPluginNameType => {
   return 'unknown'
 }
 
+/**
+ * Recognizes shorthand plugin names while excluding absolute paths, existing local paths, and
+ * separators.
+ */
 export const isSimpleName = (nameOrPath: string): boolean => {
   if (path.isAbsolute(nameOrPath)) {
     return false
@@ -30,6 +35,7 @@ export const isSimpleName = (nameOrPath: string): boolean => {
   return true
 }
 
+/** Removes the PicGo package prefix and optional npm scope to produce a display name. */
 export const handleStreamlinePluginName = (name: string): string => {
   if (/^@[^/]+\/picgo-plugin-/.test(name)) {
     return name.replace(/^@[^/]+\/picgo-plugin-/, '')
@@ -41,6 +47,10 @@ export const handleStreamlinePluginName = (name: string): string => {
 export const handleCompletePluginName = (name: string, scope = ''): string =>
   scope ? `@${scope}/picgo-plugin-${name}` : `picgo-plugin-${name}`
 
+/**
+ * Normalizes plugin shorthand or existing paths for npm operations, returning an empty string on
+ * failure.
+ */
 export const getProcessPluginName = (nameOrPath: string, logger: ILogger | Console = console): string => {
   const pluginNameType = getPluginNameType(nameOrPath)
   switch (pluginNameType) {
@@ -64,6 +74,11 @@ export const getProcessPluginName = (nameOrPath: string, logger: ILogger | Conso
   }
 }
 
+/**
+ * Resolves an unversioned package name, reading a local plugin manifest when given a path.
+ *
+ * @returns An empty string when the path or package name is invalid.
+ */
 export const getNormalPluginName = (nameOrPath: string, logger: ILogger | Console = console): string => {
   const pluginNameType = getPluginNameType(nameOrPath)
   switch (pluginNameType) {
@@ -101,6 +116,7 @@ export const handleUnixStylePath = (pathStr: string): string => {
   return pathArr.join('/')
 }
 
+/** Extracts the package name from a versioned plugin specifier, preserving the input if parsing fails. */
 export const removePluginVersion = (nameOrPath: string, scope: boolean = false): string => {
   if (!nameOrPath.includes('@')) {
     return nameOrPath

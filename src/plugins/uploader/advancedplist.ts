@@ -8,6 +8,7 @@ import { runScript } from '../../utils/runScripts'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames } from './utils'
 
+/** Builds a configurable multipart request with custom headers, form fields, and file-field name. */
 const postOptions = (
   image: Buffer,
   fileName: string,
@@ -34,6 +35,10 @@ const postOptions = (
   json: true,
 })
 
+/**
+ * Runs a custom upload script or HTTP request and resolves output URLs through the configured response
+ * path.
+ */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const advancedplistConfig = getAndCheckConfig<IAdvancedPlistConfig>(ctx, 'picBed.advancedplist', [])
   if (advancedplistConfig.uploadScriptName) {
@@ -106,9 +111,11 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   return ctx
 }
 
+/** Builds the custom HTTP/script configuration form using saved values and localized field labels. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IAdvancedPlistConfig>('picBed.advancedplist') || {}
 
+  /** Builds a custom-uploader field using saved defaults and lazily translated labels. */
   const createConfigField = (
     name: string,
     type: string,
@@ -145,6 +152,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   ]
 }
 
+/** Registers the built-in custom HTTP/script uploader and its configuration form on the client. */
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.advancedplist, {
     get name() {

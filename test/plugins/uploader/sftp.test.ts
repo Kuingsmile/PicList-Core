@@ -45,6 +45,10 @@ vi.mock('node-ssh-no-cpu-features', () => ({
   },
 }))
 
+/**
+ * Binds the SFTP handler to fixture settings and image records while preserving filesystem staging
+ * behavior.
+ */
 function createUploader(baseDir: string, config: ISftpPlistConfig, output: IImgInfo[]) {
   let handle!: (ctx: IPicGo) => Promise<IPicGo>
   const ctx = {

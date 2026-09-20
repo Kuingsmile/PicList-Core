@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 
 import isWsl from 'is-wsl'
 
+/** Writes text to a clipboard helper through stdin and kills helpers that exceed five seconds. */
 function write(command: string, args: string[], value: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: ['pipe', 'ignore', 'ignore'], windowsHide: true })
@@ -25,6 +26,7 @@ function write(command: string, args: string[], value: string): Promise<void> {
   })
 }
 
+/** Copies text using the host clipboard backend, falling back from Wayland to X11 tools on Linux. */
 export async function copyText(value: string): Promise<void> {
   if (process.platform === 'win32' || isWsl) {
     return write(
@@ -55,6 +57,7 @@ export async function copyText(value: string): Promise<void> {
   }
 }
 
+/** Removes backup labeling and optionally formats the result as an escaped Markdown image destination. */
 export function resultLink(result: string, markdown = false): string {
   const value = result.replace(/^Backup: /, '')
   if (!markdown) return value

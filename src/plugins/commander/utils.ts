@@ -1,5 +1,6 @@
 import { IPicGo, IStringKeyMap } from '../../types'
 
+/** Maps stable built-in uploader IDs to their current localized display names. */
 export const uploaderTranslators = (ctx: IPicGo) => {
   return {
     advancedplist: ctx.i18n.t('PICBED_ADVANCEDPLIST'),

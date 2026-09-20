@@ -9,6 +9,7 @@ import setting from './setting'
 import upload from './upload'
 import use from './use'
 
+/** Registers all built-in command plugins with the client command registry. */
 export default (ctx: IPicGo): void => {
   ctx.cmd.register('init', init)
   ctx.cmd.register('pluginHandler', pluginHandler)

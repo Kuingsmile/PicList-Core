@@ -17,6 +17,10 @@ vi.mock('../../src/tui/clipboard', async importOriginal => ({
   copyText: vi.fn().mockResolvedValue(undefined),
 }))
 
+/**
+ * Creates an attached UI session with configurable destination readiness and mutable language
+ * settings.
+ */
 function setup(configured: boolean | Record<string, unknown> = true) {
   const config: Record<string, unknown> = {
     'picBed.smms':
@@ -32,6 +36,7 @@ function setup(configured: boolean | Record<string, unknown> = true) {
     getConfig: vi.fn(key => config[key]),
     helper: { uploader: { get: () => ({ config: () => [{ name: 'token', type: 'input', required: true }] }) } },
     i18n: {
+      /** Resolves test catalog entries for the selected language and interpolates their placeholders. */
       translate: (key: string, args?: Record<string, string>) =>
         english(
           (config['settings.language'] === 'zh-CN'

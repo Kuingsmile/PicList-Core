@@ -1,6 +1,7 @@
 import { IPicGo, IPlugin, IStringKeyMap } from '../../types'
 
 const i18n: IPlugin = {
+  /** Registers language selection by argument or prompt and persists supported selections. */
   handle: (ctx: IPicGo) => {
     const cmd = ctx.cmd
     cmd.program

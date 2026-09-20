@@ -1,6 +1,7 @@
 import { IBuildInCompressOptions, IPicGo, IPluginConfig } from '../../types'
 import { createField } from '../uploader/utils'
 
+/** Builds the compression and conversion form with defaults from saved global processing settings. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IBuildInCompressOptions>('buildIn.compress') || {}
   const config: IPluginConfig[] = [

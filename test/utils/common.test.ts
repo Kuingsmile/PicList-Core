@@ -29,6 +29,7 @@ import {
   safeParse,
 } from '../../src/utils/common'
 
+/** Builds a length-prefixed JPEG APP1 segment for metadata-removal fixtures. */
 const createJpegApp1Segment = (payload: Buffer): Buffer => {
   const segment = Buffer.alloc(4)
   segment[0] = 0xff
@@ -37,6 +38,7 @@ const createJpegApp1Segment = (payload: Buffer): Buffer => {
   return Buffer.concat([segment, payload])
 }
 
+/** Builds a PNG-like chunk with a zero CRC for structural parsing fixtures, not full PNG validation. */
 const createPngChunk = (type: string, data: Buffer): Buffer => {
   const chunk = Buffer.alloc(12 + data.length)
   chunk.writeUInt32BE(data.length, 0)
@@ -45,6 +47,7 @@ const createPngChunk = (type: string, data: Buffer): Buffer => {
   return chunk
 }
 
+/** Builds a RIFF-style WebP chunk with the required padding for odd-length payloads. */
 const createWebpChunk = (type: string, data: Buffer): Buffer => {
   const padding = data.length % 2
   const chunk = Buffer.alloc(8 + data.length + padding)

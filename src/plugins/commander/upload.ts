@@ -6,6 +6,10 @@ import { IPicGo, IPlugin } from '../../types'
 import { isUrl } from '../../utils/common'
 
 const upload: IPlugin = {
+  /**
+   * Registers uploads of resolved local paths or URLs, using clipboard input only when no arguments
+   * were supplied.
+   */
   handle: (ctx: IPicGo) => {
     ctx.cmd.program
       .command('upload')

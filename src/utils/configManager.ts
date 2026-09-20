@@ -2,6 +2,7 @@ import { v4 as uuid } from 'uuid'
 
 import { IConfig, IConfigItem, IPicGo, IUploaderConfigList } from '../types'
 
+/** Manages named uploader profiles and synchronizes active and secondary uploader settings. */
 export class ConfigManager {
   private readonly ctx: IPicGo
 
@@ -9,6 +10,7 @@ export class ConfigManager {
     this.ctx = ctx
   }
 
+  /** Persists legacy uploader settings as a named profile if no multi-profile entry exists. */
   migrateToMultiConfig(uploaderName: string): void {
     const config = this.ctx.getConfig<IConfig>()
     const uploaderConfig = this.ctx.getConfig<any>(`picBed.${uploaderName}`)
@@ -52,6 +54,7 @@ export class ConfigManager {
     }
   }
 
+  /** Migrates legacy settings if needed and returns the default profile, or null if none matches. */
   getCurrentUploaderConfig(uploaderName: string): IConfigItem | null {
     this.migrateToMultiConfig(uploaderName)
 
@@ -64,6 +67,7 @@ export class ConfigManager {
     return currentConfig || null
   }
 
+  /** Migrates legacy settings if needed and returns every saved profile for an uploader. */
   getAllUploaderConfigs(uploaderName: string): IConfigItem[] {
     this.migrateToMultiConfig(uploaderName)
 
@@ -71,6 +75,7 @@ export class ConfigManager {
     return uploaderData?.configList || []
   }
 
+  /** Persists a profile with fresh identity and timestamps, making the first profile the default. */
   addUploaderConfig(uploaderName: string, configName: string, configData: any): IConfigItem {
     this.migrateToMultiConfig(uploaderName)
 
@@ -101,6 +106,12 @@ export class ConfigManager {
     return newConfig
   }
 
+  /**
+   * Replaces a profile's settings while preserving identity and creation time, then synchronizes
+   * active copies.
+   *
+   * @returns False if the profile ID does not exist.
+   */
   updateUploaderConfig(uploaderName: string, configId: string, configData: any): boolean {
     this.migrateToMultiConfig(uploaderName)
 
@@ -132,6 +143,12 @@ export class ConfigManager {
     return true
   }
 
+  /**
+   * Deletes an eligible profile and clears secondary-uploader settings when they refer to it.
+   *
+   * @returns False for an unknown ID, the current uploader's only profile, or a default with other
+   * profiles.
+   */
   deleteUploaderConfig(uploaderName: string, configId: string): boolean {
     this.migrateToMultiConfig(uploaderName)
 
@@ -180,6 +197,11 @@ export class ConfigManager {
     return true
   }
 
+  /**
+   * Selects an existing profile as the default and copies its settings to the legacy picBed entry.
+   *
+   * @returns False if the profile ID does not exist.
+   */
   setDefaultConfig(uploaderName: string, configId: string): boolean {
     this.migrateToMultiConfig(uploaderName)
 
@@ -201,12 +223,14 @@ export class ConfigManager {
     return true
   }
 
+  /** Copies a profile into the legacy picBed location consumed by uploader implementations. */
   private syncConfigToPicBed(uploaderName: string, config: IConfigItem): void {
     this.ctx.saveConfig({
       [`picBed.${uploaderName}`]: config,
     })
   }
 
+  /** Checks both uploader type and profile identity against the configured secondary destination. */
   private isSecondUploaderConfig(uploaderName: string, configId: string): boolean {
     return (
       this.ctx.getConfig<string>('picBed.secondUploader') === uploaderName &&
@@ -214,12 +238,14 @@ export class ConfigManager {
     )
   }
 
+  /** Persists profile edits to the secondary destination when it references the same profile. */
   private syncSecondUploaderConfig(uploaderName: string, config: IConfigItem): void {
     if (this.isSecondUploaderConfig(uploaderName, config._id)) {
       this.ctx.saveConfig({ 'picBed.secondUploaderConfig': config })
     }
   }
 
+  /** Migrates legacy settings if needed and returns the first matching profile name, or null. */
   getConfigByName(uploaderName: string, configName: string): IConfigItem | null {
     this.migrateToMultiConfig(uploaderName)
 
@@ -227,6 +253,11 @@ export class ConfigManager {
     return uploaderData?.configList?.find(item => item._configName === configName) || null
   }
 
+  /**
+   * Persists a profile name and modification time, synchronizing active and secondary copies.
+   *
+   * @returns False if the profile ID does not exist.
+   */
   renameConfig(uploaderName: string, configId: string, newName: string): boolean {
     this.migrateToMultiConfig(uploaderName)
 

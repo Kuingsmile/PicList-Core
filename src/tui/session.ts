@@ -5,6 +5,7 @@ import { english, type Translate, translator } from './i18n'
 
 export { isSecretQuestion } from '../utils/configPrompts'
 
+/** Signals that a pending UI form was cancelled without treating cancellation as an operation error. */
 export class PromptCancelledError extends Error {
   constructor() {
     super('Cancelled. No pending form was saved.')
@@ -19,10 +20,18 @@ export interface PromptPosition {
   total: number
 }
 
+/**
+ * Adapts sequential legacy questions to UI prompts, resolving conditional visibility, defaults, and
+ * filters.
+ */
 export function createPromptAdapter(
   ask: (question: IInquirerQuestion, position?: PromptPosition) => Promise<any>,
 ): IInquirerAdapter {
   return {
+    /**
+     * Asks visible questions in order, passing prior answers to dynamic defaults and visibility
+     * guards.
+     */
     async prompt<T>(questions: IInquirerQuestion[]): Promise<T> {
       const answers: Record<string, any> = {}
       for (const [index, question] of questions.entries()) {
@@ -40,6 +49,7 @@ export function createPromptAdapter(
   }
 }
 
+/** Immutable session snapshot consumed by the terminal UI through useSyncExternalStore. */
 export interface SessionState {
   busy: boolean
   title: string
@@ -49,10 +59,14 @@ export interface SessionState {
   progress?: number
   results: string[]
   resultTitle?: string
+  /**
+   * Increments only when an operation supplies nonempty results so the UI can reopen the result panel.
+   */
   resultRevision: number
   prompt?: { id: number; question: IInquirerQuestion; position?: PromptPosition }
 }
 
+/** Serializes UI actions and bridges prompts, progress, and safe operation status to React. */
 export class TuiSession {
   private state: SessionState = {
     busy: false,
@@ -63,27 +77,39 @@ export class TuiSession {
     resultRevision: 0,
   }
   private listeners = new Set<() => void>()
+  /** Resolver pair for the single active prompt, cleared before submission or cancellation. */
   private pending?: { resolve: (value: any) => void; reject: (error: Error) => void }
+  /** Monotonic prompt identity used to reset component state between questions. */
   private sequence = 0
+  /**
+   * Tracks core error logs and failure progress without retaining their potentially sensitive
+   * payloads.
+   */
   private failed = false
+  /** Tracks whether core services reported warnings during the active action. */
   private warned = false
   private disposed = false
+  /** Active action promise awaited during disposal before restoring normal logging. */
   private task?: Promise<void>
+  /** Restores the client's original logger and prompt adapter and detaches progress forwarding. */
   private restore?: () => void
   private t: Translate = english
 
   getSnapshot = (): SessionState => this.state
 
+  /** Registers a snapshot listener and returns a function that removes it. */
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
   }
 
+  /** Replaces the session snapshot and synchronously notifies subscribers. */
   private update(change: Partial<SessionState>): void {
     this.state = { ...this.state, ...change }
     this.listeners.forEach(listener => listener())
   }
 
+  /** Installs UI prompts and status-only logging, and subscribes to upload progress on the client. */
   attach(ctx: IPicGo): void {
     this.t = translator(ctx)
     const previousPrompt = ctx.cmd.inquirer
@@ -101,6 +127,7 @@ export class TuiSession {
         this.failed = true
       },
     }
+    /** Marks negative progress as failure and clamps finite progress values for an active operation. */
     const onProgress = (progress: number) => {
       if (this.state.busy && Number.isFinite(progress)) {
         if (progress < 0) this.failed = true
@@ -115,6 +142,7 @@ export class TuiSession {
     }
   }
 
+  /** Opens one prompt and resolves when answered; rejects if disposed or another prompt is pending. */
   ask = (question: IInquirerQuestion, position?: PromptPosition): Promise<any> => {
     if (this.disposed) return Promise.reject(new PromptCancelledError())
     if (this.pending) return Promise.reject(new TuiError('Another form is already open.'))
@@ -124,6 +152,7 @@ export class TuiSession {
     })
   }
 
+  /** Clears the active prompt before resolving its pending answer. */
   answer = (value: any): void => {
     const pending = this.pending
     this.pending = undefined
@@ -131,6 +160,7 @@ export class TuiSession {
     pending?.resolve(value)
   }
 
+  /** Rejects the active prompt with a cancellation error; does not abort an in-flight core upload. */
   cancel = (): void => {
     const pending = this.pending
     this.pending = undefined
@@ -138,6 +168,12 @@ export class TuiSession {
     pending?.reject(new PromptCancelledError())
   }
 
+  /**
+   * Runs one action, retains prior results when none are returned, and converts errors to safe UI
+   * messages.
+   *
+   * @returns A settled action promise; busy or disposed sessions ignore new actions.
+   */
   run(title: string, action: () => Promise<string[] | void>): Promise<void> {
     if (this.state.busy || this.disposed) return Promise.resolve()
     this.failed = false
@@ -181,6 +217,7 @@ export class TuiSession {
     return this.task
   }
 
+  /** Cancels pending input, awaits active work, then restores client services and removes subscribers. */
   async dispose(): Promise<void> {
     this.disposed = true
     this.cancel()

@@ -15,6 +15,7 @@ import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent'
 import { IAwsS3PListUserConfig, IImgInfo } from '../../../types'
 import { extractInfo, getProxyAgent } from './utils'
 
+/** Uploaded object identity, download URL aliases, and optional S3 version and ETag metadata. */
 export interface IUploadResult {
   key: string
   url: string
@@ -23,6 +24,10 @@ export interface IUploadResult {
   eTag?: string
 }
 
+/**
+ * Creates an S3 client with configured endpoint, credentials, addressing style, and optional proxy
+ * agent.
+ */
 function createS3Client(opts: IAwsS3PListUserConfig): S3Client {
   let sslEnabled = true
   try {
@@ -62,6 +67,7 @@ interface ICreateUploadTaskOpts {
   options: string
 }
 
+/** Uploads one image with its content metadata and resolves a custom, public, or signed download URL. */
 async function createUploadTask(opts: ICreateUploadTaskOpts): Promise<IUploadResult> {
   if (!opts.item.buffer && !opts.item.base64Image) {
     throw new Error('undefined image')
@@ -99,11 +105,19 @@ async function createUploadTask(opts: ICreateUploadTaskOpts): Promise<IUploadRes
   }
 }
 
+/** Appends configured query options without discarding existing URL parameters. */
 function appendUrlOptions(fileUrl: string, options: string): string {
   if (!options) return fileUrl
   return `${fileUrl}${fileUrl.includes('?') ? '&' : '?'}${options.replace(/^\?/, '')}`
 }
 
+/**
+ * Builds a version-aware download URL, retaining a one-hour signature for non-public ACLs.
+ *
+ * @remarks
+ * Private URL options are added before signing. Public links remove signing parameters and preserve
+ * versionId.
+ */
 async function getFileURL(opts: ICreateUploadTaskOpts, versionId?: string): Promise<string> {
   const isPublic = opts.acl === 'public-read' || opts.acl === 'public-read-write'
   const command = new GetObjectCommand({

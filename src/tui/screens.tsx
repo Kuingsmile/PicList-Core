@@ -10,6 +10,7 @@ import type { NavigationItem } from './navigation'
 import type { SessionState } from './session'
 import { theme } from './theme'
 
+/** Shows action guidance in full or compact form, including setup and configuration context. */
 export function ActionDetails({
   item,
   firstRun,
@@ -55,6 +56,7 @@ export function ActionDetails({
   )
 }
 
+/** Maps upload progress to stage text and indicates when exit is waiting for active work. */
 export function Working({ state, quitting }: { state: SessionState; quitting: boolean }) {
   const t = useTranslation()
   const progress = state.progress
@@ -86,6 +88,9 @@ export function Working({ state, quitting }: { state: SessionState; quitting: bo
   )
 }
 
+/**
+ * Builds a readable result label from a URL or path, preserving backup labeling when parsing succeeds.
+ */
 export function resultName(result: string, index: number, t: Translate = english): string {
   const original = result.replace(/^Backup: /, '')
   try {
@@ -98,6 +103,7 @@ export function resultName(result: string, index: number, t: Translate = english
   }
 }
 
+/** Displays selectable results with wrapped detail scrolling and plain-text or Markdown copying. */
 export function ResultPanel({
   results,
   title,
@@ -118,6 +124,7 @@ export function ResultPanel({
   const [scroll, setScroll] = useState(0)
   const [copyStatus, setCopyStatus] = useState('')
   const copying = useRef(false)
+  /** Invalidates asynchronous clipboard status updates after selection changes or unmounting. */
   const generation = useRef(0)
   useEffect(
     () => () => {
@@ -134,6 +141,10 @@ export function ResultPanel({
     [results, selected, detailWidth],
   )
   const offset = Math.min(scroll, Math.max(0, lines.length - visibleLines))
+  /**
+   * Copies the current result once and applies status updates only while the selection generation is
+   * current.
+   */
   const copy = async (markdown: boolean) => {
     if (copying.current || !value || (markdown && !isLink)) return
     copying.current = true

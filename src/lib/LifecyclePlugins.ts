@@ -1,6 +1,8 @@
 import { ILifecyclePlugins, IPlugin } from '../types'
 
+/** Registry of lifecycle handlers with ownership tracking for package-wide removal. */
 export class LifecyclePlugins implements ILifecyclePlugins {
+  /** Registration owner shared by lifecycle registries while a plugin registers its handlers. */
   static currentPlugin: string | null
 
   /**
@@ -22,6 +24,11 @@ export class LifecyclePlugins implements ILifecyclePlugins {
     this.pluginIdMap = new Map()
   }
 
+  /**
+   * Registers a unique handler and associates it with the current plugin package.
+   *
+   * @throws If the ID is empty, the handler is missing, or the ID is already registered.
+   */
   register(id: string, plugin: IPlugin): void {
     if (!id) throw new TypeError('id is required!')
     if (typeof plugin.handle !== 'function') throw new TypeError('plugin.handle must be a function!')
@@ -38,6 +45,7 @@ export class LifecyclePlugins implements ILifecyclePlugins {
     }
   }
 
+  /** Removes all handler IDs owned by a plugin package; the argument is not a handler ID. */
   unregister(pluginName: string): void {
     if (this.pluginIdMap.has(pluginName)) {
       const pluginList = this.pluginIdMap.get(pluginName)
@@ -64,6 +72,7 @@ export class LifecyclePlugins implements ILifecyclePlugins {
   }
 }
 
+/** Sets the owner attributed to subsequent handler registrations; null disables attribution. */
 export const setCurrentPluginName = (name: string | null = null): void => {
   LifecyclePlugins.currentPlugin = name
 }

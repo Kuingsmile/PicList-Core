@@ -9,6 +9,13 @@ import SSHClient from '../../utils/sshClient'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
 
+/**
+ * Stages each image in an isolated directory, uploads over SSH, and retains a gallery copy.
+ *
+ * @remarks
+ * Each image connection and its staging directory are released in finally blocks, including on
+ * failure.
+ */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const sftpplistConfig = { ...getAndCheckConfig<ISftpPlistConfig>(ctx, 'picBed.sftpplist', []) }
   sftpplistConfig.port = Number(sftpplistConfig.port) || 22
@@ -29,6 +36,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       const image = getImageBuffer(img)
       if (!image) continue
       const client = new SSHClient()
+      /** Per-image staging directory owned by this upload and removed after the SSH operation. */
       let uploadTempPath: string | undefined
       try {
         const uploadTempRoot = path.join(ctx.baseDir, 'uploadTemp')
@@ -71,6 +79,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   }
 }
 
+/** Builds the SFTP configuration form using saved values and localized field labels. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<ISftpPlistConfig>('picBed.sftpplist') || {}
   const config: IPluginConfig[] = [
@@ -252,6 +261,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   return config
 }
 
+/** Registers the built-in SFTP uploader and its configuration form on the client. */
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.sftpplist, {
     get name() {

@@ -11,11 +11,13 @@ import multer from 'multer'
 
 import { PicGo } from '../dist/index.js'
 
+/** Root directory for per-request multipart staging, kept separate from user-supplied upload paths. */
 const tempDir = path.join(os.homedir(), '.piclist', 'serverTemp')
 ensureDirSync(tempDir)
 
 const argv = minimist(process.argv.slice(2))
 
+/** Optional server access key checked for remote POST uploads; loopback requests bypass key checks. */
 let key = ''
 let defaultPort = 36677
 let defaultHost = '0.0.0.0'
@@ -42,6 +44,7 @@ const ensureHTTPLink = url => {
   return url.startsWith('http') ? url : `http://${url}`
 }
 
+/** Recognizes IPv4, IPv6, and IPv4-mapped IPv6 localhost addresses for local upload access. */
 function isLoopback(addr = '') {
   return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1'
 }
@@ -79,6 +82,13 @@ if (configPath !== true && configPath !== '') {
 const picgo = await PicGo.create(configPath)
 const errorMessage = 'Upload failed, please check your network and config'
 
+/**
+ * Returns URLs only when every expected primary upload produced a nonblank URL.
+ *
+ * @param result - Upload result containing the primary lifecycle context.
+ * @param expectedCount - Number of images required for a complete successful response.
+ * @returns All output URLs, or null for missing, partial, sparse, or invalid output.
+ */
 export const getUploadedImageUrls = (result, expectedCount) => {
   const output = result.ctx?.output
   if (!Array.isArray(output) || output.length !== expectedCount) return null
@@ -89,6 +99,7 @@ export const getUploadedImageUrls = (result, expectedCount) => {
   return urls
 }
 
+/** Writes a JSON response with default CORS headers, logging write failures instead of throwing. */
 const handleResponse = ({
   response,
   statusCode = 200,
@@ -113,11 +124,13 @@ const handleResponse = ({
   }
 }
 
+/** Exact-path and HTTP-method routing table for the small upload server. */
 class Router {
   constructor() {
     this.routes = new Map()
   }
 
+  /** Registers or replaces a route handler for one path and method. */
   add(method, url, callback, urlparams) {
     if (!this.routes.has(url)) {
       this.routes.set(url, new Map())
@@ -133,11 +146,13 @@ class Router {
     this.add('POST', url, callback, urlparams)
   }
 
+  /** Registers the same handler for both GET and POST. */
   any(url, callback, urlparams) {
     this.add('GET', url, callback, urlparams)
     this.add('POST', url, callback, urlparams)
   }
 
+  /** Returns the exact path/method route entry, or null when no handler is registered. */
   getHandler(url, method) {
     if (this.routes.has(url)) {
       const methods = this.routes.get(url)
@@ -150,9 +165,15 @@ class Router {
 }
 
 const router = new Router()
+/** Private request property holding the directory owned by one multipart upload. */
 const uploadDirectory = Symbol('uploadDirectory')
 
+/** Multipart storage that isolates each file while retaining its original decoded filename. */
 const multerStorage = multer.diskStorage({
+  /**
+   * Allocates a separate child directory to prevent same-name multipart files from overwriting one
+   * another.
+   */
   destination(req, _file, cb) {
     try {
       // Separate files too, while retaining their original names for uploaders.
@@ -161,6 +182,7 @@ const multerStorage = multer.diskStorage({
       cb(err)
     }
   },
+  /** Repairs Latin-1-decoded UTF-8 multipart filenames when they contain only single-byte characters. */
   filename(_req, file, cb) {
     if (!/[^\u0000-\u00ff]/.test(file.originalname)) {
       file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8')
@@ -173,6 +195,10 @@ const uploadMulter = multer({
   storage: multerStorage,
 })
 
+/**
+ * Parses multipart files in request-owned storage, awaits the upload handler, and always removes
+ * staged files.
+ */
 const handleMultipartUpload = async (request, response, handler, urlparams) => {
   let requestTempDir
   try {
@@ -291,6 +317,7 @@ router.any('/heartbeat', async ({ response }) => {
   })
 })
 
+/** Serves the upload API usage page for the root and GET /upload routes. */
 async function responseForGet({ response }) {
   response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
   response.end(`
@@ -354,11 +381,17 @@ async function responseForGet({ response }) {
 </html>`)
 }
 
+/** HTTP upload server with request authentication, multipart handling, and occupied-port fallback. */
 class Server {
+  /** Creates the HTTP server and binds request dispatch without starting a listener. */
   constructor() {
     this.httpServer = http.createServer(this.handleRequest)
   }
 
+  /**
+   * Routes requests, authenticates remote uploads before reading bodies, and dispatches JSON or
+   * multipart input.
+   */
   handleRequest(request, response) {
     if (request.method === 'OPTIONS') {
       handleResponse({ response })
@@ -460,6 +493,7 @@ class Server {
     response.end()
   }
 
+  /** Listens on the configured host, probing heartbeat on port conflicts before trying the next port. */
   listen(port) {
     console.log(`[PicList Server] is listening at ${port}`)
     if (typeof port === 'string') {
@@ -489,6 +523,7 @@ class Server {
     this.listen(defaultPort)
   }
 
+  /** Closes the HTTP listener and optionally suppresses the ordinary shutdown message. */
   shutdown(hasStarted) {
     try {
       this.httpServer.close()
@@ -500,12 +535,14 @@ class Server {
     }
   }
 
+  /** Closes the current listener and starts again using the configured default port. */
   restart() {
     this.shutdown()
     this.startup()
   }
 }
 
+/** Default server instance started when this executable module is imported or run. */
 const server = new Server()
 server.startup()
 

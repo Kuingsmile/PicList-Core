@@ -11,16 +11,19 @@ import { EN } from './en'
 import { ILocalesKey, ZH_CN } from './zh-CN'
 import { ZH_TW } from './zh-TW'
 
+/** Combines built-in and user YAML locales and provides typed and dynamic translation APIs. */
 class I18nManager implements II18nManager {
   private readonly i18n: TypedI18n<typeof ZH_CN>
   private readonly objectAdapter: ObjectAdapter
   private readonly ctx: IPicGo
+  /** Per-client copies of built-in locale dictionaries used to initialize the locale adapter. */
   private readonly languageList: IStringKeyMap<ILocale> = cloneDeep({
     'zh-CN': ZH_CN,
     'zh-TW': ZH_TW,
     en: EN,
   })
 
+  /** Loads external locales and selects the saved language, falling back to Simplified Chinese. */
   constructor(ctx: IPicGo) {
     this.ctx = ctx
     this.objectAdapter = new ObjectAdapter(this.languageList)
@@ -36,6 +39,10 @@ class I18nManager implements II18nManager {
     })
   }
 
+  /**
+   * Loads user .yml dictionaries by filename and reports malformed YAML without aborting
+   * initialization.
+   */
   private loadOutterI18n(): void {
     const i18nFolder = this.getOutterI18nFolder()
     const files = fs.readdirSync(i18nFolder, {
@@ -55,6 +62,7 @@ class I18nManager implements II18nManager {
     })
   }
 
+  /** Ensures the client's i18n-cli directory exists and returns its path. */
   private getOutterI18nFolder(): string {
     const i18nFolder = path.join(this.ctx.baseDir, 'i18n-cli')
     if (!pathExistsSync(i18nFolder)) {
@@ -63,12 +71,18 @@ class I18nManager implements II18nManager {
     return i18nFolder
   }
 
+  /**
+   * Translates built-in keys with checked arguments, falling back to the key when translation is
+   * empty.
+   */
   readonly t: I18nTranslate = (...args) => this.i18n.t(...args) || args[0]
 
+  /** Translates dynamic or plugin-defined keys, returning the key when no translation is available. */
   translate<T extends string>(key: ILocalesKey | T, args?: IStringKeyMap<string>): string {
     return this.i18n.translate(key, args) || key
   }
 
+  /** Changes the active language and persists the selection to client settings. */
   setLanguage(language: string): void {
     this.i18n.setLanguage(language)
     this.ctx.saveConfig({
@@ -76,6 +90,7 @@ class I18nManager implements II18nManager {
     })
   }
 
+  /** Deep-merges messages into an existing language; returns false if the language is unknown. */
   addLocale(language: string, locales: ILocale): boolean {
     const originLocales = this.objectAdapter.getLocale(language)
     if (!originLocales) {
@@ -86,6 +101,7 @@ class I18nManager implements II18nManager {
     return true
   }
 
+  /** Registers a cloned dictionary for a new language; returns false if it already exists. */
   addLanguage(language: string, locales: ILocale): boolean {
     const originLocales = this.objectAdapter.getLocale(language)
     if (originLocales) {

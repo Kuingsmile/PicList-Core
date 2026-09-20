@@ -5,6 +5,7 @@ import { IBuildInEvent } from '../../utils/enum'
 import uploader from './s3/uploader'
 import { buildInUploaderNames, formatPathHelper } from './utils'
 
+/** Normalizes legacy string or boolean flags controlling bucket prefixes in custom URLs. */
 function formatDisableBucketPrefixToURL(disableBucketPrefixToURL: string | boolean | undefined): boolean {
   if (typeof disableBucketPrefixToURL === 'string') {
     return disableBucketPrefixToURL.toLowerCase() === 'true'
@@ -12,6 +13,10 @@ function formatDisableBucketPrefixToURL(disableBucketPrefixToURL: string | boole
   return Boolean(disableBucketPrefixToURL)
 }
 
+/**
+ * Uploads image records through the S3 adapter and applies custom URL prefixes and bucket-path
+ * settings.
+ */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const awsS3Options: IAwsS3PListUserConfig = ctx.getConfig('picBed.aws-s3-plist')
   if (!awsS3Options) throw new Error("Can't find aws s3 uploader config")
@@ -53,6 +58,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   }
 }
 
+/** Builds the S3-compatible storage configuration form using saved values and localized field labels. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const defaultConfig: IAwsS3PListUserConfig = {
     accessKeyID: '',
@@ -274,6 +280,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   return config
 }
 
+/** Registers the built-in S3-compatible storage uploader and its configuration form on the client. */
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames['aws-s3-plist'], {
     get name() {

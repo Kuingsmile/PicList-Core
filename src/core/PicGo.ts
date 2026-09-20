@@ -37,9 +37,17 @@ import { eventBus } from '../utils/eventBus'
 import getClipboardImage from '../utils/getClipboardImage'
 import { Lifecycle } from './Lifecycle'
 
+/**
+ * Upload client that owns configuration, plugin registries, and lifecycle services.
+ *
+ * @remarks
+ * Use {@link PicGo.create} to initialize asynchronous services before uploading.
+ */
 export class PicGo extends EventEmitter implements IPicGo {
   private _config!: IConfig
+  /** Configuration paths explicitly overridden or removed in memory, reapplied after disk refreshes. */
   private readonly runtimeConfigPaths = new Map<string, string[]>()
+  /** Async-local configuration snapshots that keep per-upload settings separate from saved defaults. */
   private readonly uploadConfig = new AsyncLocalStorage<IConfig>()
   private lifecycle!: Lifecycle
   private db!: DB
@@ -49,10 +57,15 @@ export class PicGo extends EventEmitter implements IPicGo {
   helper!: IHelper
   log: Logger
   cmd: Commander
+  /** Image records progressively populated by transformers and uploaders. */
   output: IImgInfo[]
+  /** Inputs for the active lifecycle stage; preprocessing may replace paths with temporary files. */
   input: any[]
+  /** Original upload inputs retained before preprocessing and transformation. */
   rawInput: any[]
+  /** Source paths indexed by original input position, used to preserve names after transformation. */
   rawInputPath: string[]
+  /** Transformed image records retained for a secondary upload that reuses processing results. */
   processedInput: any[]
   pluginHandler: PluginHandler
   configManager: ConfigManager
@@ -70,6 +83,12 @@ export class PicGo extends EventEmitter implements IPicGo {
     return this._pluginLoader
   }
 
+  /**
+   * Creates synchronous configuration and service state. Call {@link PicGo.create} for a ready client.
+   *
+   * @param configPath - JSON configuration path; an empty string uses the user's
+   * `.piclist/config.json`.
+   */
   constructor(configPath: string = '') {
     super()
     this.configPath = configPath
@@ -93,12 +112,21 @@ export class PicGo extends EventEmitter implements IPicGo {
     this.initConfig()
   }
 
+  /**
+   * Creates a client and initializes localization, HTTP requests, plugins, and the upload lifecycle.
+   *
+   * @param configPath - JSON configuration path; an empty string selects the default user
+   * configuration.
+   * @returns A fully initialized upload client.
+   * @throws If configuration setup or asynchronous initialization fails.
+   */
   static async create(configPath: string = ''): Promise<PicGo> {
     const ctx = new PicGo(configPath)
     await ctx.init()
     return ctx
   }
 
+  /** Resolves and creates the configuration file and base directory; rejects non-JSON paths. */
   private initConfigPath(): void {
     this.configPath = this.configPath || path.join(homedir(), '.piclist/config.json')
     if (path.extname(this.configPath).toUpperCase() !== '.JSON') {
@@ -111,12 +139,14 @@ export class PicGo extends EventEmitter implements IPicGo {
     }
   }
 
+  /** Loads a cloned disk configuration and initializes the configuration manager. */
   private initConfig(): void {
     this.db = new DB(this)
     this.configManager = new ConfigManager(this)
     this._config = cloneDeep(this.db.read(true)) as IConfig
   }
 
+  /** Initializes localization and requests, registers built-ins, then loads third-party plugins. */
   private async init(): Promise<void> {
     try {
       // init 18n at first
@@ -139,9 +169,11 @@ export class PicGo extends EventEmitter implements IPicGo {
   }
 
   /**
-   * easily mannually load a plugin
-   * if provide plugin name, will register plugin by name
-   * or just instantiate a plugin
+   * Instantiates a plugin factory and optionally registers its handlers under a name.
+   *
+   * @param plugin - Factory receiving this client and returning its plugin interface.
+   * @param name - Registration name; omitted to instantiate without invoking register.
+   * @returns The instantiated plugin interface, or the loader result after named registration.
    */
   async use(plugin: IPicGoPlugin, name?: string): Promise<IPicGoPluginInterface> {
     if (name) {
@@ -151,6 +183,7 @@ export class PicGo extends EventEmitter implements IPicGo {
     return plugin(this)
   }
 
+  /** Initializes built-in CLI commands and runs command registrations supplied by plugins. */
   registerCommands(): void {
     if (this.configPath !== '') {
       this.cmd.init()
@@ -158,6 +191,13 @@ export class PicGo extends EventEmitter implements IPicGo {
     }
   }
 
+  /**
+   * Reads configuration from the current upload snapshot or refreshes saved settings with runtime
+   * overrides.
+   *
+   * @param name - Optional lodash-style path; omitted to return the complete configuration.
+   * @returns The selected value. Values read inside an upload are cloned to protect its snapshot.
+   */
   getConfig<T>(name?: string): T {
     const uploadConfig = this.uploadConfig.getStore()
     if (uploadConfig) {
@@ -180,6 +220,12 @@ export class PicGo extends EventEmitter implements IPicGo {
     return get(this._config, name)
   }
 
+  /**
+   * Applies configuration paths in memory and on disk, clearing matching runtime overrides.
+   *
+   * @param config - Mapping of lodash-style paths to values. Protected keys are removed from the
+   * supplied object before saving.
+   */
   saveConfig(config: IStringKeyMap<any>): void {
     if (!isInputConfigValid(config)) {
       this.log.warn('the format of config is invalid, please provide object')
@@ -194,6 +240,12 @@ export class PicGo extends EventEmitter implements IPicGo {
     })
   }
 
+  /**
+   * Removes a nested setting from memory and disk unless its configuration root is protected.
+   *
+   * @param key - Configuration root or path containing the setting.
+   * @param propName - Nested property path to remove.
+   */
   removeConfig(key: string, propName: string): void {
     if (!key || !propName) return
     if (isConfigKeyInBlackList(key)) {
@@ -206,6 +258,16 @@ export class PicGo extends EventEmitter implements IPicGo {
     this.clearRuntimeConfigPaths([...toPath(key), ...toPath(propName)])
   }
 
+  /**
+   * Applies temporary configuration changes and emits a change event for each accepted path.
+   *
+   * @remarks
+   * During an upload, only its async-local snapshot is changed. Otherwise, overrides survive disk
+   * refreshes.
+   * Protected keys are deleted from the supplied object.
+   *
+   * @param config - Mapping of lodash-style paths to values; changes are not saved to disk.
+   */
   setConfig(config: IStringKeyMap<any>): void {
     if (!isInputConfigValid(config)) {
       this.log.warn('the format of config is invalid, please provide object')
@@ -228,6 +290,12 @@ export class PicGo extends EventEmitter implements IPicGo {
     })
   }
 
+  /**
+   * Removes a nested setting from the upload snapshot or runtime configuration without saving it.
+   *
+   * @param key - Configuration root or path containing the setting.
+   * @param propName - Nested property path to remove.
+   */
   unsetConfig(key: string, propName: string): void {
     if (!key || !propName) return
     if (isConfigKeyInBlackList(key)) {
@@ -239,11 +307,13 @@ export class PicGo extends EventEmitter implements IPicGo {
     if (!config) this.trackRuntimeConfigPath([...toPath(key), ...toPath(propName)])
   }
 
+  /** Records an explicit runtime override, replacing tracked descendant paths. */
   private trackRuntimeConfigPath(configPath: string[]): void {
     this.clearRuntimeConfigPaths(configPath)
     this.runtimeConfigPaths.set(JSON.stringify(configPath), configPath)
   }
 
+  /** Forgets runtime overrides at or below the supplied path while retaining unrelated paths. */
   private clearRuntimeConfigPaths(configPath: string[]): void {
     for (const [key, runtimePath] of this.runtimeConfigPaths) {
       if (configPath.every((part, index) => part === runtimePath[index])) {
@@ -252,10 +322,16 @@ export class PicGo extends EventEmitter implements IPicGo {
     }
   }
 
+  /** Bound HTTP request API supporting both Axios options and legacy request-style options. */
   get request(): IRequest['request'] {
     return this.Request.request.bind(this.Request)
   }
 
+  /**
+   * Clones effective settings and applies an optional uploader and named profile for one upload.
+   *
+   * @throws If a requested profile cannot be found in an applicable saved configuration list.
+   */
   private getUploadConfig(options: IUploadOptions = {}): IConfig {
     const config = cloneDeep(this.getConfig<IConfig>())
     const type = options.picBed
@@ -278,10 +354,20 @@ export class PicGo extends EventEmitter implements IPicGo {
     return config
   }
 
+  /**
+   * Uploads supplied inputs, or a clipboard image when inputs are omitted or empty.
+   *
+   * @param input - Inputs accepted by the selected transformer, normally file paths or URLs.
+   * @param options - Uploader selection applied only to this upload.
+   * @returns The primary upload's output records. Lifecycle failures may leave incomplete output.
+   * @throws If clipboard acquisition fails, profile resolution fails, or a lifecycle error occurs in
+   * debug mode.
+   */
   async upload(input?: any[], options?: IUploadOptions): Promise<IImgInfo[] | Error> {
     return this.uploadConfig.run(this.getUploadConfig(options), () => this.uploadWithConfig(input))
   }
 
+  /** Runs the primary upload under the active configuration snapshot and schedules clipboard cleanup. */
   private async uploadWithConfig(input?: any[]): Promise<IImgInfo[] | Error> {
     if (this.configPath === '') {
       this.log.error('No config file found, please check your config file path')
@@ -291,6 +377,10 @@ export class PicGo extends EventEmitter implements IPicGo {
     if (input === undefined || input.length === 0) {
       try {
         const { imgPath, shouldKeepAfterUploading } = await getClipboardImage(this)
+        /**
+         * Deletes a generated clipboard image after completion or failure while retaining existing
+         * files.
+         */
         const cleanup = (): void => {
           if (!shouldKeepAfterUploading) {
             remove(imgPath).catch(e => {
@@ -316,6 +406,7 @@ export class PicGo extends EventEmitter implements IPicGo {
     }
   }
 
+  /** Persists the uploader configuration and updates both current and legacy uploader selectors. */
   changeCurrentUploader(type: string, config: IStringKeyMap<any>): void {
     this.saveConfig({
       [`picBed.${type}`]: config,
@@ -324,12 +415,26 @@ export class PicGo extends EventEmitter implements IPicGo {
     })
   }
 
+  /**
+   * Uploads with optional secondary delivery and returns both lifecycle contexts.
+   *
+   * @remarks
+   * Processed temporary files remain available until both uploads and their hooks finish. Secondary
+   * upload errors are logged without discarding the primary result.
+   *
+   * @param input - Transformer inputs; omitted or empty to acquire an image from the clipboard.
+   * @param options - Uploader selection for this call without changing saved defaults.
+   */
   async uploadReturnCtx(input?: any[], options?: IUploadOptions): Promise<IUploadResultWithBackup> {
     return this.uploadConfig.run(this.getUploadConfig(options), () =>
       this.lifecycle.withTempFileCleanup(tempDirs => this.uploadReturnCtxWithConfig(input, tempDirs)),
     )
   }
 
+  /**
+   * Runs primary and optional secondary uploads, either reprocessing original inputs or reusing
+   * transformed records.
+   */
   private async uploadReturnCtxWithConfig(
     input: any[] | undefined,
     tempDirs: string[],
@@ -344,6 +449,7 @@ export class PicGo extends EventEmitter implements IPicGo {
     const secondaryUploaderType = this.getConfig<string>('picBed.secondUploader') || ''
     const secondUploaderConfig = this.getConfig<IStringKeyMap<any>>('picBed.secondUploaderConfig') || {}
     const secondPicBedMode = this.getConfig<string>('settings.secondPicBedMode')
+    /** Snapshot selecting the secondary uploader without changing the primary upload's configuration. */
     const secondaryConfig = this.getUploadConfig()
     set(secondaryConfig, `picBed.${secondaryUploaderType}`, secondUploaderConfig)
     set(secondaryConfig, 'picBed.current', secondaryUploaderType)
@@ -383,6 +489,10 @@ export class PicGo extends EventEmitter implements IPicGo {
         if (enableSecondUploader) {
           shouldKeepAfterUploading = true
         }
+        /**
+         * Deletes a generated clipboard image after completion or failure while retaining existing
+         * files.
+         */
         const cleanup = (): void => {
           if (!shouldKeepAfterUploading) {
             remove(imgPath).catch(e => {
@@ -413,6 +523,7 @@ export class PicGo extends EventEmitter implements IPicGo {
       ctxResult.backupCtx = await this.uploadConfig.run(secondaryConfig, async () => {
         if (secondPicBedMode === 'seperate') {
           if (initialUploadType === 'clipboard') {
+            /** Releases a generated clipboard file after the secondary upload has finished using it. */
             const cleanupForSecond = (): void => {
               if (!getClipboardResult.shouldKeepAfterUploading) {
                 remove(imgPath).catch(e => {

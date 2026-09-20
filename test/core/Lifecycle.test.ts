@@ -19,6 +19,7 @@ describe('Lifecycle', () => {
     baseDirs.length = 0
   })
 
+  /** Creates a lifecycle with an isolated temporary base directory tracked for test cleanup. */
   function createLifecycle(): Lifecycle {
     const baseDir = path.join(os.tmpdir(), `piclist-lifecycle-${Date.now()}-${Math.random().toString(36).slice(2)}`)
     baseDirs.push(baseDir)
@@ -156,6 +157,10 @@ describe('Lifecycle preprocessing isolation', () => {
     await fs.remove(baseDir)
   })
 
+  /**
+   * Asserts that same-name inputs retain separate paths, bytes, dimensions, and their expected source
+   * colors.
+   */
   async function expectDistinctImages(images: IImgInfo[]): Promise<void> {
     expect(images).toHaveLength(2)
     expect(images[0].buffer!.equals(images[1].buffer!)).toBe(false)

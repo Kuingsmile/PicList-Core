@@ -2,6 +2,13 @@ import type { IConfigItem, IPicGo, IPlugin } from '../../types'
 import { invalidFields, isEmptyValue, isSecretQuestion } from '../../utils/configPrompts'
 import { uploaderTranslators } from './utils'
 
+/**
+ * Collects and validates a named uploader profile before saving it as the active default.
+ *
+ * @remarks
+ * Existing profiles require overwrite confirmation. Secret fields are not prefilled, and cancellation
+ * before the final save leaves profile migration and persisted settings untouched.
+ */
 const setupUploader = async (ctx: IPicGo): Promise<void> => {
   const { t } = ctx.i18n
   const uploaders = ctx.helper.uploader.getIdList()
@@ -58,6 +65,10 @@ const setupUploader = async (ctx: IPicGo): Promise<void> => {
       type: secret ? 'password' : question.type,
       default: secret ? undefined : (existing?.[question.name] ?? question.default),
       transformer: secret ? undefined : question.transformer,
+      /**
+       * Validates a setup answer while replacing provider messages and exceptions with generic
+       * localized errors.
+       */
       validate: async (value: unknown) => {
         if (isEmptyValue(value)) return !question.required || t('CLI_INIT_REQUIRED')
         try {
@@ -84,6 +95,7 @@ const setupUploader = async (ctx: IPicGo): Promise<void> => {
 }
 
 const init: IPlugin = {
+  /** Registers interactive first-run setup and converts provider errors to a safe generic CLI failure. */
   handle: (ctx: IPicGo) => {
     ctx.cmd.program
       .command('init')

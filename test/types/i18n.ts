@@ -2,6 +2,10 @@ import type { ILocales } from '../../src/i18n/zh-CN'
 import type { IPicGo } from '../../src/types'
 
 // Compiled by npm run typecheck; no runtime side effects.
+/**
+ * Compile-only assertions for checked built-in translation keys, required placeholders, and dynamic
+ * plugin keys.
+ */
 export function checkI18nTypes(ctx: IPicGo, dynamicKey: string, locales: ILocales) {
   const { t } = ctx.i18n
   const text: string = t('UPLOAD_FAILED')

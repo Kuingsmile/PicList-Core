@@ -3,6 +3,7 @@ import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField } from './utils'
 
+/** Builds the authenticated multipart request for the configured SM.MS-compatible file API. */
 const postOptions = (fileName: string, image: Buffer, apiToken: string): IOldReqOptions => {
   return {
     method: 'POST',
@@ -22,6 +23,10 @@ const postOptions = (fileName: string, image: Buffer, apiToken: string): IOldReq
   }
 }
 
+/**
+ * Uploads image records and stores returned URLs and hashes, notifying and throwing on rejected
+ * responses.
+ */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const smmsConfig = getAndCheckConfig<ISmmsConfig>(ctx, 'picBed.smms', ['token'])
   for (const img of ctx.output) {
@@ -48,6 +53,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   return ctx
 }
 
+/** Builds the SM.MS configuration form using saved values and localized field labels. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<ISmmsConfig>('picBed.smms') || {}
   return [
@@ -59,6 +65,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   ]
 }
 
+/** Registers the built-in SM.MS uploader and its configuration form on the client. */
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.smms, {
     get name() {

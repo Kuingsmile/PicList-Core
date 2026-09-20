@@ -14,8 +14,13 @@ import ts from 'typescript'
 
 // Bundler resolution accepts extensionless source imports, but NodeNext consumers
 // need explicit file names in declarations (including index.js for directories).
+/** Rewrites relative declaration imports to explicit runtime filenames for NodeNext consumers. */
 function nodeDeclarationImports(context) {
   return source => {
+    /**
+     * Resolves a relative source module and replaces its declaration specifier with the emitted
+     * runtime path.
+     */
     function resolveSpecifier(node) {
       if (!ts.isStringLiteral(node) || !/^\.{1,2}\//.test(node.text)) return node
 
@@ -31,6 +36,10 @@ function nodeDeclarationImports(context) {
       return context.factory.createStringLiteral(relative.startsWith('.') ? relative : `./${relative}`)
     }
 
+    /**
+     * Rewrites import/export specifiers and import-type references throughout an emitted declaration
+     * tree.
+     */
     function visit(node) {
       if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
         return ts.visitEachChild(
@@ -58,6 +67,10 @@ function nodeDeclarationImports(context) {
 
 const fromRoot = file => path.resolve(import.meta.dirname, file)
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+/**
+ * Package boundaries that remain external to the bundle, including all declared runtime dependency
+ * classes.
+ */
 const externalPackages = Object.keys({ ...pkg.dependencies, ...pkg.peerDependencies, ...pkg.optionalDependencies })
 
 const version = process.env.VERSION || pkg.version
@@ -72,6 +85,7 @@ export default defineConfig({
   input: { index: fromRoot('src/index.ts'), tui: fromRoot('src/tui/index.tsx') },
   // Match package boundaries so e.g. `react-dom` is not mistaken for `react`.
   external: id => isBuiltin(id) || externalPackages.some(name => id === name || id.startsWith(`${name}/`)),
+  /** Fails the build on unresolved imports while forwarding other Rollup warnings. */
   onwarn(warning, warn) {
     // Undeclared dependencies must not silently become runtime imports.
     if (warning.code === 'UNRESOLVED_IMPORT') throw new Error(warning.message)

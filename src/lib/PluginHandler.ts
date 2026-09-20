@@ -13,6 +13,7 @@ import {
 import { getNormalPluginName, getProcessPluginName } from '../utils/common'
 import { IBuildInEvent } from '../utils/enum'
 
+/** Installs, removes, and updates user plugin packages through npm and reports operation events. */
 export class PluginHandler implements IPluginHandler {
   // Thanks to feflow -> https://github.com/feflow/feflow/blob/master/lib/internal/install/plugin.js
   private readonly ctx: IPicGo
@@ -24,6 +25,10 @@ export class PluginHandler implements IPluginHandler {
     return this.ctx.pluginLoader.getList()
   }
 
+  /**
+   * Installs valid plugin names or paths, registers successful packages, and emits installation
+   * results.
+   */
   async install(
     plugins: string[],
     options: IPluginHandlerOptions = {},
@@ -110,6 +115,10 @@ export class PluginHandler implements IPluginHandler {
     }
   }
 
+  /**
+   * Uninstalls resolved plugin packages, unregisters their handlers on success, and emits result
+   * events.
+   */
   async uninstall(plugins: string[], options: IPluginHandlerOptions = {}): Promise<IPluginHandlerResult<boolean>> {
     const processPlugins = plugins
       .map((item: string) => handlePluginNameProcess(this.ctx, item))
@@ -164,6 +173,7 @@ export class PluginHandler implements IPluginHandler {
     }
   }
 
+  /** Updates resolved plugin packages through npm and emits success or failure events. */
   async update(
     plugins: string[],
     options: IPluginHandlerOptions = {},
@@ -219,6 +229,11 @@ export class PluginHandler implements IPluginHandler {
     }
   }
 
+  /**
+   * Runs npm in the user plugin directory with effective registry, proxy, and environment settings.
+   *
+   * @returns Combined stdout/stderr and exit code; startup failures return code 1.
+   */
   private async execCommand(
     cmd: string,
     modules: string[],
@@ -279,9 +294,11 @@ export class PluginHandler implements IPluginHandler {
 }
 
 /**
- * transform the input plugin name or path string to valid result
- * @param ctx
- * @param nameOrPath
+ * Resolves plugin shorthand, package specifiers, or local paths for npm operations.
+ *
+ * @param ctx - Client providing the logger for invalid plugin inputs.
+ * @param nameOrPath - Plugin shorthand, full package name, or local plugin directory.
+ * @returns Installation target and package identity, or a result with success set to false.
  */
 const handlePluginNameProcess = (ctx: IPicGo, nameOrPath: string): IPluginProcessResult => {
   const res = {

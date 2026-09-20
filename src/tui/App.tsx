@@ -12,6 +12,10 @@ import { ActionDetails, ResultPanel, Working } from './screens'
 import type { TuiSession } from './session'
 import { sections, theme } from './theme'
 
+/**
+ * Renders the responsive terminal workspace and routes navigation, prompts, progress, results, and
+ * exit handling.
+ */
 export function App({ ctx, session }: { ctx: IPicGo; session: TuiSession }) {
   const state = useSyncExternalStore(session.subscribe, session.getSnapshot)
   const language = ctx.getConfig<string>('settings.language')
@@ -24,6 +28,7 @@ export function App({ ctx, session }: { ctx: IPicGo; session: TuiSession }) {
   const uploader = ctx.getConfig<string>('picBed.uploader') || ctx.getConfig<string>('picBed.current') || 'smms'
   const config = ctx.getConfig<Record<string, unknown>>(`picBed.${uploader}`)
   const [configured, setConfigured] = useState<boolean>()
+  /** Allows initial setup guidance to move selection only until the user begins navigating. */
   const initialReadiness = useRef(true)
   const configName = String(config?._configName || t(configured ? 'Default' : 'Not configured'))
   const secondary = t(ctx.getConfig<boolean>('settings.enableSecondUploader') ? 'On' : 'Off')
@@ -62,10 +67,12 @@ export function App({ ctx, session }: { ctx: IPicGo; session: TuiSession }) {
   useEffect(() => {
     if (!state.busy && state.error) setShowError(true)
   }, [state.busy, state.error])
+  /** Wraps section navigation and resets the highlighted action. */
   const changeSection = (next: number) => {
     setSection((next + sections.length) % sections.length)
     setHighlight(0)
   }
+  /** Selects an action's section, clears overlays, and starts it through the serialized session. */
   const start = (index: number) => {
     const item = items[index]
     if (!item) return

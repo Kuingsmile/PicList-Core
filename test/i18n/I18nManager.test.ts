@@ -27,6 +27,10 @@ describe('I18nManager', () => {
     await fs.remove(baseDir)
   })
 
+  /**
+   * Creates a locale manager with isolated user dictionaries and an inspectable configuration-save
+   * spy.
+   */
   function createManager(language?: string, directory = baseDir) {
     const saveConfig = vi.fn()
     const ctx = {

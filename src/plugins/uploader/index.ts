@@ -15,8 +15,10 @@ import tcYunUploader from './tcyun'
 import upYunUploader from './upyun'
 import webdavplistUploader from './webdav'
 
+/** Creates the plugin interface that installs every built-in uploader. */
 const buildInUploaders = () => {
   return {
+    /** Registers built-in uploaders on the supplied client in their declared order. */
     register(ctx: IPicGo) {
       advancedplistUploader(ctx)
       alistUploader(ctx)

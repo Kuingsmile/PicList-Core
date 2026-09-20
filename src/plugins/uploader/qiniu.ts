@@ -7,12 +7,14 @@ import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig } from './helper'
 import { buildInUploaderNames, createField } from './utils'
 
+/** Creates a lazy message getter so configuration help follows the current language. */
 const messageGetter = (ctx: IPicGo, key: Extract<ILocalesKey, `PICBED_QINIU_MESSAGE_${string}`>) => ({
   get message() {
     return ctx.i18n.t(key)
   },
 })
 
+/** Builds a region-specific base64 upload request with a URL-safe encoded object key. */
 function postOptions(options: IQiniuConfig, fileName: string, token: string, imgBase64: string): IOldReqOptions {
   const area = selectArea(options.area || 'z0')
   const path = options.path || ''
@@ -31,10 +33,12 @@ function postOptions(options: IQiniuConfig, fileName: string, token: string, img
   }
 }
 
+/** Converts a region code into the upload-host suffix, omitting the default z0 region. */
 function selectArea(area: string): string {
   return area === 'z0' ? '' : '-' + area
 }
 
+/** Creates a bucket-scoped Qiniu upload token using the configured access credentials. */
 function getToken(qiniuOptions: any): string {
   const accessKey = qiniuOptions.accessKey
   const secretKey = qiniuOptions.secretKey
@@ -46,6 +50,7 @@ function getToken(qiniuOptions: any): string {
   return putPolicy.uploadToken(mac)
 }
 
+/** Uploads base64 image records to Qiniu and constructs public URLs from returned object keys. */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const qiniuOptions = getAndCheckConfig<IQiniuConfig>(ctx, 'picBed.qiniu', [])
   try {
@@ -87,6 +92,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   }
 }
 
+/** Builds the Qiniu configuration form using saved values and localized field labels. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IQiniuConfig>('picBed.qiniu') || {}
   const config: IPluginConfig[] = [
@@ -137,6 +143,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   return config
 }
 
+/** Registers the built-in Qiniu uploader and its configuration form on the client. */
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.qiniu, {
     get name() {

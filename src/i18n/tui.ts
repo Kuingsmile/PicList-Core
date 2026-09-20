@@ -271,9 +271,11 @@ const messages = {
 } as const
 
 // Dots are path separators in the existing translator; keep catalog keys flat.
+/** Maps a known English message to a flat translation key, avoiding dots interpreted as object paths. */
 export const tuiKey = (message: string): string | undefined =>
   Object.hasOwn(messages, message) ? `TUI_${message.replace(/[^a-zA-Z0-9]+/g, '_')}` : undefined
 
+/** Builds the flat terminal catalog for English or either indexed Chinese translation. */
 const locale = (language?: 0 | 1): Record<string, string> =>
   Object.fromEntries(
     Object.entries(messages).map(([key, values]) => [tuiKey(key)!, language === undefined ? key : values[language]]),

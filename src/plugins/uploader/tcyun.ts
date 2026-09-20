@@ -14,6 +14,7 @@ export interface ISignature {
   signTime: string
 }
 
+/** Generates version-specific COS authorization, including its signing time window. */
 const generateSignature = (options: ITcyunConfig, fileName: string): ISignature => {
   const { secretId, secretKey, appId, bucket, version, area, endpoint, path } = options
   const isV4 = !version || version === 'v4'
@@ -44,6 +45,7 @@ const generateSignature = (options: ITcyunConfig, fileName: string): ISignature 
   return { signature, appId, bucket, signTime }
 }
 
+/** Builds either a legacy multipart COS upload or a signed PUT request for the newer API. */
 const postOptions = (
   options: ITcyunConfig,
   fileName: string,
@@ -86,6 +88,10 @@ const postOptions = (
   }
 }
 
+/**
+ * Uploads through the selected COS API version and constructs download URLs with optional image
+ * processing.
+ */
 const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   const tcYunOptions = getAndCheckConfig<ITcyunConfig>(ctx, 'picBed.tcyun', [])
 
@@ -152,6 +158,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   }
 }
 
+/** Builds the Tencent COS configuration form using saved values and localized field labels. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<ITcyunConfig>('picBed.tcyun') || {}
 
@@ -209,6 +216,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   ]
 }
 
+/** Registers the built-in Tencent COS uploader and its configuration form on the client. */
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.tcyun, {
     get name() {

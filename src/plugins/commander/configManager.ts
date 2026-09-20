@@ -1,5 +1,6 @@
 import { IConfigItem, IPicGo, IStringKeyMap } from '../../types'
 
+/** Logs profile metadata and non-metadata configuration fields for the config-show command. */
 const printConfigDetails = (ctx: IPicGo, config: IConfigItem, name?: string) => {
   ctx.log.info(`Config details for "${name ?? config._configName}":`)
   ctx.log.info(`  ID: ${config._id}`)
@@ -14,6 +15,7 @@ const printConfigDetails = (ctx: IPicGo, config: IConfigItem, name?: string) => 
   })
 }
 
+/** Looks up a named profile and logs a missing-profile error instead of throwing. */
 const getConfigOrLogError = (ctx: IPicGo, uploader: string, configName: string): IConfigItem | undefined => {
   const config = ctx.configManager.getConfigByName(uploader, configName)
 
@@ -26,6 +28,7 @@ const getConfigOrLogError = (ctx: IPicGo, uploader: string, configName: string):
 }
 
 const configCmd = {
+  /** Registers CLI commands for listing, selecting, removing, renaming, and inspecting saved profiles. */
   handle: (ctx: IPicGo) => {
     const cmd = ctx.cmd
     cmd.program

@@ -10,6 +10,7 @@ import { PicGo } from '../../src/core/PicGo'
 
 const errorMessage = 'Upload failed, please check your network and config'
 
+/** Allocates and releases an ephemeral loopback port for a test server to bind. */
 const getAvailablePort = async (): Promise<number> => {
   const probe = createNetServer()
   await new Promise<void>((resolve, reject) => {

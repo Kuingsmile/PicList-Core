@@ -7,6 +7,7 @@ import { handleSecondUploader } from './secondUploader'
 import { uploaderTranslators } from './utils'
 
 // Built-in modules configuration mapping
+/** Built-in processing form factories paired with their localization keys. */
 const BUILDIN_MODULES = {
   compress: { config: compress.config, key: 'BUILDIN_COMPRESS' },
   watermark: { config: watermark.config, key: 'BUILDIN_WATERMARK' },
@@ -16,6 +17,10 @@ const BUILDIN_MODULES = {
 
 type BuildinModuleName = keyof typeof BUILDIN_MODULES
 
+/**
+ * Collects a module form and saves it to an uploader profile, global settings, or profile-linked
+ * processing settings.
+ */
 const handleConfig = async (
   ctx: IPicGo,
   prompts: IPluginConfig[],
@@ -96,6 +101,7 @@ const handleConfig = async (
   }
 }
 
+/** Maps module categories to configuration namespaces, leaving plugin names as root keys. */
 const getConfigName = (module: string, name: string): string => {
   const configMap: Record<string, string> = {
     uploader: `picBed.${name}`,
@@ -105,6 +111,7 @@ const getConfigName = (module: string, name: string): string => {
   return configMap[module] || name
 }
 
+/** Selects a built-in processing form and saves global or uploader-profile-specific settings. */
 export const handleBuildinModule = async (
   ctx: IPicGo,
   name?: string,
@@ -143,6 +150,7 @@ export const handleBuildinModule = async (
   await handleConfig(ctx, selectedModule.config(ctx), 'buildin', answer.buildin, configName, uploaderName)
 }
 
+/** Resolves or prompts for a registered uploader/transformer and opens its configuration form. */
 const handleUploaderOrTransformer = async (
   ctx: IPicGo,
   module: 'uploader' | 'transformer',
@@ -183,6 +191,7 @@ const handleUploaderOrTransformer = async (
   }
 }
 
+/** Resolves or prompts for an installed plugin and saves answers from its configuration form. */
 export const handlePlugin = async (ctx: IPicGo, name?: string): Promise<void> => {
   if (name) {
     const pluginName = name.includes('picgo-plugin-') ? name : `picgo-plugin-${name}`
@@ -217,6 +226,10 @@ export const handlePlugin = async (ctx: IPicGo, name?: string): Promise<void> =>
 }
 
 const setting = {
+  /**
+   * Registers set/config commands and dispatches supported module categories to their configuration
+   * flows.
+   */
   handle: (ctx: IPicGo) => {
     const cmd = ctx.cmd
     cmd.program

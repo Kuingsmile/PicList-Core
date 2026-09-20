@@ -4,6 +4,12 @@ import mime from 'mime'
 import { IImgInfo, IImgSize, IPathTransformedImgInfo, IPicGo } from '../../types'
 import { getFSFile, getImageSize, getURLFile, isUrl } from '../../utils/common'
 
+/**
+ * Loads files, URLs, or buffers into image records concurrently and drops failed inputs.
+ *
+ * @remarks
+ * Each successful record retains its original inputIndex so renaming remains correct after filtering.
+ */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const results: IImgInfo[] = ctx.output
   await Promise.all(
@@ -44,6 +50,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   return ctx
 }
 
+/** Reads image dimensions and logs when the 200×200 fallback must be used. */
 const getImgSize = (ctx: IPicGo, file: Buffer, path: string | Buffer): IImgSize => {
   const imageSize = getImageSize(file)
   if (!imageSize.real) {

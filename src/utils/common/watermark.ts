@@ -10,6 +10,7 @@ import { forceNumber } from './config'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
+/** Renders watermark text as SVG bytes using the selected font file and fill color. */
 async function text2SVG(
   defaultWatermarkFontPath: string,
   text?: string,
@@ -30,13 +31,32 @@ async function text2SVG(
   return Buffer.from(textSVG)
 }
 
+/** Locates the bundled watermark image from either the source utility layout or built module layout. */
 const getDefaultWatermarkImagePath = (): string => {
   const commonUtilsDir = path.basename(__dirname) === 'common' ? path.dirname(__dirname) : __dirname
   return path.join(commonUtilsDir, 'assets', 'piclist.png')
 }
 
+/** Fallback image watermark resolved relative to this module's asset directory. */
 const defaultWatermarkImagePath = getDefaultWatermarkImagePath()
 
+/**
+ * Composites a scaled text or image watermark, optionally tiled across every frame.
+ *
+ * @param img - Encoded source image bytes.
+ * @param watermarkType - Selects generated text or an image file.
+ * @param defaultWatermarkFontPath - Font file used when no custom text font is supplied.
+ * @param isFullScreenWatermark - Tiles the watermark instead of placing it once.
+ * @param watermarkDegree - Rotation angle in degrees.
+ * @param text - Watermark text; empty values use the built-in sample text.
+ * @param watermarkFontPath - Optional custom font file.
+ * @param watermarkScaleRatio - Watermark width relative to image width; invalid values fall back to
+ * 0.15.
+ * @param watermarkColor - Text fill color accepted by the SVG renderer.
+ * @param watermarkImagePath - Image watermark file; omitted to use the bundled logo.
+ * @param position - Composite gravity, defaulting to southeast.
+ * @param watermarkImageOpacity - Image watermark alpha on a 0–255 scale.
+ */
 export async function AddWatermark(
   img: Buffer,
   watermarkType: 'text' | 'image',
@@ -78,6 +98,7 @@ export async function AddWatermark(
     .toBuffer()
 }
 
+/** Builds text or image watermark bytes, applies image opacity, and scales and rotates the result. */
 async function createWatermark(
   watermarkType: 'text' | 'image',
   defaultWatermarkFontPath: string,
@@ -129,11 +150,13 @@ async function createWatermark(
     .toBuffer()
 }
 
+/** Reads watermark dimensions, using 200 pixels for each unavailable dimension. */
 async function getSize(image: Buffer): Promise<{ width: number; height: number }> {
   const { width, height } = await sharp(image).metadata()
   return { width: width || 200, height: height || 200 }
 }
 
+/** Applies configured watermark settings, logging failures and returning the original bytes on error. */
 export async function imageAddWaterMark(
   img: Buffer,
   options: IBuildInWaterMarkOptions,

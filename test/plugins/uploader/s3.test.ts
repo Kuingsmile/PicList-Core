@@ -39,6 +39,7 @@ describe('S3 download URLs', () => {
     vi.useRealTimers()
   })
 
+  /** Creates a synthetic S3 upload with private ACL defaults and per-test task overrides. */
   function upload(overrides: Partial<Parameters<typeof uploader.createUploadTask>[0]> = {}) {
     return uploader.createUploadTask({
       client,

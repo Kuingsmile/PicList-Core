@@ -17,6 +17,7 @@ function mockLogin(token: string): void {
   vi.mocked(axios.post).mockResolvedValueOnce({ data: { code: 200, message: 'success', data: { token } } })
 }
 
+/** Creates an Alist fixture with mutable server settings and a persisted-token cache between uploads. */
 function createUploader(initialStore?: IAlistTokenStore) {
   let config = { ...initialConfig }
   let tokenStore = initialStore
@@ -51,6 +52,10 @@ function createUploader(initialStore?: IAlistTokenStore) {
     request,
     saveConfig,
     getTokenStore: () => structuredClone(tokenStore),
+    /**
+     * Resets image output and request history while preserving the cached token for the next fixture
+     * upload.
+     */
     async upload(nextConfig = config) {
       config = { ...nextConfig }
       ctx.output = [{ fileName: 'photo.png', buffer: Buffer.from('synthetic-image') }]
@@ -61,6 +66,7 @@ function createUploader(initialStore?: IAlistTokenStore) {
   }
 }
 
+/** Asserts that upload, directory refresh, and file lookup all use the expected token. */
 function expectAuthorization(uploader: ReturnType<typeof createUploader>, token: string): void {
   expect(uploader.request).toHaveBeenCalledTimes(3)
   for (const [options] of uploader.request.mock.calls) {

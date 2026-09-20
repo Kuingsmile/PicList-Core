@@ -8,8 +8,16 @@ import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
+/**
+ * Reuses a login token for up to one hour only when server and credential identity match; otherwise
+ * logs in and saves it.
+ */
 const getAlistToken = async (ctx: IPicGo, url: string, username: string, password: string): Promise<string> => {
   // Legacy caches have no identity and must be refreshed before they can be trusted.
+  /**
+   * Digest binding the cached token to its server and login credentials without storing those inputs
+   * in the cache key.
+   */
   const cacheKey = getSha256(JSON.stringify([url, username, password]))
   const tokenStore = ctx.getConfig<IAlistTokenStore>('picgo-plugin-buildin-alistplist')
   if (
@@ -39,6 +47,7 @@ const getAlistToken = async (ctx: IPicGo, url: string, username: string, passwor
   throw new Error('Get token failed')
 }
 
+/** Builds an authenticated Alist multipart upload with the encoded destination in File-Path. */
 const postOptions = (url: string, token: string, fileName: string, filePath: string, image: Buffer): IOldReqOptions => {
   return {
     method: 'PUT',
@@ -61,6 +70,7 @@ const postOptions = (url: string, token: string, fileName: string, filePath: str
   }
 }
 
+/** Checks HTTP and Alist application status, emitting a notification and throwing on failure. */
 const handleResError = (ctx: IPicGo, res: IFullResponse): void => {
   if (res.statusCode !== 200 || res.body.code !== 200 || res.body.message !== 'success') {
     ctx.emit(IBuildInEvent.NOTIFICATION, {
@@ -72,6 +82,7 @@ const handleResError = (ctx: IPicGo, res: IFullResponse): void => {
   }
 }
 
+/** Builds an authenticated JSON request for Alist directory and file metadata operations. */
 const createApiRequest = (url: string, token: string, body: any): IOldReqOptions => ({
   method: 'POST',
   url,
@@ -83,6 +94,7 @@ const createApiRequest = (url: string, token: string, body: any): IOldReqOptions
   resolveWithFullResponse: true,
 })
 
+/** Normalizes Alist endpoints and upload/public paths while supplying empty optional credentials. */
 const extractConfig = (config: IAlistConfig) => {
   const { url, token, username, password, uploadPath, webPath, customUrl } = config
   return {
@@ -108,6 +120,9 @@ const extractConfig = (config: IAlistConfig) => {
   }
 }
 
+/**
+ * Uploads images, refreshes their directory, and resolves signed Alist or custom-domain download URLs.
+ */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const alistConfig = getAndCheckConfig<IAlistConfig>(ctx, 'picBed.alistplist', [])
 
@@ -160,6 +175,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   return ctx
 }
 
+/** Builds the Alist configuration form using saved values and localized field labels. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IAlistConfig>('picBed.alistplist') || {}
   return [
@@ -201,6 +217,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   ]
 }
 
+/** Registers the built-in Alist uploader and its configuration form on the client. */
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.alistplist, {
     get name() {

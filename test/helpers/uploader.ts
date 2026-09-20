@@ -3,6 +3,10 @@ import { vi } from 'vitest'
 import { LifecyclePlugins } from '../../src/lib/LifecyclePlugins'
 import type { IImgInfo, IOldReqOptions, IPicGo } from '../../src/types'
 
+/**
+ * Registers an uploader against a mock client with cloned settings, synthetic image data, and
+ * inspectable request calls.
+ */
 export function createUploader(
   register: (ctx: IPicGo) => void,
   configKey: string,

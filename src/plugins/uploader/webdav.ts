@@ -9,14 +9,17 @@ import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
+/** HTTP request and response size limit in bytes for the WebDAV client. */
 const MAX_FILE_SIZE = 4 * 1024 * 1024 * 1024 // 4GB
 const GALLERY_PORT = 36699
 
+/** Rebuilds the host URL using the explicit SSL setting and removes trailing slashes. */
 const normalizeHostUrl = (host: string, sslEnabled: boolean): string => {
   const cleanHost = host.replace(/^https?:\/\/|\/+$/g, '')
   return `${sslEnabled ? 'https://' : 'http://'}${cleanHost}`
 }
 
+/** Creates an authenticated WebDAV client with upload size limits and optional digest authentication. */
 const createWebDAVClient = (config: IWebdavPlistConfig): WebDAVClient => {
   const clientOptions: WebDAVClientOptions = {
     username: config.username,
@@ -32,6 +35,10 @@ const createWebDAVClient = (config: IWebdavPlistConfig): WebDAVClient => {
   return createClient(config.host, clientOptions)
 }
 
+/**
+ * Constructs a public URL from the selected upload or web path, encoded filename, and configured
+ * suffix.
+ */
 const buildImageUrl = (
   baseUrl: string,
   uploadPath: string,
@@ -45,6 +52,7 @@ const buildImageUrl = (
   return `${baseUrl}/${encodedPath}${suffix}`
 }
 
+/** Writes a gallery-cache copy while creating any nested filename directories. */
 const saveImageToTemp = (ctx: IPicGo, fileName: string, imageBuffer: Buffer): void => {
   const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'webdavplist')
   const imgTempFilePath = path.join(imgTempPath, fileName)
@@ -52,6 +60,7 @@ const saveImageToTemp = (ctx: IPicGo, fileName: string, imageBuffer: Buffer): vo
   fs.writeFileSync(imgTempFilePath, imageBuffer)
 }
 
+/** Creates remote parent directories and uploads image bytes with overwrite enabled. */
 const uploadImage = async (
   client: WebDAVClient,
   uploadPath: string,
@@ -69,6 +78,7 @@ const uploadImage = async (
   return await client.putFileContents(filePath, imageBuffer, { overwrite: true })
 }
 
+/** Uploads output images to WebDAV, caches gallery copies, and assigns their public and gallery URLs. */
 const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   const webdavOptions = getAndCheckConfig<IWebdavPlistConfig>(ctx, 'picBed.webdavplist', [])
 
@@ -105,6 +115,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   }
 }
 
+/** Builds the WebDAV configuration form using saved values and localized field labels. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IWebdavPlistConfig>('picBed.webdavplist') || {}
 
@@ -151,6 +162,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   ]
 }
 
+/** Registers the built-in WebDAV uploader and its configuration form on the client. */
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.webdavplist, {
     get name() {

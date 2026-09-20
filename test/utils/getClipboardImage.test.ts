@@ -22,12 +22,14 @@ vi.mock('../../src/utils/clipboard/wsl.sh', () => ({ default: 'wsl clipboard scr
 
 const baseDirs: string[] = []
 
+/** Reserves a unique fixture directory path and tracks it for cleanup after the test. */
 function createBaseDir(): string {
   const baseDir = path.join(os.tmpdir(), `piclist-clipboard-${Date.now()}-${Math.random().toString(36).slice(2)}`)
   baseDirs.push(baseDir)
   return baseDir
 }
 
+/** Simulates the next extraction child process emitting its image path asynchronously. */
 function mockClipboardImageScriptOutput(output: string): void {
   const stdout = new EventEmitter()
   const childProcess = new EventEmitter() as EventEmitter & { stdout: EventEmitter }
@@ -39,6 +41,7 @@ function mockClipboardImageScriptOutput(output: string): void {
   })
 }
 
+/** Simulates a successful text-clipboard helper without invoking a native clipboard command. */
 function mockClipboardTextOutput(output: string): void {
   childProcessMock.execFile.mockImplementationOnce(
     (

@@ -1,6 +1,10 @@
 import { IPicGo, IPluginConfig } from '../../types'
 import { createField } from '../uploader/utils'
 
+/**
+ * Builds the image-processing extension exclusion form with defaults from saved global processing
+ * settings.
+ */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<{ skipProcessExtList?: string }>('buildIn.skipProcess') || {}
   const config: IPluginConfig[] = [

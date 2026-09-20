@@ -1,5 +1,6 @@
 import { checkbox, confirm, input, password, select } from '@inquirer/prompts'
 
+/** Legacy-style question contract shared by CLI prompts and terminal UI adapters. */
 export interface IInquirerQuestion {
   type: string
   name: string
@@ -7,16 +8,22 @@ export interface IInquirerQuestion {
   choices?: ({ name: string; value: any } | string)[]
   default?: any
   validate?: (val: any) => boolean | string | Promise<boolean | string>
+  /** Controls visibility using answers collected from earlier questions. */
   when?: boolean | ((answers: Record<string, any>) => boolean | Promise<boolean>)
+  /** Transforms a submitted value before it is stored in the answer map. */
   filter?: (val: any) => any
+  /** Formats the displayed input without replacing its stored value. */
   transformer?: (val: any) => string
   [key: string]: any
 }
 
+/** Replaceable sequential prompt interface used by commands and embedded UI sessions. */
 export interface IInquirerAdapter {
+  /** Asks the supplied questions in order and returns answers keyed by question name. */
   prompt<T = Record<string, any>>(questions: IInquirerQuestion[]): Promise<T>
 }
 
+/** Expands string choices into explicit display-name/value pairs for modern Inquirer prompts. */
 function normaliseChoices(
   choices: ({ name: string; value: any } | string)[] | undefined,
 ): { name: string; value: any }[] {
@@ -24,6 +31,7 @@ function normaliseChoices(
   return choices.map(c => (typeof c === 'string' ? { name: c, value: c } : c))
 }
 
+/** Evaluates visibility and dispatches a legacy question to its modern Inquirer prompt implementation. */
 async function runQuestion(question: IInquirerQuestion, answers: Record<string, any>): Promise<any> {
   // evaluate the `when` guard
   if (question.when !== undefined) {
@@ -123,6 +131,10 @@ async function runQuestion(question: IInquirerQuestion, answers: Record<string, 
  */
 export function createInquirerAdapter(): IInquirerAdapter {
   return {
+    /**
+     * Collects visible answers sequentially and applies filters before exposing them to later
+     * questions.
+     */
     async prompt<T = Record<string, any>>(questions: IInquirerQuestion[]): Promise<T> {
       const answers: Record<string, any> = {}
       for (const q of questions) {

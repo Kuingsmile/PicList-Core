@@ -2,9 +2,14 @@ import { IFullResponse, IImgurConfig, IOldReqOptions, IPicGo, IPluginConfig } fr
 import { IBuildInEvent } from '../../utils/enum'
 import { buildInUploaderNames } from './utils'
 
+/** Adds the Bearer prefix when a nonempty access token does not already include it. */
 const formatAccessToken = (accessToken: string): string =>
   accessToken ? (accessToken.startsWith('Bearer') ? accessToken : `Bearer ${accessToken}`) : ''
 
+/**
+ * Selects account or client authorization and optionally searches account albums before building an
+ * upload request.
+ */
 const postOptions = async (
   ctx: IPicGo,
   options: IImgurConfig,
@@ -80,6 +85,7 @@ const postOptions = async (
   return requestOptions
 }
 
+/** Uploads base64 image content to Imgur and retains the returned public link and deletion hash. */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const imgurOptions = ctx.getConfig<IImgurConfig>('picBed.imgur')
   if (!imgurOptions) throw new Error("Can't find imgur config")
@@ -111,6 +117,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   }
 }
 
+/** Builds the Imgur configuration form using saved values and localized field labels. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IImgurConfig>('picBed.imgur') || {}
   const config: IPluginConfig[] = [
@@ -193,6 +200,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   return config
 }
 
+/** Registers the built-in Imgur uploader and its configuration form on the client. */
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.imgur, {
     get name() {

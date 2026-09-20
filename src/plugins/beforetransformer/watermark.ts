@@ -1,6 +1,7 @@
 import { IBuildInWaterMarkOptions, IPicGo, IPluginConfig } from '../../types'
 import { createField } from '../uploader/utils'
 
+/** Builds the text and image watermark form with defaults from saved global processing settings. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IBuildInWaterMarkOptions>('buildIn.watermark') || {}
   const config: IPluginConfig[] = [

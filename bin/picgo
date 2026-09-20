@@ -17,6 +17,7 @@ if (configPath !== true && configPath !== '') {
 const picgo = await PicGo.create(configPath)
 picgo.registerCommands()
 
+/** Loads and runs the terminal UI only when both standard input and output are interactive. */
 const openTui = async () => {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     throw new Error('The TUI requires an interactive terminal. Use picgo --help for command-line usage.')

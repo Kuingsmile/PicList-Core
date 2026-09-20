@@ -12,6 +12,7 @@ import getClipboardImage from '../../src/utils/getClipboardImage'
 
 vi.mock('../../src/utils/getClipboardImage', () => ({ default: vi.fn() }))
 
+/** Creates a manually released promise used to coordinate overlapping upload tests. */
 const deferred = () => {
   let resolve!: () => void
   const promise = new Promise<void>(done => (resolve = done))

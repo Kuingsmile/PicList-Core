@@ -3,8 +3,12 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import { IPicGo } from '../types'
 
 /**
- * create an unique context for each upload process
- * @param ctx
+ * Creates isolated lifecycle arrays while sharing client services and event listeners.
+ *
+ * @remarks
+ * Configuration methods retain the current async-local upload snapshot even after the upload returns.
+ *
+ * @param ctx - Initialized client whose services and active configuration are inherited.
  */
 export const createContext = (ctx: IPicGo): IPicGo => {
   return {

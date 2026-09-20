@@ -1,6 +1,7 @@
 import { IPicGo, IPluginConfig } from '../../types'
 import { createField } from '../uploader/utils'
 
+/** Builds the filename-template renaming form with defaults from saved global processing settings. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<any>('buildIn.rename') || {}
   const config: IPluginConfig[] = [

@@ -13,10 +13,12 @@ import { translator } from './i18n'
 import { invalidFields, uploaderReady } from './readiness'
 import { TuiError } from './session'
 
+/** Executable terminal action with a stable ID, localized labels, and optional displayable results. */
 export interface TuiAction {
   id: string
   label: string
   description: string
+  /** Runs the action and optionally returns result lines for the session result panel. */
   run: () => Promise<string[] | void>
 }
 
@@ -43,6 +45,12 @@ export function parseUploadPaths(input: string): string[] {
   return paths
 }
 
+/**
+ * Parses pasted paths, expands home-directory prefixes, and accepts existing files or valid HTTP(S)
+ * URLs.
+ *
+ * @throws A display-safe TuiError for missing input, malformed URLs, or invalid local files.
+ */
 export async function validateUploadPaths(input: string): Promise<string[]> {
   const values = parseUploadPaths(input)
   if (!values.length) throw new TuiError('Enter at least one file path or HTTP(S) URL.')
@@ -66,8 +74,13 @@ export async function validateUploadPaths(input: string): Promise<string[]> {
   return resolved
 }
 
+/**
+ * Builds localized terminal actions bound to the client's current prompt adapter and configuration
+ * APIs.
+ */
 export function createActions(ctx: IPicGo): TuiAction[] {
   const t = translator(ctx)
+  /** Asks one localized question and unwraps its value from the adapter's answer map. */
   const ask = async <T>(question: Omit<IInquirerQuestion, 'name'>): Promise<T> => {
     const answer = await ctx.cmd.inquirer.prompt<{ value: T }>([
       {
@@ -80,10 +93,12 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     ])
     return answer.value
   }
+  /** Presents typed choices, rejecting empty lists with a display-safe error. */
   const choose = <T>(message: string, choices: { name: string; value: T }[], defaultValue?: T) => {
     if (!choices.length) throw new TuiError('No items are available. Configure an uploader or install a plugin first.')
     return ask<T>({ type: 'list', message, choices, default: defaultValue })
   }
+  /** Offers registered uploaders with localized names and the current uploader preselected. */
   const chooseUploader = () =>
     choose(
       'Choose an uploader',
@@ -93,6 +108,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
       })),
       ctx.getConfig<string>('picBed.uploader') || ctx.getConfig<string>('picBed.current'),
     )
+  /** Selects a saved uploader profile by ID, highlighting the current default. */
   const chooseConfig = async (uploader: string) => {
     const configs = ctx.configManager.getAllUploaderConfigs(uploader)
     const current = ctx.configManager.getCurrentUploaderConfig(uploader)
@@ -106,6 +122,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     )
     return configs.find(config => config._id === id)!
   }
+  /** Prompts for a trimmed, nonempty profile name that is not already in use. */
   const configName = (uploader: string, defaultName = '') =>
     ask<string>({
       type: 'input',
@@ -119,6 +136,9 @@ export function createActions(ctx: IPicGo): TuiAction[] {
             : true,
       filter: (value: string) => value.trim(),
     })
+  /**
+   * Collects and validates a complete uploader form before persisting the profile and active uploader.
+   */
   const configureUploader = async (uploader: string, name: string, editing: boolean) => {
     const plugin = ctx.helper.uploader.get(uploader)
     if (!plugin?.config) throw new TuiError('This uploader has no configuration form.')
@@ -143,6 +163,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     }
     ctx.saveConfig({ 'picBed.uploader': uploader, 'picBed.current': uploader })
   }
+  /** Checks destination readiness, uploads inputs, and returns primary and backup links for display. */
   const upload = async (input?: string[]) => {
     await requireDestination()
     const result = await ctx.uploadReturnCtx(input)
@@ -151,6 +172,10 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     if (!urls.length) throw new TuiError('No images were uploaded. Check the input and uploader settings.')
     return [...urls, ...backup]
   }
+  /**
+   * Rejects incomplete uploader settings with a display-safe error before uploads or connection
+   * checks.
+   */
   const requireDestination = async () => {
     if (!(await uploaderReady(ctx)))
       throw new TuiError(t('Complete the required destination settings before uploading or checking the connection.'))
@@ -169,6 +194,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     {
       label: 'Check connection',
       description: 'Upload a small test image using your current upload settings.',
+      /** Confirms a real test upload using current processing and backup settings, then removes its local fixture. */
       run: async () => {
         await requireDestination()
         if (
@@ -200,6 +226,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     {
       label: 'Upload files or URLs',
       description: 'Paste paths or HTTP(S) URLs; quote paths containing spaces.',
+      /** Collects and validates pasted inputs before uploading, exposing only safe validation messages. */
       run: async () => {
         const input = await ask<string>({
           type: 'input',
@@ -227,6 +254,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     {
       label: 'Switch uploader',
       description: 'Select an uploader and its saved configuration.',
+      /** Persists the selected profile as the uploader default and switches the active destination. */
       run: async () => {
         const uploader = await chooseUploader()
         const config = await chooseConfig(uploader)
@@ -237,6 +265,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     {
       label: 'Uploader configurations',
       description: 'Create, edit, activate, rename or delete a named configuration.',
+      /** Dispatches profile management operations and requires confirmation before deletion. */
       run: async () => {
         const uploader = await chooseUploader()
         const operation = await choose(
@@ -286,6 +315,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     {
       label: 'Image processing',
       description: 'Configure compression, watermarks, renaming and processing rules.',
+      /** Applies a processing form globally or to the ID of a selected saved profile. */
       run: async () => {
         const scope = await choose('Apply image processing settings to', [
           { name: t('All uploaders (global settings)'), value: 'global' },
@@ -302,6 +332,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     {
       label: 'Transformer',
       description: 'Choose and configure the input transformer.',
+      /** Collects optional transformer settings and persists them together with the selected transformer. */
       run: async () => {
         const name = await choose(
           'Choose a transformer',
@@ -316,6 +347,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     {
       label: 'Plugins',
       description: 'Enable, configure, install, update or remove PicGo plugins.',
+      /** Manages plugin packages and enablement with silent npm output and display-safe failure messages. */
       run: async () => {
         const operation = await choose(
           'Manage plugins',
@@ -362,6 +394,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     {
       label: 'Proxy',
       description: 'Set or clear the upload proxy.',
+      /** Validates and saves an HTTP(S) proxy URL, allowing an empty value to clear the proxy. */
       run: async () => {
         const proxy = await ask<string>({
           type: 'password',
@@ -382,6 +415,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     {
       label: 'Language',
       description: 'Change the language used by navigation and forms.',
+      /** Prompts for a supported language and applies it through the persistent locale manager. */
       run: async () => {
         const language = await choose(
           'Choose a language',

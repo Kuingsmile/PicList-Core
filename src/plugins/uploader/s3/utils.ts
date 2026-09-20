@@ -6,6 +6,10 @@ import mime from 'mime'
 
 import { IImgInfo } from '../../../types'
 
+/**
+ * Resolves upload bytes and MIME metadata from base64 or buffer input, detecting file type when
+ * needed.
+ */
 export async function extractInfo(info: IImgInfo): Promise<{
   body?: Buffer
   contentType?: string
@@ -38,6 +42,7 @@ export async function extractInfo(info: IImgInfo): Promise<{
   return result
 }
 
+/** Normalizes proxy host/port strings into HTTP URLs and substitutes localhost for 127.0.0.1. */
 function formatHttpProxyURL(url = ''): string {
   if (!url) return ''
 
@@ -54,6 +59,10 @@ function formatHttpProxyURL(url = ''): string {
   }
 }
 
+/**
+ * Creates a keep-alive HTTP or HTTPS proxy agent, returning undefined when no usable proxy is
+ * configured.
+ */
 export function getProxyAgent(
   proxy: string | undefined,
   sslEnabled: boolean,

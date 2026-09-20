@@ -5,6 +5,7 @@ import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames } from './utils'
 
+/** Builds a PicList server upload request with destination/profile selection and optional server key. */
 const postOptions = (options: IPicListConfig, fileName: string, image: Buffer): IOldReqOptionsWithFullResponse => {
   const { host = '127.0.0.1', port = '', picbed = '', configName = 'Default', serverKey = '' } = options
   const isIp = host.match(/(\d+)\.(\d+)\.(\d+)\.(\d+)/)
@@ -34,6 +35,7 @@ const postOptions = (options: IPicListConfig, fileName: string, image: Buffer): 
   }
 }
 
+/** Forwards image records to a PicList server and stores its returned URL and optional full result. */
 const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   const piclistOptions = getAndCheckConfig<IPicListConfig>(ctx, 'picBed.piclist', [])
 
@@ -75,6 +77,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   }
 }
 
+/** Builds the PicList server configuration form using saved values and localized field labels. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IPicListConfig>('picBed.piclist') || {}
   const config: IPluginConfig[] = [
@@ -142,6 +145,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   return config
 }
 
+/** Registers the built-in PicList server uploader and its configuration form on the client. */
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.piclist, {
     get name() {

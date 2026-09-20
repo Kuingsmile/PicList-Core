@@ -13,6 +13,10 @@ export interface Choice {
   value: any
 }
 
+/**
+ * Renders a scrolling keyboard menu with optional controlled selection, checkboxes, and page
+ * navigation.
+ */
 export function Menu({
   choices,
   initial = 0,
@@ -97,6 +101,7 @@ export function Shortcut({ keys, label }: { keys: string; label: string }) {
   )
 }
 
+/** Animates a busy indicator unless screen-reader mode requests a stable display. */
 export function Spinner() {
   const [frame, setFrame] = useState(0)
   useEffect(() => {
@@ -107,6 +112,10 @@ export function Spinner() {
   return <Text color={theme.accent}>{['◐', '◓', '◑', '◒'][frame]}</Text>
 }
 
+/**
+ * Renders and validates one legacy question with masked secrets, cancellable input, and filtered
+ * choices.
+ */
 export function PromptForm({
   question,
   position,
@@ -127,8 +136,10 @@ export function PromptForm({
   const [validating, setValidating] = useState(false)
   const [filtering, setFiltering] = useState(false)
   const [query, setQuery] = useState('')
+  /** Prevents duplicate submissions while asynchronous validation is running. */
   const lock = useRef(false)
   const mounted = useRef(true)
+  /** Suppresses validation results after cancellation, even before React unmounts the form. */
   const cancelled = useRef(false)
   useEffect(() => {
     mounted.current = true
@@ -146,6 +157,10 @@ export function PromptForm({
   const filtered = choices.filter(choice => choice.name.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
   const isSelection = ['list', 'rawlist', 'checkbox', 'confirm'].includes(question.type)
   const secret = isSecretQuestion(question)
+  /**
+   * Validates an answer once, hides sensitive validation details, and ignores stale or cancelled
+   * results.
+   */
   const submit = async (answer: any) => {
     if (lock.current || cancelled.current) return
     lock.current = true

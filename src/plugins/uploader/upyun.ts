@@ -12,6 +12,7 @@ const DEFAULT_ENDPOINT = 'https://v0.api.upyun.com'
 const DEFAULT_EXPIRE_TIME = 1800 // 30 minutes
 const SUCCESS_STATUS_CODE = 200
 
+/** Signs a PUT resource and UTC date using the MD5-derived operator password key. */
 const generateSignature = (options: IUpyunConfig, fileName: string): string => {
   const { path = '', operator, password, bucket } = options
   const md5Password = getMd5(password)
@@ -22,6 +23,7 @@ const generateSignature = (options: IUpyunConfig, fileName: string): string => {
   return `UPYUN ${operator}:${sign}`
 }
 
+/** Builds a signed Upyun PUT request against the configured or default API endpoint. */
 const postOptions = (
   options: IUpyunConfig,
   fileName: string,
@@ -47,6 +49,14 @@ const postOptions = (
   }
 }
 
+/**
+ * Builds an expiring download-protection query parameter for the object path.
+ *
+ * @param antiLeechToken - Download-protection signing key.
+ * @param expireTime - Lifetime in seconds, defaulting to 1800.
+ * @param options - Uploader settings containing the object-path prefix.
+ * @param fileName - Object filename appended to the prefix.
+ */
 const getAntiLeechParam = (
   antiLeechToken: string,
   expireTime: string | number | undefined,
@@ -62,6 +72,7 @@ const getAntiLeechParam = (
 }
 
 // Process upload for a single image
+/** Uploads one image, releases its payload, and assigns a URL with optional download protection. */
 const processImage = async (ctx: IPicGo, img: any, upyunOptions: IUpyunConfig, path: string): Promise<void> => {
   if (!img.fileName) return
   const image = getImageBuffer(img)
@@ -84,11 +95,13 @@ const processImage = async (ctx: IPicGo, img: any, upyunOptions: IUpyunConfig, p
   img.imgUrl = upyunOptions.antiLeechToken ? addAntiLeechToken(baseUrl, upyunOptions, img.fileName) : baseUrl
 }
 
+/** Appends the generated download-protection token using the appropriate query delimiter. */
 const addAntiLeechToken = (url: string, options: IUpyunConfig, fileName: string): string => {
   const upt = getAntiLeechParam(options.antiLeechToken, options.expireTime, options, fileName)
   return url.includes('?') ? `${url}&${upt}` : `${url}?${upt}`
 }
 
+/** Validates Upyun credentials, normalizes its path, and uploads output images sequentially. */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const upyunOptions = getAndCheckConfig<IUpyunConfig>(ctx, 'picBed.upyun', ['bucket', 'operator', 'password', 'url'])
 
@@ -107,6 +120,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   }
 }
 
+/** Emits a localized notification for upload rejection or a parsed Upyun error code. */
 const handleUploadError = (ctx: IPicGo, err: any): void => {
   const isUploadFailure = err.message === 'Upload failed'
 
@@ -127,6 +141,7 @@ const handleUploadError = (ctx: IPicGo, err: any): void => {
   }
 }
 
+/** Builds the Upyun configuration form using saved values and localized field labels. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IUpyunConfig>('picBed.upyun') || {}
 
@@ -167,6 +182,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   ]
 }
 
+/** Registers the built-in Upyun uploader and its configuration form on the client. */
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.upyun, {
     get name() {

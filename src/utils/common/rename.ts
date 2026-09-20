@@ -5,12 +5,20 @@ import { v4 as uuidv4 } from 'uuid'
 
 import { getMd5, getSha1, getSha256 } from './hash'
 
+/** Six-bit mask used to draw candidate indexes into the alphanumeric alphabet. */
 const mask = 0b111111
 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
+/**
+ * Generates an alphanumeric filename fragment with Math.random, rejecting unused six-bit values.
+ *
+ * @remarks
+ * Intended for filenames, not cryptographic tokens.
+ */
 export function randomStringGenerator(length: number): string {
   const out = new Array(length)
   let i = 0
+  /** Buffered random bits consumed six at a time to choose candidate characters. */
   let pool = 0
   let bits = 0
   while (i < length) {
@@ -27,10 +35,12 @@ export function randomStringGenerator(length: number): string {
   return out.join('')
 }
 
+/** Builds a seconds-based timestamp plus random suffix while preserving the original extension. */
 export function renameFileNameWithTimestamp(oldName: string): string {
   return `${Math.floor(Date.now() / 1000)}${randomStringGenerator(5)}${path.extname(oldName)}`
 }
 
+/** Replaces the basename with an alphanumeric fragment and preserves the original extension. */
 export function renameFileNameWithRandomString(oldName: string, length: number = 5): string {
   return `${randomStringGenerator(length)}${path.extname(oldName)}`
 }
@@ -39,6 +49,15 @@ function formatHelper(num: number): string {
   return num.toString().length === 1 ? `0${num}` : num.toString()
 }
 
+/**
+ * Expands filename, date, hash, identifier, random-string, and parent-folder placeholders.
+ *
+ * @param oldName - Source path supplying the original basename, extension, and parent folders.
+ * @param customFormat - Placeholder template; unrecognized templates return oldName unchanged.
+ * @param affixFileName - Optional alternate source for the filename placeholder.
+ * @param fileBuffer - Content to hash; omitted to hash the original basename.
+ * @returns The expanded name with the source extension appended.
+ */
 export function renameFileNameWithCustomString(
   oldName: string,
   customFormat: string,
@@ -48,6 +67,7 @@ export function renameFileNameWithCustomString(
   const now = new Date()
   const year = now.getFullYear().toString()
   const filebasename = path.basename(oldName, path.extname(oldName))
+  /** Lazy replacements for fixed tokens, evaluated once per token before global substitution. */
   const conversionMap: Record<string, () => string> = {
     '{Y}': () => year,
     '{y}': () => year.slice(2),

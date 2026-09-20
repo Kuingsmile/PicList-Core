@@ -5,6 +5,7 @@ import { NodeSSH } from 'node-ssh-no-cpu-features'
 
 import type { ISftpPlistConfig } from '../types'
 
+/** Quotes a remote POSIX shell argument without expansion and rejects embedded null bytes. */
 const quoteShellArgument = (value: string): string => {
   if (value.includes('\0')) {
     throw new Error('SSH command arguments must not contain null bytes')
@@ -13,6 +14,7 @@ const quoteShellArgument = (value: string): string => {
   return `'${value.replace(/'/g, "'\\''")}'`
 }
 
+/** SSH/SFTP connection wrapper used to create remote directories, upload files, and set ownership. */
 class SSHClient {
   private client = new NodeSSH()
   isConnected = false
@@ -21,6 +23,7 @@ class SSHClient {
     return path.replace(/\\/g, '/')
   }
 
+  /** Connects using a private-key file or password and records successful connection state. */
   public async connect(config: ISftpPlistConfig): Promise<void> {
     const { host, port, username, password, privateKey, passphrase } = config
     const loginInfo: Config = privateKey
@@ -42,6 +45,12 @@ class SSHClient {
     }
   }
 
+  /**
+   * Creates the remote parent directory, uploads a local file, and optionally applies a custom file
+   * mode.
+   *
+   * @throws If no connection is active or the SFTP operation fails.
+   */
   public async upload(local: string, remote: string, config: ISftpPlistConfig): Promise<void> {
     if (!this.isConnected) {
       throw new Error('SSH client is not connected')
@@ -59,6 +68,7 @@ class SSHClient {
     }
   }
 
+  /** Creates remote parent directories, applying custom permissions when configured. */
   private async mkdir(dirPath: string, config: ISftpPlistConfig): Promise<void> {
     if (!this.client.isConnected()) {
       throw new Error('sftp client is not connected')
@@ -81,6 +91,7 @@ class SSHClient {
     }
   }
 
+  /** Sets remote ownership using a supplied group, a user:group pair, or the username as its group. */
   public async chown(remote: string, user: string, group?: string): Promise<void> {
     remote = SSHClient.changeWinStylePathToUnix(remote)
     const [_user, _group] = group ? [user, group] : user.includes(':') ? user.split(':') : [user, user]
@@ -88,11 +99,13 @@ class SSHClient {
     await this.exec(`chown -- ${quoteShellArgument(`${_user}:${_group}`)} ${quoteShellArgument(remote)}`)
   }
 
+  /** Runs a remote shell command and reports whether its exit code is zero. */
   private async exec(script: string): Promise<boolean> {
     const execResult = await this.client.execCommand(script)
     return execResult.code === 0
   }
 
+  /** Disposes the SSH connection and resets the wrapper's connection state. */
   public close(): void {
     this.client.dispose()
     this.isConnected = false

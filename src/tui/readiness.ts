@@ -3,9 +3,14 @@ import { invalidFields } from '../utils/configPrompts'
 
 export { invalidFields, isEmptyValue } from '../utils/configPrompts'
 
+/** Resolves the current uploader using modern, legacy, and built-in fallback settings. */
 export const currentUploader = (ctx: IPicGo): string =>
   ctx.getConfig<string>('picBed.uploader') || ctx.getConfig<string>('picBed.current') || 'smms'
 
+/**
+ * Checks saved settings against the uploader form contract, returning false for validation failures or
+ * exceptions.
+ */
 export async function uploaderReady(ctx: IPicGo, uploader = currentUploader(ctx)): Promise<boolean> {
   try {
     const plugin = ctx.helper.uploader.get(uploader)

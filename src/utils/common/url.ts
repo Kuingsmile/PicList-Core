@@ -1,5 +1,6 @@
 export const isUrl = (url: string): boolean => /^https?:\/\//.test(url)
 
+/** Detects URI escapes that decodeURI changes, returning false for malformed escape sequences. */
 export const isUrlEncode = (url: string): boolean => {
   url = url || ''
   try {
@@ -9,6 +10,7 @@ export const isUrlEncode = (url: string): boolean => {
   }
 }
 
+/** Applies encodeURI only when the URL does not already contain detectable URI escapes. */
 export const handleUrlEncode = (url: string): string => {
   if (!isUrlEncode(url)) {
     url = encodeURI(url)

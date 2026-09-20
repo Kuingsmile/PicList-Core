@@ -28,6 +28,7 @@ export interface IV2FORMDATA {
   permission?: number
 }
 
+/** Builds version-specific Lsky multipart fields and authorization, omitting unset V2 options. */
 const postOptions = (options: ILskyConfig, fileName: string | undefined, image: Buffer): any => {
   let host = options.host
   host = host.replace(/\/$/, '')
@@ -97,6 +98,10 @@ const postOptions = (options: ILskyConfig, fileName: string | undefined, image: 
   }
 }
 
+/**
+ * Uploads images through the configured Lsky API version and extracts its version-specific URL and
+ * key.
+ */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const lskyOptions = getAndCheckConfig<ILskyConfig>(ctx, 'picBed.lskyplist', [])
   for (const img of ctx.output) {
@@ -127,6 +132,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   return ctx
 }
 
+/** Builds the Lsky configuration form using saved values and localized field labels. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<ILskyConfig>('picBed.lskyplist') || {}
   const config: IPluginConfig[] = [
@@ -235,6 +241,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   return config
 }
 
+/** Registers the built-in Lsky uploader and its configuration form on the client. */
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.lskyplist, {
     get name() {

@@ -10,6 +10,7 @@ export interface NavigationItem {
   steps: string[]
 }
 
+/** Display metadata keyed by stable action IDs and grouped into terminal workspace sections. */
 export const navigation: NavigationItem[] = [
   {
     label: 'Files & URLs',
@@ -101,6 +102,15 @@ export const navigation: NavigationItem[] = [
   },
 ]
 
+/**
+ * Joins navigation metadata to executable actions and localizes display text.
+ *
+ * @param actions - Available actions keyed by stable ID.
+ * @param section - Section to show when search is inactive.
+ * @param query - Optional search text; when supplied, all sections are searched using every query
+ * word.
+ * @param t - Translator for navigation labels and searchable localized text.
+ */
 export function findActions(
   actions: TuiAction[],
   section: Section,

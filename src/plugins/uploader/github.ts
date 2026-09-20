@@ -6,16 +6,19 @@ import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
+/** Creates a lazy message getter so configuration help follows the current language. */
 const messageGetter = (ctx: IPicGo, key: Extract<ILocalesKey, `PICBED_GITHUB_MESSAGE_${string}`>) => ({
   get message() {
     return ctx.i18n.t(key)
   },
 })
 
+/** Builds a repository contents endpoint with individually encoded path segments. */
 function buildGithubApiUrl(repo: string, path: string, fileName: string, extra: string = ''): string {
   return `https://api.github.com/repos/${repo}/contents/${encodePath(`${path}${fileName}`)}${extra}`
 }
 
+/** Builds the authenticated contents API request used to create an image commit. */
 const postOptions = (fileName: string, options: IGithubConfig, data: any): IOldReqOptionsWithJSON => {
   const { token, repo } = options
   const contentType = mime.getType(fileName) || 'application/octet-stream'
@@ -32,6 +35,7 @@ const postOptions = (fileName: string, options: IGithubConfig, data: any): IOldR
   } as const
 }
 
+/** Builds a branch-specific contents lookup used to recover an existing image after HTTP 422. */
 const getOptions = (fileName: string, options: IGithubConfig): IOldReqOptionsWithJSON => {
   const { token, repo, branch } = options
   return {
@@ -45,6 +49,10 @@ const getOptions = (fileName: string, options: IGithubConfig): IOldReqOptionsWit
   }
 }
 
+/**
+ * Creates repository files and records their URLs and hashes, looking up existing files after HTTP
+ * 422.
+ */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const githubOptions = getAndCheckConfig<IGithubConfig>(ctx, 'picBed.github', ['token'])
 
@@ -101,6 +109,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   }
 }
 
+/** Builds the GitHub configuration form using saved values and localized field labels. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<IGithubConfig>('picBed.github') || {}
   const config: IPluginConfig[] = [
@@ -159,6 +168,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   return config
 }
 
+/** Registers the built-in GitHub uploader and its configuration form on the client. */
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.github, {
     get name() {

@@ -9,12 +9,17 @@ import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
+/** Creates a lazy message getter so configuration help follows the current language. */
 const messageGetter = (ctx: IPicGo, key: Extract<ILocalesKey, `PICBED_LOCAL_MESSAGE_${string}`>) => ({
   get message() {
     return ctx.i18n.t(key)
   },
 })
 
+/**
+ * Writes images to the configured directory and gallery cache, returning local paths or custom public
+ * URLs.
+ */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const localConfig = getAndCheckConfig<ILocalConfig>(ctx, 'picBed.local', [])
 
@@ -58,6 +63,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   return ctx
 }
 
+/** Builds the local filesystem configuration form using saved values and localized field labels. */
 const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<ILocalConfig>('picBed.local') || {}
   const config: IPluginConfig[] = [
@@ -95,6 +101,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   return config
 }
 
+/** Registers the built-in local filesystem uploader and its configuration form on the client. */
 export default function register(ctx: IPicGo): void {
   ctx.helper.uploader.register(buildInUploaderNames.local, {
     get name() {

@@ -6,6 +6,10 @@ import type {
 } from '../../types'
 import { forceNumber } from './config'
 
+/**
+ * Resolves a profile override before the uploader-specific map and global value, preserving false and
+ * zero.
+ */
 const resolveOption = <T>(
   idSpecificValue: T | undefined,
   globalMap: Record<string, T> | undefined,
@@ -13,6 +17,7 @@ const resolveOption = <T>(
   globalValue: T | undefined,
 ): T | undefined => idSpecificValue ?? globalMap?.[picBed] ?? globalValue
 
+/** Resolves an option by profile/uploader/global precedence and coerces it to a boolean. */
 const resolveBooleanOption = <T>(
   idSpecificValue: T | undefined,
   globalMap: Record<string, T> | undefined,
@@ -20,6 +25,7 @@ const resolveBooleanOption = <T>(
   globalValue: T | undefined,
 ): boolean => !!resolveOption(idSpecificValue, globalMap, picBed, globalValue)
 
+/** Resolves an option by profile/uploader/global precedence and normalizes it as a number. */
 const resolveNumberOption = (
   idSpecificValue: number | undefined,
   globalMap: Record<string, number> | undefined,
@@ -27,6 +33,15 @@ const resolveNumberOption = (
   globalValue: number | undefined,
 ): number => forceNumber(resolveOption(idSpecificValue, globalMap, picBed, globalValue))
 
+/**
+ * Produces concrete watermark settings using profile overrides, uploader maps, and global defaults.
+ *
+ * @param global - Global settings and optional maps keyed by uploader type.
+ * @param idSpecificConfig - Settings for the selected profile; explicit false and zero values take
+ * precedence.
+ * @param picBed - Uploader type used to select mapped values.
+ * @param id - Profile identity attached to the normalized result.
+ */
 export function getTreatedWaterMarkOptions(
   global: IBuildInWaterMarkOptions | undefined,
   idSpecificConfig: Partial<IBuildInWaterMarkOptions>,
@@ -93,6 +108,15 @@ export function getTreatedWaterMarkOptions(
   return options
 }
 
+/**
+ * Produces concrete compression settings using profile overrides, uploader maps, and global defaults.
+ *
+ * @param global - Global settings and optional maps keyed by uploader type.
+ * @param idSpecificConfig - Settings for the selected profile; explicit false and zero values take
+ * precedence.
+ * @param picBed - Uploader type used to select mapped values.
+ * @param id - Profile identity attached to the normalized result.
+ */
 export function getTreatedCompressOptions(
   global: IBuildInCompressOptions | undefined,
   idSpecificConfig: Partial<IBuildInCompressOptions>,
