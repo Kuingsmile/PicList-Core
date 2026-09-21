@@ -33,9 +33,10 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     const imageBuffer = getImageBuffer(img)
     if (!imageBuffer) continue
     try {
+      const fileName = img.fileName.replace(/\\/g, '/')
       const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'local')
-      const fileImgTempPath = path.join(imgTempPath, img.fileName)
-      const fileUploadPath = path.join(uploadPath, img.fileName)
+      const fileImgTempPath = path.join(imgTempPath, fileName)
+      const fileUploadPath = path.join(uploadPath, fileName)
       const uploadDir = path.dirname(fileUploadPath)
       // Recursive mkdir on an existing Windows drive root can fail with EPERM.
       if (!fs.existsSync(uploadDir)) ensureDirSync(uploadDir)
@@ -45,12 +46,12 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       delete img.base64Image
       delete img.buffer
       if (customUrl) {
-        img.imgUrl = `${customUrl}/${encodePath(`${webPath}${img.fileName}`)}`
+        img.imgUrl = `${customUrl}/${encodePath(`${webPath}${fileName}`)}`
       } else {
-        img.imgUrl = path.join(uploadPath, img.fileName)
+        img.imgUrl = fileUploadPath
       }
-      img.hash = path.join(uploadPath, img.fileName)
-      img.galleryPath = `http://localhost:36699/local/${encodePath(img.fileName).replace(/^\//, '')}`
+      img.hash = fileUploadPath
+      img.galleryPath = `http://localhost:36699/local/${encodePath(fileName).replace(/^\//, '')}`
     } catch (e: any) {
       ctx.emit(IBuildInEvent.NOTIFICATION, {
         title: ctx.i18n.t('UPLOAD_FAILED'),

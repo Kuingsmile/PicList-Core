@@ -55,27 +55,35 @@ describe('Local uploader', () => {
     expect(ctx.emit).not.toHaveBeenCalled()
   })
 
-  it('creates missing nested directories and preserves custom URLs for base64 images', async () => {
+  it.each([
+    ['nested/album/photo #1.png', 'https://cdn.example.invalid/'],
+    ['nested\\album\\photo #1.png', 'https://cdn.example.invalid/'],
+    ['nested\\album/photo #1.png', 'https://cdn.example.invalid/'],
+    ['nested/album/photo #1.png', ''],
+    ['nested\\album\\photo #1.png', ''],
+    ['nested\\album/photo #1.png', ''],
+  ])('uploads %s with URL prefix "%s" using consistent directory separators', async (fileName, customUrl) => {
     const uploadPath = path.join(baseDir, 'destination')
     const buffer = Buffer.from('synthetic-image')
-    const fileName = 'nested/photo #1.png'
+    const relativePath = 'nested/album/photo #1.png'
+    const destination = path.join(uploadPath, relativePath)
     const { ctx, upload } = createUploader(
       registerLocalUploader,
       'picBed.local',
-      { path: uploadPath, customUrl: 'https://cdn.example.invalid/', webPath: 'public' },
+      { path: uploadPath, customUrl, webPath: 'public' },
       [{ fileName, base64Image: buffer.toString('base64') }],
     )
     ctx.baseDir = baseDir
 
     await upload()
 
-    expect(await fs.readFile(path.join(uploadPath, fileName))).toEqual(buffer)
-    expect(await fs.readFile(path.join(baseDir, 'imgTemp', 'local', fileName))).toEqual(buffer)
+    expect(await fs.readFile(destination)).toEqual(buffer)
+    expect(await fs.readFile(path.join(baseDir, 'imgTemp', 'local', relativePath))).toEqual(buffer)
     expect(ctx.output[0]).toEqual({
       fileName,
-      imgUrl: 'https://cdn.example.invalid/public/nested/photo%20%231.png',
-      hash: path.join(uploadPath, fileName),
-      galleryPath: 'http://localhost:36699/local/nested/photo%20%231.png',
+      imgUrl: customUrl ? 'https://cdn.example.invalid/public/nested/album/photo%20%231.png' : destination,
+      hash: destination,
+      galleryPath: 'http://localhost:36699/local/nested/album/photo%20%231.png',
     })
   })
 
