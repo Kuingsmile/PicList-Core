@@ -447,6 +447,10 @@ export class PicGo extends EventEmitter implements IPicGo {
     /** Snapshot selecting the secondary uploader without changing the primary upload's configuration. */
     const secondaryConfig = this.getUploadConfig()
     set(secondaryConfig, `picBed.${secondaryUploaderType}`, secondUploaderConfig)
+    const secondaryUploaderData = secondaryConfig.uploader?.[secondaryUploaderType]
+    if (secondaryUploaderData && secondUploaderConfig._id) {
+      secondaryUploaderData.defaultId = secondUploaderConfig._id
+    }
     set(secondaryConfig, 'picBed.current', secondaryUploaderType)
     set(secondaryConfig, 'picBed.uploader', secondaryUploaderType)
     if (!secondUploaderConfig || Object.keys(secondUploaderConfig).length === 0) {

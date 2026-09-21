@@ -414,6 +414,57 @@ describe('PicGo upload configuration isolation', () => {
     expect(await fs.readFile(picgo.configPath, 'utf8')).toBe(savedConfig)
   })
 
+  describe.each(['separate', 'shared'])('secondary profile selection in %s mode', mode => {
+    it.each(['test-a', 'test-b'])('keeps configuration APIs consistent for %s', async type => {
+      const secondary = picgo.configManager.addUploaderConfig(type, 'Secondary', { destination: 'secondary' })
+      picgo.saveConfig({
+        'settings.enableSecondUploader': true,
+        'settings.secondPicBedMode': mode,
+        'picBed.secondUploader': type,
+        'picBed.secondUploaderConfig': secondary,
+      })
+      const savedConfig = await fs.readFile(picgo.configPath, 'utf8')
+      const observed: { direct: unknown; managed: unknown; captured: unknown }[] = []
+      vi.spyOn(picgo.helper.uploader.get(type)!, 'handle').mockImplementation(async ctx => {
+        const managed = ctx.configManager.getCurrentUploaderConfig(type)
+        observed.push({
+          direct: ctx.getConfig(`picBed.${type}`),
+          managed,
+          captured: picgo.configManager.getCurrentUploaderConfig(type),
+        })
+        for (const item of ctx.output) item.imgUrl = `https://example.invalid/${managed?.destination}/${item.fileName}`
+      })
+
+      const result = await picgo.uploadReturnCtx(['first.png'])
+
+      expect(result.ctx?.output[0].imgUrl).toBe('https://example.invalid/a/first.png')
+      expect(result.backupCtx?.output[0].imgUrl).toBe('https://example.invalid/secondary/first.png')
+      expect(observed.at(-1)).toEqual({ direct: secondary, managed: secondary, captured: secondary })
+      for (const profile of observed) {
+        expect(profile.managed).toEqual(profile.direct)
+        expect(profile.captured).toEqual(profile.direct)
+      }
+      const defaultId = type === 'test-a' ? 'a' : 'b'
+      expect(result.ctx?.getConfig(`uploader.${type}.defaultId`)).toBe(defaultId)
+      expect(result.backupCtx?.getConfig(`uploader.${type}.defaultId`)).toBe(secondary._id)
+      expect(picgo.configManager.getCurrentUploaderConfig(type)?._id).toBe(defaultId)
+      expect(picgo.getConfig('picBed.uploader')).toBe('test-a')
+      expect(await fs.readFile(picgo.configPath, 'utf8')).toBe(savedConfig)
+    })
+
+    it('preserves legacy secondary settings without a profile list', async () => {
+      picgo.removeConfig('uploader', 'test-b')
+      picgo.saveConfig({ 'settings.enableSecondUploader': true, 'settings.secondPicBedMode': mode })
+      const savedConfig = await fs.readFile(picgo.configPath, 'utf8')
+
+      const result = await picgo.uploadReturnCtx(['first.png'])
+
+      expect(result.backupCtx?.output[0].imgUrl).toBe('https://example.invalid/b/first.png')
+      expect(result.backupCtx?.getConfig('uploader.test-b')).toBeUndefined()
+      expect(await fs.readFile(picgo.configPath, 'utf8')).toBe(savedConfig)
+    })
+  })
+
   it('captures secondary settings before the primary upload starts', async () => {
     picgo.saveConfig({ 'settings.enableSecondUploader': true })
     const started = deferred()
