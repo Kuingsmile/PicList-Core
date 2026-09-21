@@ -15,6 +15,10 @@ vi.mock('fs-extra/esm', async importOriginal => {
   return { ...actual, ensureDirSync: vi.fn(actual.ensureDirSync) }
 })
 
+/** Resolves a gallery URL to the file served from the image cache. */
+const getGalleryCachePath = (baseDir: string, galleryPath: string): string =>
+  path.join(baseDir, 'imgTemp', decodeURIComponent(new URL(galleryPath).pathname).replace(/^\//, ''))
+
 describe('Local uploader', () => {
   let baseDir: string
   const tempPrefix = path.join(os.tmpdir(), 'piclist-local-test-')
@@ -49,12 +53,54 @@ describe('Local uploader', () => {
 
     const destination = path.join(uploadPath, fileName)
     expect(await fs.readFile(destination)).toEqual(buffer)
-    expect(await fs.readFile(path.join(baseDir, 'imgTemp', 'local', fileName))).toEqual(buffer)
+    expect(await fs.readFile(getGalleryCachePath(baseDir, ctx.output[0].galleryPath!))).toEqual(buffer)
     expect(ctx.output).toEqual([
-      { fileName, imgUrl: destination, hash: destination, galleryPath: 'http://localhost:36699/local/photo.png' },
+      {
+        fileName,
+        imgUrl: destination,
+        hash: destination,
+        galleryPath: expect.stringMatching(/^http:\/\/localhost:36699\/local\/[a-f0-9]{64}\/photo\.png$/),
+      },
     ])
     expect(ctx.emit).not.toHaveBeenCalled()
   })
+
+  it.each(['photo.png', 'nested/album/photo #1.png'])(
+    'keeps separate gallery images for %s uploaded to different destinations',
+    async fileName => {
+      const firstPath = path.join(baseDir, 'first', 'destination')
+      const secondPath = path.join(baseDir, 'second', 'destination')
+      const firstBuffer = Buffer.from('first-image')
+      const secondBuffer = Buffer.from('second-image')
+      const first = createUploader(registerLocalUploader, 'picBed.local', { path: firstPath }, [
+        { fileName, buffer: firstBuffer },
+      ])
+      const second = createUploader(registerLocalUploader, 'picBed.local', { path: secondPath }, [
+        { fileName, buffer: secondBuffer },
+      ])
+      first.ctx.baseDir = baseDir
+      second.ctx.baseDir = baseDir
+
+      await first.upload()
+      await second.upload()
+
+      const firstGalleryPath = first.ctx.output[0].galleryPath!
+      const secondGalleryPath = second.ctx.output[0].galleryPath!
+      expect(await fs.readFile(path.join(firstPath, fileName))).toEqual(firstBuffer)
+      expect(await fs.readFile(path.join(secondPath, fileName))).toEqual(secondBuffer)
+      expect(secondGalleryPath).not.toBe(firstGalleryPath)
+      expect(await fs.readFile(getGalleryCachePath(baseDir, firstGalleryPath))).toEqual(firstBuffer)
+      expect(await fs.readFile(getGalleryCachePath(baseDir, secondGalleryPath))).toEqual(secondBuffer)
+
+      const replacement = Buffer.from('replacement-image')
+      first.ctx.output = [{ fileName, buffer: replacement }]
+      await first.upload()
+
+      expect(first.ctx.output[0].galleryPath).toBe(firstGalleryPath)
+      expect(await fs.readFile(getGalleryCachePath(baseDir, firstGalleryPath))).toEqual(replacement)
+      expect(await fs.readFile(getGalleryCachePath(baseDir, secondGalleryPath))).toEqual(secondBuffer)
+    },
+  )
 
   it.each([
     ['nested/album/photo #1.png', 'https://cdn.example.invalid/'],
@@ -79,12 +125,14 @@ describe('Local uploader', () => {
     await upload()
 
     expect(await fs.readFile(destination)).toEqual(buffer)
-    expect(await fs.readFile(path.join(baseDir, 'imgTemp', 'local', relativePath))).toEqual(buffer)
+    expect(await fs.readFile(getGalleryCachePath(baseDir, ctx.output[0].galleryPath!))).toEqual(buffer)
     expect(ctx.output[0]).toEqual({
       fileName,
       imgUrl: customUrl ? 'https://cdn.example.invalid/public/nested/album/photo%20%231.png' : destination,
       hash: destination,
-      galleryPath: 'http://localhost:36699/local/nested/album/photo%20%231.png',
+      galleryPath: expect.stringMatching(
+        /^http:\/\/localhost:36699\/local\/[a-f0-9]{64}\/nested\/album\/photo%20%231\.png$/,
+      ),
     })
   })
 
@@ -93,7 +141,7 @@ describe('Local uploader', () => {
     const failure = Object.assign(new Error(`${stage} directory creation denied`), { code: 'EACCES' })
     const blockedDirectory = stage === 'destination' ? uploadPath : path.join(baseDir, 'imgTemp', 'local')
     vi.mocked(ensureDirSync).mockImplementation(directory => {
-      if (directory === blockedDirectory) throw failure
+      if (directory === blockedDirectory || directory.startsWith(`${blockedDirectory}${path.sep}`)) throw failure
       return fs.ensureDirSync(directory)
     })
     const image = { fileName: 'photo.png', buffer: Buffer.from('synthetic-image') }

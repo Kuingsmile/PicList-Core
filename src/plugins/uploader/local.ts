@@ -5,6 +5,7 @@ import { ensureDirSync } from 'fs-extra/esm'
 
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { ILocalConfig, IPicGo, IPluginConfig } from '../../types'
+import { getSha256 } from '../../utils/common/hash'
 import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
@@ -45,13 +46,15 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const webPath = formatPathHelper({
     path: localConfig.webPath?.replace(/\\/g, '/'),
   })
+  // Isolate same-named previews by destination, including configurations without a profile ID.
+  const destinationKey = getSha256(path.resolve(uploadPath))
+  const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'local', destinationKey)
   for (const img of ctx.output) {
     if (!img.fileName) continue
     const imageBuffer = getImageBuffer(img)
     if (!imageBuffer) continue
     try {
       const fileName = img.fileName.replace(/\\/g, '/')
-      const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'local')
       const fileImgTempPath = getFilePathWithinRoot(imgTempPath, fileName)
       const fileUploadPath = getFilePathWithinRoot(uploadPath, fileName)
       const uploadDir = path.dirname(fileUploadPath)
@@ -68,7 +71,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         img.imgUrl = fileUploadPath
       }
       img.hash = fileUploadPath
-      img.galleryPath = `http://localhost:36699/local/${encodePath(fileName).replace(/^\//, '')}`
+      img.galleryPath = `http://localhost:36699/local/${destinationKey}/${encodePath(fileName)}`
     } catch (e: any) {
       ctx.emit(IBuildInEvent.NOTIFICATION, {
         title: ctx.i18n.t('UPLOAD_FAILED'),
