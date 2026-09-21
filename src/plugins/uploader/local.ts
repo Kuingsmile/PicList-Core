@@ -17,7 +17,7 @@ const messageGetter = (ctx: IPicGo, key: Extract<ILocalesKey, `PICBED_LOCAL_MESS
   },
 })
 
-/** Validates containment while preserving relative configured paths in the returned filename. */
+/** Validates that an image filename stays within its configured root. */
 const getFilePathWithinRoot = (root: string, fileName: string): string => {
   const filePath = path.join(root, fileName)
   const relativePath = path.relative(path.resolve(root), path.resolve(filePath))
@@ -59,15 +59,18 @@ const replaceFile = (ctx: IPicGo, filePath: string, write: (stagedPath: string) 
  * cache is best effort: failures log a warning and omit galleryPath without failing the upload.
  */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
-  const localConfig = getAndCheckConfig<ILocalConfig>(ctx, 'picBed.local', [])
+  const localConfig = getAndCheckConfig<ILocalConfig>(ctx, 'picBed.local', ['path'])
+  if (typeof localConfig.path !== 'string' || !localConfig.path.trim()) {
+    throw new Error('Local upload path must be a nonblank string')
+  }
 
-  const uploadPath = localConfig.path || ''
+  const uploadPath = path.resolve(localConfig.path)
   const customUrl = (localConfig.customUrl || '').replace(/\/$/, '')
   const webPath = formatPathHelper({
     path: localConfig.webPath?.replace(/\\/g, '/'),
   })
   // Isolate same-named previews by destination, including configurations without a profile ID.
-  const destinationKey = getSha256(path.resolve(uploadPath))
+  const destinationKey = getSha256(uploadPath)
   const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'local', destinationKey)
   for (const img of ctx.output) {
     if (!img.fileName) continue

@@ -34,6 +34,77 @@ describe('Local uploader', () => {
     await fs.remove(baseDir)
   })
 
+  it.each([
+    {},
+    { path: undefined },
+    { path: null },
+    { path: '' },
+    { path: ' \t\n ' },
+    { path: false },
+    { path: 0 },
+    { path: 42 },
+    { path: true },
+    { path: [] },
+    { path: {} },
+  ])('rejects invalid destination configuration %j before any filesystem mutation', async config => {
+    const image = { fileName: 'photo.png', buffer: Buffer.from('synthetic-image') }
+    const { ctx, upload } = createUploader(registerLocalUploader, 'picBed.local', config, [{ ...image }])
+    ctx.baseDir = baseDir
+    vi.mocked(ensureDirSync).mockImplementation(() => undefined)
+    // Stop a regression from writing into the actual working directory.
+    const stage = vi.spyOn(fs, 'mkdtempSync').mockImplementation(() => {
+      throw new Error('Unexpected filesystem mutation')
+    })
+
+    await expect(upload()).rejects.toThrow(/config option: path|path must be a nonblank string/)
+
+    expect(ensureDirSync).not.toHaveBeenCalled()
+    expect(stage).not.toHaveBeenCalled()
+    expect(ctx.output).toEqual([image])
+    expect(await fs.readdir(baseDir)).toEqual([])
+  })
+
+  it.each(['', 'https://cdn.example.invalid/'])(
+    'resolves relative destinations consistently with URL prefix "%s"',
+    async customUrl => {
+      const workingDirectory = process.cwd()
+      try {
+        process.chdir(baseDir)
+        const destinationRoot = path.join(baseDir, 'destination with spaces')
+        const fileName = 'nested/photo.png'
+        const buffer = Buffer.from('synthetic-image')
+        const relative = createUploader(
+          registerLocalUploader,
+          'picBed.local',
+          { path: './unused/../destination with spaces', customUrl, webPath: 'public' },
+          [{ fileName, buffer }],
+        )
+        const absolute = createUploader(
+          registerLocalUploader,
+          'picBed.local',
+          { path: destinationRoot, customUrl, webPath: 'public' },
+          [{ fileName, buffer }],
+        )
+        relative.ctx.baseDir = baseDir
+        absolute.ctx.baseDir = baseDir
+
+        await relative.upload()
+        await absolute.upload()
+
+        const destination = path.join(destinationRoot, fileName)
+        expect(relative.ctx.output).toEqual(absolute.ctx.output)
+        expect(relative.ctx.output[0]).toMatchObject({
+          hash: destination,
+          imgUrl: customUrl ? 'https://cdn.example.invalid/public/nested/photo.png' : destination,
+        })
+        expect(await fs.readFile(destination)).toEqual(buffer)
+        expect(await fs.readFile(getGalleryCachePath(baseDir, relative.ctx.output[0].galleryPath!))).toEqual(buffer)
+      } finally {
+        process.chdir(workingDirectory)
+      }
+    },
+  )
+
   it('uploads to an existing directory even when mkdir on it would fail, and creates the gallery directory', async () => {
     const uploadPath = path.join(baseDir, 'destination')
     await fs.ensureDir(uploadPath)
