@@ -690,6 +690,55 @@ describe('PicGo upload configuration isolation', () => {
     expect(await fs.readFile(picgo.configPath, 'utf8')).toBe(configWithBackup)
   })
 
+  describe.each(['upload', 'uploadReturnCtx'] as const)('%s legacy profile selection', method => {
+    it.each([
+      { picBed: 'test-a', configName: 'Other', destination: 'a2', id: 'a2' },
+      { picBed: 'test-b', configName: 'Default', destination: 'b', id: 'b' },
+    ])('selects a saved profile without active profile metadata: $picBed', async options => {
+      picgo.saveConfig({ [`picBed.${options.picBed}`]: { destination: 'legacy' } })
+      const savedConfig = await fs.readFile(picgo.configPath, 'utf8')
+      beforeUpload = async ctx => {
+        expect(ctx.getConfig(`uploader.${options.picBed}.defaultId`)).toBe(options.id)
+      }
+
+      const result = await picgo[method](['first.png'], options)
+      if (result instanceof Error) throw result
+      const output = Array.isArray(result) ? result : result.ctx?.output
+
+      expect(output?.[0].imgUrl).toBe(`https://example.invalid/${options.destination}/first.png`)
+      expect(picgo.getConfig(`picBed.${options.picBed}`)).toEqual({ destination: 'legacy' })
+      expect(picgo.getConfig('uploader.test-a.defaultId')).toBe('a')
+      expect(picgo.getConfig('picBed.uploader')).toBe('test-a')
+      expect(await fs.readFile(picgo.configPath, 'utf8')).toBe(savedConfig)
+    })
+
+    it.each(['existing', 'empty', 'absent'])('rejects a missing profile with an %s saved list', async list => {
+      picgo.saveConfig({ 'picBed.test-a': { destination: 'legacy' } })
+      if (list === 'empty') picgo.saveConfig({ 'uploader.test-a.configList': [] })
+      if (list === 'absent') picgo.removeConfig('uploader', 'test-a')
+      const savedConfig = await fs.readFile(picgo.configPath, 'utf8')
+      const transform = vi.spyOn(picgo.helper.transformer.get('test')!, 'handle')
+
+      await expect(
+        picgo[method](['first.png'], { picBed: 'test-a', configName: 'Missing' }).then(() => undefined),
+      ).rejects.toThrow('Uploader configuration not found')
+
+      expect(transform).not.toHaveBeenCalled()
+      expect(picgo.getConfig('picBed.test-a')).toEqual({ destination: 'legacy' })
+      expect(await fs.readFile(picgo.configPath, 'utf8')).toBe(savedConfig)
+    })
+
+    it.each(['test-a', 'test-b'])('keeps legacy settings without an explicit profile: %s', async type => {
+      picgo.saveConfig({ [`picBed.${type}`]: { destination: 'legacy' } })
+
+      const result = await picgo[method](['first.png'], { picBed: type })
+      if (result instanceof Error) throw result
+      const output = Array.isArray(result) ? result : result.ctx?.output
+
+      expect(output?.[0].imgUrl).toBe('https://example.invalid/legacy/first.png')
+    })
+  })
+
   it('rejects an unknown named configuration without changing defaults', async () => {
     const savedConfig = await fs.readFile(picgo.configPath, 'utf8')
     await expect(picgo.uploadReturnCtx(['first.png'], { picBed: 'test-a', configName: 'Missing' })).rejects.toThrow(
