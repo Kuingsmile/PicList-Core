@@ -16,6 +16,23 @@ const messageGetter = (ctx: IPicGo, key: Extract<ILocalesKey, `PICBED_LOCAL_MESS
   },
 })
 
+/** Validates containment while preserving relative configured paths in the returned filename. */
+const getFilePathWithinRoot = (root: string, fileName: string): string => {
+  const filePath = path.join(root, fileName)
+  const relativePath = path.relative(path.resolve(root), path.resolve(filePath))
+  // Reject rooted names on every platform, including Windows drive-relative names such as C:photo.png.
+  if (
+    path.win32.parse(fileName).root ||
+    relativePath === '' ||
+    relativePath === '..' ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath)
+  ) {
+    throw new Error('Image filename must resolve to a file within the configured directory')
+  }
+  return filePath
+}
+
 /**
  * Writes images to the configured directory and gallery cache, returning local paths or custom public
  * URLs.
@@ -35,8 +52,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     try {
       const fileName = img.fileName.replace(/\\/g, '/')
       const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'local')
-      const fileImgTempPath = path.join(imgTempPath, fileName)
-      const fileUploadPath = path.join(uploadPath, fileName)
+      const fileImgTempPath = getFilePathWithinRoot(imgTempPath, fileName)
+      const fileUploadPath = getFilePathWithinRoot(uploadPath, fileName)
       const uploadDir = path.dirname(fileUploadPath)
       // Recursive mkdir on an existing Windows drive root can fail with EPERM.
       if (!fs.existsSync(uploadDir)) ensureDirSync(uploadDir)

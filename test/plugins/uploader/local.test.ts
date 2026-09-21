@@ -6,6 +6,7 @@ import { ensureDirSync } from 'fs-extra/esm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import registerLocalUploader from '../../../src/plugins/uploader/local'
+import { renameFileNameWithCustomString } from '../../../src/utils/common/rename'
 import { IBuildInEvent } from '../../../src/utils/enum'
 import { createUploader } from '../../helpers/uploader'
 
@@ -107,6 +108,84 @@ describe('Local uploader', () => {
       title: 'UPLOAD_FAILED',
       body: 'failed to upload image',
     })
+    expect(ctx.output).toEqual([image])
+  })
+
+  it('rejects a traversal rename without overwriting files outside either directory', async () => {
+    const uploadPath = path.join(baseDir, 'destination')
+    const outsideDestination = path.join(baseDir, 'photo.png')
+    const outsideGallery = path.join(baseDir, 'imgTemp', 'photo.png')
+    const original = Buffer.from('existing-image')
+    await fs.outputFile(outsideDestination, original)
+    await fs.outputFile(outsideGallery, original)
+    const image = {
+      fileName: renameFileNameWithCustomString('photo.png', '../{filename}'),
+      buffer: Buffer.from('synthetic-image'),
+    }
+    const { ctx, upload } = createUploader(registerLocalUploader, 'picBed.local', { path: uploadPath }, [{ ...image }])
+    ctx.baseDir = baseDir
+
+    await expect(upload()).rejects.toThrow('within the configured directory')
+
+    expect(await fs.readFile(outsideDestination)).toEqual(original)
+    expect(await fs.readFile(outsideGallery)).toEqual(original)
+    expect(ensureDirSync).not.toHaveBeenCalled()
+    expect(ctx.output).toEqual([image])
+    expect(ctx.emit).toHaveBeenCalledExactlyOnceWith(IBuildInEvent.NOTIFICATION, {
+      title: 'UPLOAD_FAILED',
+      body: 'failed to upload image',
+    })
+  })
+
+  it.each([
+    '..\\photo.png',
+    'nested/../../photo.png',
+    'nested\\../../photo.png',
+    '../destination-other/photo.png',
+    '../local-other/photo.png',
+    '../destination/photo.png',
+    '../local/photo.png',
+    '/photo.png',
+    '\\photo.png',
+    'C:/outside/photo.png',
+    'C:\\outside\\photo.png',
+    'C:photo.png',
+    '//server/share/photo.png',
+    '\\\\server\\share\\photo.png',
+    '.',
+    '..',
+    'nested/..',
+  ])('rejects filename "%s" before any filesystem mutation', async fileName => {
+    const uploadPath = path.join(baseDir, 'destination')
+    const image = { fileName, buffer: Buffer.from('synthetic-image') }
+    const { ctx, upload } = createUploader(registerLocalUploader, 'picBed.local', { path: uploadPath }, [{ ...image }])
+    ctx.baseDir = baseDir
+    vi.mocked(ensureDirSync).mockImplementation(() => undefined)
+    const write = vi.spyOn(fs, 'writeFileSync').mockImplementation(() => undefined)
+    const copy = vi.spyOn(fs, 'copyFileSync').mockImplementation(() => undefined)
+
+    await expect(upload()).rejects.toThrow('within the configured directory')
+
+    expect(ensureDirSync).not.toHaveBeenCalled()
+    expect(write).not.toHaveBeenCalled()
+    expect(copy).not.toHaveBeenCalled()
+    expect(ctx.output).toEqual([image])
+  })
+
+  it('checks gallery containment even when traversal stays within the destination root', async () => {
+    const uploadPath = path.parse(baseDir).root
+    const image = { fileName: '../photo.png', buffer: Buffer.from('synthetic-image') }
+    const { ctx, upload } = createUploader(registerLocalUploader, 'picBed.local', { path: uploadPath }, [{ ...image }])
+    ctx.baseDir = baseDir
+    vi.mocked(ensureDirSync).mockImplementation(() => undefined)
+    const write = vi.spyOn(fs, 'writeFileSync').mockImplementation(() => undefined)
+    const copy = vi.spyOn(fs, 'copyFileSync').mockImplementation(() => undefined)
+
+    await expect(upload()).rejects.toThrow('within the configured directory')
+
+    expect(ensureDirSync).not.toHaveBeenCalled()
+    expect(write).not.toHaveBeenCalled()
+    expect(copy).not.toHaveBeenCalled()
     expect(ctx.output).toEqual([image])
   })
 })
