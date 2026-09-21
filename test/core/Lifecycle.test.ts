@@ -324,9 +324,9 @@ describe('Lifecycle preprocessing isolation', () => {
 
   it.each([
     { mode: 'shared', fail: false },
-    { mode: 'seperate', fail: false },
+    { mode: 'separate', fail: false },
     { mode: 'shared', fail: true },
-    { mode: 'seperate', fail: true },
+    { mode: 'separate', fail: true },
   ])('keeps files through secondary upload ($mode, fail=$fail) then cleans them', async ({ mode, fail }) => {
     picgo.setConfig({
       'settings.enableSecondUploader': true,

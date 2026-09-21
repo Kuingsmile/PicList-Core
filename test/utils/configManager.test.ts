@@ -286,7 +286,7 @@ describe('ConfigManager', () => {
         'picBed.secondUploader': uploader,
         'picBed.secondUploaderConfig': config,
         'settings.enableSecondUploader': enabled,
-        'settings.secondPicBedMode': 'seperate',
+        'settings.secondPicBedMode': 'separate',
       })
     }
 

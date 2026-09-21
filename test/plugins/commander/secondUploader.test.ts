@@ -61,7 +61,7 @@ describe('secondary uploader CLI settings', () => {
 
   it.each([
     ['set', 'shared'],
-    ['config', 'seperate'],
+    ['config', 'separate'],
   ])('selects a named source using %s in %s mode without changing defaults', async (command, mode) => {
     vi.spyOn(picgo.cmd.inquirer, 'prompt')
       .mockResolvedValueOnce({ enableSecondUploader: true })
@@ -84,7 +84,7 @@ describe('secondary uploader CLI settings', () => {
       'picBed.secondUploader': 'test-b',
       'picBed.secondUploaderConfig': backup,
       'settings.enableSecondUploader': true,
-      'settings.secondPicBedMode': 'seperate',
+      'settings.secondPicBedMode': 'separate',
     })
     const prompt = vi
       .spyOn(picgo.cmd.inquirer, 'prompt')
@@ -95,7 +95,7 @@ describe('secondary uploader CLI settings', () => {
 
     await run('set', 'secondUploader')
 
-    expect(prompt.mock.calls.map(([questions]) => questions[0].default)).toEqual([true, 'test-b', 'b2', 'seperate'])
+    expect(prompt.mock.calls.map(([questions]) => questions[0].default)).toEqual([true, 'test-b', 'b2', 'separate'])
     expect(picgo.getConfig('picBed.secondUploaderConfig')).toEqual(backup)
     expect(picgo.getConfig('settings.secondPicBedMode')).toBe('shared')
   })

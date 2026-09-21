@@ -41,15 +41,20 @@ class DB {
     this.read(true)
   }
 
-  /** Reads cached configuration, or refreshes it from disk when flush is true. */
+  /** Reads configuration, optionally refreshing from disk, and silently migrates legacy settings. */
   read(flush?: boolean): IConfig {
-    return flush ? this.db.refresh() : this.db.read()
+    if (flush) this.db.refresh()
+    // Older releases persisted this misspelling for independent secondary processing.
+    if (this.db.get('settings.secondPicBedMode') === 'seperate') {
+      this.db.set('settings.secondPicBedMode', 'separate')
+    }
+    return this.db.read()
   }
 
   /** Refreshes disk state before reading a path; an empty path returns the whole configuration. */
   getSingle(key = ''): any {
     if (key === '') {
-      return this.db.refresh()
+      return this.read(true)
     }
     this.read(true)
     return this.db.get(key)

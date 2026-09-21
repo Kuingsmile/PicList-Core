@@ -367,42 +367,40 @@ export class PicGo extends EventEmitter implements IPicGo {
     return this.uploadConfig.run(this.getUploadConfig(options), () => this.uploadWithConfig(input))
   }
 
-  /** Runs the primary upload under the active configuration snapshot and schedules clipboard cleanup. */
+  /** Runs the primary upload under the active configuration snapshot and cleans up its clipboard input. */
   private async uploadWithConfig(input?: any[]): Promise<IImgInfo[] | Error> {
     if (this.configPath === '') {
       this.log.error('No config file found, please check your config file path')
       return []
     }
 
-    if (input === undefined || input.length === 0) {
-      try {
-        const { imgPath, shouldKeepAfterUploading } = await getClipboardImage(this)
-        /**
-         * Deletes a generated clipboard image after completion or failure while retaining existing
-         * files.
-         */
-        const cleanup = (): void => {
-          if (!shouldKeepAfterUploading) {
-            remove(imgPath).catch(e => {
-              this.log.error(e)
-            })
-          }
-        }
-        if (imgPath === 'no image') {
-          throw new Error('image not found in clipboard')
-        } else {
-          this.once(IBuildInEvent.FAILED, cleanup)
-          this.once(IBuildInEvent.FINISHED, cleanup)
-          const { output } = await this.lifecycle.start([imgPath])
-          return output
-        }
-      } catch (e) {
-        this.emit(IBuildInEvent.FAILED, e)
-        throw e
-      }
-    } else {
+    return this.withUploadInput(input, async input => {
       const { output } = await this.lifecycle.start(input)
       return output
+    })
+  }
+
+  /** Keeps an acquired clipboard file alive until this upload and any secondary upload settle. */
+  private async withUploadInput<T>(input: any[] | undefined, action: (input: any[]) => Promise<T>): Promise<T> {
+    if (input !== undefined && input.length > 0) return action(input)
+
+    let clipboardPath: string | undefined
+    try {
+      const { imgPath, shouldKeepAfterUploading } = await getClipboardImage(this)
+      console.log('Clipboard image path:', imgPath)
+      if (imgPath === 'no image') throw new Error('image not found in clipboard')
+      if (!shouldKeepAfterUploading) clipboardPath = imgPath
+      return await action([imgPath])
+    } catch (e) {
+      this.emit(IBuildInEvent.FAILED, e)
+      throw e
+    } finally {
+      // Instance-wide lifecycle events may belong to another concurrent upload.
+      if (clipboardPath) {
+        await remove(clipboardPath).catch(e => {
+          this.log.error(e)
+        })
+      }
     }
   }
 
@@ -444,7 +442,6 @@ export class PicGo extends EventEmitter implements IPicGo {
       this.log.error('No config file found, please check your config file path')
       return ctxResult
     }
-    const rawInput = cloneDeep(input || [])
     let enableSecondUploader = this.getConfig<boolean>('settings.enableSecondUploader') || false
     const secondaryUploaderType = this.getConfig<string>('picBed.secondUploader') || ''
     const secondUploaderConfig = this.getConfig<IStringKeyMap<any>>('picBed.secondUploaderConfig') || {}
@@ -466,86 +463,26 @@ export class PicGo extends EventEmitter implements IPicGo {
       this.log.info('The second uploader config is the same as the first uploader, skipping second upload.')
       enableSecondUploader = false
     }
-    let initialUploadType: 'file' | 'clipboard'
-    let imgPath: string = ''
-    let getClipboardResult: { imgPath: string; shouldKeepAfterUploading: boolean } = {
-      imgPath: '',
-      shouldKeepAfterUploading: false,
-    }
-    let shouldKeepAfterUploading: boolean = false
-    let ctxP: IPicGo
-
-    // upload the default picbed first
-    if (!(input === undefined || input.length === 0)) {
-      initialUploadType = 'file'
-      ctxP = await this.lifecycle.start(input, false, tempDirs)
+    return this.withUploadInput(input, async input => {
+      const rawInput = cloneDeep(input)
+      // Upload the primary and secondary destinations before releasing clipboard input.
+      const ctxP = await this.lifecycle.start(input, false, tempDirs)
       ctxResult.ctx = ctxP
-    } else {
-      initialUploadType = 'clipboard'
-      try {
-        getClipboardResult = await getClipboardImage(this)
-        imgPath = getClipboardResult.imgPath
-        shouldKeepAfterUploading = getClipboardResult.shouldKeepAfterUploading
-        if (enableSecondUploader) {
-          shouldKeepAfterUploading = true
-        }
-        /**
-         * Deletes a generated clipboard image after completion or failure while retaining existing
-         * files.
-         */
-        const cleanup = (): void => {
-          if (!shouldKeepAfterUploading) {
-            remove(imgPath).catch(e => {
-              this.log.error(e)
-            })
-          }
-        }
-        if (imgPath === 'no image') {
-          throw new Error('image not found in clipboard')
-        } else {
-          this.once(IBuildInEvent.FAILED, cleanup)
-          this.once(IBuildInEvent.FINISHED, cleanup)
-          ctxP = await this.lifecycle.start([imgPath], false, tempDirs)
-          ctxResult.ctx = ctxP
-        }
-      } catch (e) {
-        this.emit(IBuildInEvent.FAILED, e)
-        throw e
+      if (!enableSecondUploader) return ctxResult
+      if (!secondUploaderConfig || Object.keys(secondUploaderConfig).length === 0) {
+        this.log.error('Second uploader config is empty, please check your settings')
+        return ctxResult
       }
-    }
-    if (!enableSecondUploader) return ctxResult
-    // upload the second picbed
-    if (!secondUploaderConfig || Object.keys(secondUploaderConfig).length === 0) {
-      this.log.error('Second uploader config is empty, please check your settings')
+      try {
+        ctxResult.backupCtx = await this.uploadConfig.run(secondaryConfig, () =>
+          secondPicBedMode === 'separate'
+            ? this.lifecycle.start(rawInput, false, tempDirs)
+            : this.lifecycle.start(ctxP.processedInput, true, tempDirs),
+        )
+      } catch (e: any) {
+        this.log.error('Failed to upload to second uploader:', e)
+      }
       return ctxResult
-    }
-    try {
-      ctxResult.backupCtx = await this.uploadConfig.run(secondaryConfig, async () => {
-        if (secondPicBedMode === 'seperate') {
-          if (initialUploadType === 'clipboard') {
-            /** Releases a generated clipboard file after the secondary upload has finished using it. */
-            const cleanupForSecond = (): void => {
-              if (!getClipboardResult.shouldKeepAfterUploading) {
-                remove(imgPath).catch(e => {
-                  this.log.error(e)
-                })
-              }
-            }
-            this.once(IBuildInEvent.FAILED, cleanupForSecond)
-            this.once(IBuildInEvent.FINISHED, cleanupForSecond)
-          }
-          return this.lifecycle.start(
-            initialUploadType === 'file' ? rawInput : [getClipboardResult.imgPath],
-            false,
-            tempDirs,
-          )
-        } else {
-          return this.lifecycle.start(ctxP.processedInput, true, tempDirs)
-        }
-      })
-    } catch (e: any) {
-      this.log.error('Failed to upload to second uploader:', e)
-    }
-    return ctxResult
+    })
   }
 }

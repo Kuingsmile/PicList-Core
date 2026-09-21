@@ -546,7 +546,7 @@ export interface IConfig {
   silent?: boolean
   settings?: {
     enableSecondUploader?: boolean
-    secondPicBedMode?: 'shared' | 'seperate'
+    secondPicBedMode?: 'shared' | 'separate'
     logLevel?: string[]
     logPath?: string
     /** for npm */

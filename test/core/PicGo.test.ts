@@ -2,15 +2,20 @@ import os from 'node:os'
 import path from 'node:path'
 
 import fs from 'fs-extra'
+import * as fsExtra from 'fs-extra/esm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PicGo } from '../../src/core/PicGo'
 import type { IPicGo } from '../../src/types'
-import { IBusEvent } from '../../src/utils/enum'
+import { IBuildInEvent, IBusEvent } from '../../src/utils/enum'
 import { eventBus } from '../../src/utils/eventBus'
 import getClipboardImage from '../../src/utils/getClipboardImage'
 
 vi.mock('../../src/utils/getClipboardImage', () => ({ default: vi.fn() }))
+vi.mock('fs-extra/esm', async importOriginal => {
+  const actual = await importOriginal<typeof import('fs-extra/esm')>()
+  return { ...actual, remove: vi.fn(actual.remove) }
+})
 
 /** Creates a manually released promise used to coordinate overlapping upload tests. */
 const deferred = () => {
@@ -150,6 +155,7 @@ describe('PicGo upload configuration isolation', () => {
 
   beforeEach(async () => {
     listeners = new Set(eventBus.listeners(IBusEvent.CONFIG_CHANGE))
+    vi.mocked(fsExtra.remove).mockClear()
     baseDir = await fs.mkdtemp(path.join(os.tmpdir(), 'piclist-config-test-'))
     const configA = { _id: 'a', _configName: 'Default', destination: 'a' }
     const configB = { _id: 'b', _configName: 'Default', destination: 'b' }
@@ -285,7 +291,25 @@ describe('PicGo upload configuration isolation', () => {
     },
   )
 
-  it.each(['seperate', 'shared'])('isolates secondary uploads in %s mode', async mode => {
+  it('migrates a saved legacy mode before independently processing the secondary upload', async () => {
+    const saved = await fs.readJson(picgo.configPath)
+    await fs.writeJson(picgo.configPath, {
+      ...saved,
+      settings: { enableSecondUploader: true, secondPicBedMode: 'seperate' },
+    })
+    const transform = vi.spyOn(picgo.helper.transformer.get('test')!, 'handle')
+
+    const result = await picgo.uploadReturnCtx(['first.png'])
+
+    expect(transform).toHaveBeenCalledTimes(2)
+    expect(result.ctx?.output[0].imgUrl).toBe('https://example.invalid/a/first.png')
+    expect(result.backupCtx?.output[0].imgUrl).toBe('https://example.invalid/b/first.png')
+    expect(result.ctx?.getConfig('settings.secondPicBedMode')).toBe('separate')
+    expect(result.backupCtx?.getConfig('settings.secondPicBedMode')).toBe('separate')
+    expect((await fs.readJson(picgo.configPath)).settings.secondPicBedMode).toBe('separate')
+  })
+
+  it.each(['separate', 'shared'])('isolates secondary uploads in %s mode', async mode => {
     picgo.saveConfig({ 'settings.enableSecondUploader': true, 'settings.secondPicBedMode': mode })
     const started = deferred()
     const release = deferred()
@@ -384,6 +408,182 @@ describe('PicGo upload configuration isolation', () => {
     const result = await pending
     const output = Array.isArray(result) ? result : (result as any).ctx.output
     expect(output[0].imgUrl).toBe('https://example.invalid/a/clipboard.png')
+  })
+
+  describe.each(['upload', 'uploadReturnCtx'] as const)('%s clipboard cleanup', method => {
+    it.each([
+      { outcome: 'finished', source: 'file' },
+      { outcome: 'failed', source: 'file' },
+      { outcome: 'finished', source: 'clipboard' },
+      { outcome: 'failed', source: 'clipboard' },
+    ])('keeps a paused clipboard input when another $source upload has $outcome', async ({ outcome, source }) => {
+      const imgPath = path.join(baseDir, 'clipboard.png')
+      const otherPath = path.join(baseDir, 'other.png')
+      await fs.writeFile(imgPath, 'clipboard image')
+      await fs.writeFile(otherPath, 'other image')
+      vi.mocked(getClipboardImage)
+        .mockResolvedValueOnce({ imgPath, shouldKeepAfterUploading: false })
+        .mockResolvedValueOnce({ imgPath: otherPath, shouldKeepAfterUploading: false })
+      const remove = vi.spyOn(fsExtra, 'remove')
+      const started = deferred()
+      const release = deferred()
+      beforeUpload = async ctx => {
+        if (ctx.input[0] === imgPath) {
+          started.resolve()
+          await release.promise
+          expect(await fs.readFile(imgPath, 'utf8')).toBe('clipboard image')
+        } else if (outcome === 'failed') {
+          throw new Error('Concurrent upload failed')
+        }
+      }
+      const pending = picgo[method]()
+      try {
+        await started.promise
+        const concurrent = picgo[method === 'upload' ? 'uploadReturnCtx' : 'upload'](
+          source === 'clipboard' ? [] : [otherPath],
+        )
+        if (outcome === 'failed') {
+          await expect(concurrent).rejects.toThrow('Concurrent upload failed')
+        } else {
+          await concurrent
+        }
+        // Drain any event-triggered removals before checking the paused upload's input.
+        await Promise.all(remove.mock.results.map(result => result.value))
+        expect(await fs.pathExists(imgPath)).toBe(true)
+        expect(await fs.pathExists(otherPath)).toBe(source === 'file')
+      } finally {
+        release.resolve()
+        await Promise.allSettled([pending])
+      }
+      const result = await pending
+      const output = Array.isArray(result) ? result : (result as any).ctx.output
+      expect(output[0].imgUrl).toBe(`https://example.invalid/a/${imgPath}`)
+      expect(await fs.pathExists(imgPath)).toBe(false)
+      expect(picgo.listenerCount(IBuildInEvent.FAILED)).toBe(0)
+      expect(picgo.listenerCount(IBuildInEvent.FINISHED)).toBe(0)
+    })
+
+    it.each([false, true])('removes generated input after a failed upload (debug: %s)', async debug => {
+      picgo.setConfig({ debug, 'settings.enableSecondUploader': true })
+      const imgPath = path.join(baseDir, 'clipboard.png')
+      await fs.writeFile(imgPath, 'clipboard image')
+      vi.mocked(getClipboardImage).mockResolvedValue({ imgPath, shouldKeepAfterUploading: false })
+      beforeUpload = async () => {
+        throw new Error('Upload failed')
+      }
+
+      if (debug) {
+        await expect(picgo[method]()).rejects.toThrow('Upload failed')
+      } else {
+        await picgo[method]()
+      }
+
+      expect(await fs.pathExists(imgPath)).toBe(false)
+      expect(fsExtra.remove).toHaveBeenCalledExactlyOnceWith(imgPath)
+    })
+
+    it.each([false, true])('retains existing clipboard files (failure: %s)', async failure => {
+      const imgPath = path.join(baseDir, 'existing.png')
+      await fs.writeFile(imgPath, 'existing image')
+      vi.mocked(getClipboardImage).mockResolvedValue({ imgPath, shouldKeepAfterUploading: true })
+      beforeUpload = async () => {
+        if (failure) throw new Error('Upload failed')
+      }
+
+      if (failure) {
+        await expect(picgo[method]()).rejects.toThrow('Upload failed')
+      } else {
+        await picgo[method]()
+      }
+
+      expect(await fs.readFile(imgPath, 'utf8')).toBe('existing image')
+      expect(fsExtra.remove).not.toHaveBeenCalled()
+      expect(picgo.listenerCount(IBuildInEvent.FAILED)).toBe(0)
+      expect(picgo.listenerCount(IBuildInEvent.FINISHED)).toBe(0)
+    })
+
+    it.each([false, true])('logs cleanup errors without replacing the upload outcome (failure: %s)', async failure => {
+      const imgPath = path.join(baseDir, 'clipboard.png')
+      await fs.writeFile(imgPath, 'clipboard image')
+      vi.mocked(getClipboardImage).mockResolvedValue({ imgPath, shouldKeepAfterUploading: false })
+      const cleanupError = new Error('Cleanup failed')
+      vi.mocked(fsExtra.remove).mockRejectedValueOnce(cleanupError)
+      const log = vi.spyOn(picgo.log, 'error')
+      beforeUpload = async () => {
+        if (failure) throw new Error('Upload failed')
+      }
+
+      if (failure) {
+        await expect(picgo[method]()).rejects.toThrow('Upload failed')
+      } else {
+        const result = await picgo[method]()
+        const output = Array.isArray(result) ? result : (result as any).ctx.output
+        expect(output[0].imgUrl).toBe(`https://example.invalid/a/${imgPath}`)
+      }
+      expect(log).toHaveBeenCalledWith(cleanupError)
+    })
+
+    it('emits acquisition failures without trying to remove a sentinel path', async () => {
+      vi.mocked(getClipboardImage).mockResolvedValue({ imgPath: 'no image', shouldKeepAfterUploading: false })
+      const failed = vi.fn()
+      picgo.on(IBuildInEvent.FAILED, failed)
+
+      await expect(picgo[method]()).rejects.toThrow('image not found in clipboard')
+
+      expect(failed).toHaveBeenCalledOnce()
+      expect(fsExtra.remove).not.toHaveBeenCalled()
+    })
+  })
+
+  describe.each(['separate', 'shared'])('clipboard cleanup with a %s secondary upload', mode => {
+    it.each([false, true])('retains input until the secondary upload settles (failure: %s)', async failure => {
+      picgo.setConfig({ 'settings.enableSecondUploader': true, 'settings.secondPicBedMode': mode })
+      const imgPath = path.join(baseDir, 'clipboard.png')
+      await fs.writeFile(imgPath, 'clipboard image')
+      vi.mocked(getClipboardImage).mockResolvedValue({ imgPath, shouldKeepAfterUploading: false })
+      const started = deferred()
+      const release = deferred()
+      const secondary = picgo.helper.uploader.get('test-b')!
+      const handle = secondary.handle
+      vi.spyOn(secondary, 'handle').mockImplementation(async ctx => {
+        started.resolve()
+        await release.promise
+        expect(await fs.readFile(imgPath, 'utf8')).toBe('clipboard image')
+        if (failure) throw new Error('Secondary upload failed')
+        return handle(ctx)
+      })
+      const observedInputs: string[] = []
+      beforeUpload = async ctx => {
+        if (ctx.input[0] === imgPath) {
+          expect(await fs.readFile(imgPath, 'utf8')).toBe('clipboard image')
+          observedInputs.push(imgPath)
+        }
+      }
+
+      const pending = picgo.uploadReturnCtx()
+      try {
+        await started.promise
+        await picgo.upload(['other.png'])
+        await Promise.all(vi.mocked(fsExtra.remove).mock.results.map(result => result.value))
+        expect(await fs.pathExists(imgPath)).toBe(true)
+      } finally {
+        release.resolve()
+        await Promise.allSettled([pending])
+      }
+
+      const result = await pending
+      expect(result.ctx?.output[0].imgUrl).toBe(`https://example.invalid/a/${imgPath}`)
+      if (failure) {
+        expect(result.backupCtx).toBeUndefined()
+      } else {
+        expect(result.backupCtx?.output[0].imgUrl).toBe(`https://example.invalid/b/${imgPath}`)
+      }
+      expect(observedInputs).toHaveLength(mode === 'separate' ? 2 : 1)
+      expect(await fs.pathExists(imgPath)).toBe(false)
+      expect(fsExtra.remove).toHaveBeenCalledExactlyOnceWith(imgPath)
+      expect(picgo.listenerCount(IBuildInEvent.FAILED)).toBe(0)
+      expect(picgo.listenerCount(IBuildInEvent.FINISHED)).toBe(0)
+    })
   })
 
   it('preserves explicit plugin saves and isolates mutations of returned config objects', async () => {

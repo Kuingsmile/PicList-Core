@@ -85,16 +85,16 @@ export const handleSecondUploader = async (
     return false
   }
 
-  const { secondPicBedMode } = await ctx.cmd.inquirer.prompt<{ secondPicBedMode: 'shared' | 'seperate' }>([
+  const { secondPicBedMode } = await ctx.cmd.inquirer.prompt<{ secondPicBedMode: 'shared' | 'separate' }>([
     {
       type: 'list',
       name: 'secondPicBedMode',
       message: 'Choose secondary upload processing mode',
       choices: [
         { name: "Share the primary uploader's processed files", value: 'shared' },
-        { name: 'Process the original files separately', value: 'seperate' },
+        { name: 'Process the original files separately', value: 'separate' },
       ],
-      default: ctx.getConfig<string>('settings.secondPicBedMode') === 'seperate' ? 'seperate' : 'shared',
+      default: ctx.getConfig<string>('settings.secondPicBedMode') === 'separate' ? 'separate' : 'shared',
     },
   ])
 

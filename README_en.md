@@ -8,7 +8,9 @@
 
 ![picgo-core](https://cdn.jsdelivr.net/gh/Molunerfinn/test/picgo/picgo-core-fix.jpg)
 
-A powerful tool for image uploading with both CLI & API support. PicList-Core extends PicGo-Core with additional features while maintaining plugin compatibility. Check out [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) for a collection of powerful plugins.
+A powerful tool for image uploading with both CLI & API support. PicList-Core extends PicGo-Core with additional
+features while maintaining plugin compatibility. Check out [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) for a
+collection of powerful plugins.
 
 You can refer to the [DeepWiki of PiclList-Core](https://deepwiki.com/Kuingsmile/PicList-Core/) for more information.
 
@@ -25,10 +27,13 @@ You can refer to the [DeepWiki of PiclList-Core](https://deepwiki.com/Kuingsmile
   - View configuration details via `picgo config-show <uploader> [configName]`
 
 - **Secondary upload**:
-  - Run `picgo set secondUploader [uploader] [configName]` (or `picgo config secondUploader`) to enable or disable secondary upload and select an existing uploader configuration
+  - Run `picgo set secondUploader [uploader] [configName]` (or `picgo config secondUploader`) to enable or disable
+    secondary upload and select an existing uploader configuration
   - Example: `picgo set secondUploader github "Backup account"`; omitted uploader and configuration names are prompted
-  - Choose whether to share the primary uploader's processed files (`shared`) or process the originals separately (`seperate`, retained for config compatibility)
-  - Editing or renaming the selected source configuration updates `picBed.secondUploaderConfig`; deleting it clears the secondary selection and disables secondary upload
+  - Choose whether to share the primary uploader's processed files (`shared`) or process the originals separately
+    (`separate`; legacy `seperate` settings are migrated automatically)
+  - Editing or renaming the selected source configuration updates `picBed.secondUploaderConfig`; deleting it clears the
+    secondary selection and disables secondary upload
 
 - **Image processing capabilities**:
   - Add watermarks, compress images, and convert formats
@@ -96,9 +101,9 @@ docker build -t piclist:local .
 docker run --rm piclist:local node -p "require('/usr/local/lib/node_modules/piclist/package.json').version"
 ```
 
-The build uses a pinned Node 22 image, installs dependencies from `yarn.lock`, runs the type check and tests, and packs the
-checkout. The runtime installs that tarball with its locked production dependencies. Both the build and release workflow
-check the installed package version against the checkout's `package.json` before publishing.
+The build uses a pinned Node 22 image, installs dependencies from `yarn.lock`, runs the type check and tests, and packs
+the checkout. The runtime installs that tarball with its locked production dependencies. Both the build and release
+workflow check the installed package version against the checkout's `package.json` before publishing.
 
 #### Build and download an image with GitHub Actions
 
@@ -106,9 +111,9 @@ Open **Actions → Build Docker Image → Run workflow** and select the branch t
 to build that branch's latest commit at dispatch time, or enter an existing Git tag (for example, `v2.4.2`) to build a
 release. Branch builds use `sha-<12-character-commit>` as the image tag and in artifact filenames. Tag pushes do not
 trigger this workflow. GitHub's custom choices are static, so an optional tag is entered as text and checked out
-explicitly; both builds use the same resolved source commit. The Dockerfile and
-`.dockerignore` come from the workflow revision, because historical Dockerfiles installed the latest npm release rather
-than the tagged source. Both source and build recipe commits appear in the size report.
+explicitly; both builds use the same resolved source commit. The Dockerfile and `.dockerignore` come from the workflow
+revision, because historical Dockerfiles installed the latest npm release rather than the tagged source. Both source and
+build recipe commits appear in the size report.
 
 Leave `enable_push` unchecked to build without Docker Hub credentials or publishing. AMD64 builds and tests run on
 `ubuntu-24.04`; ARM64 builds and tests run natively on `ubuntu-24.04-arm`, without QEMU. Each platform has its own build
@@ -116,8 +121,8 @@ cache. The run summary shows each `.tar.gz` archive's compressed size and downlo
 days and contain the image archive, `SHA256SUMS`, and a size report. This measures the downloadable archive, which can
 differ from Docker Hub's compressed layer size.
 
-Download and extract the artifact for your architecture, then load it locally (replace the example tag with your Git
-tag or generated `sha-…` image tag):
+Download and extract the artifact for your architecture, then load it locally (replace the example tag with your Git tag
+or generated `sha-…` image tag):
 
 ```bash
 sha256sum -c SHA256SUMS
@@ -126,13 +131,14 @@ docker run --rm kuingsmile/piclist:v2.4.2-amd64 picgo --version
 ```
 
 To publish, check `enable_push`. After both platforms pass verification, the workflow publishes those same images as
-`<image-tag>-amd64` and `<image-tag>-arm64` and combines them under the multi-platform `<image-tag>`, without rebuilding. Check
-`update_latest` only when you also want to move `latest` to this release. Publishing uses the repository secrets
-`DOCKERHUB_USERNAME` and `DOCKERHUB_ACCESS_TOKEN`.
+`<image-tag>-amd64` and `<image-tag>-arm64` and combines them under the multi-platform `<image-tag>`, without
+rebuilding. Check `update_latest` only when you also want to move `latest` to this release. Publishing uses the
+repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_ACCESS_TOKEN`.
 
 #### docker run
 
-Change the `./piclist` to your own path, this path is where you put your `config.json` file, and change the `piclist123456` to your own secret key.
+Change the `./piclist` to your own path, this path is where you put your `config.json` file, and change the
+`piclist123456` to your own secret key.
 
 ```bash
 docker run -d \
@@ -163,7 +169,8 @@ services:
     command: node /usr/local/bin/picgo-server -k piclist123456
 ```
 
-You can change the `./piclist` to your own path, this path is where you put your `config.json` file, and change the `command` to your own secret key.
+You can change the `./piclist` to your own path, this path is where you put your `config.json` file, and change the
+`command` to your own secret key.
 
 Then run:
 
@@ -233,39 +240,40 @@ $ picgo-server -h
 
 > PicList-Core uses `SM.MS` as the default upload pic-bed.
 
-Run `picgo` in an interactive terminal to open the Ink interface, or launch it explicitly with `picgo tui`.
-Use `picgo -c /path/to/config.json` to open a specific configuration. For local development, run `yarn build`
-and then `yarn start`.
+Run `picgo` in an interactive terminal to open the Ink interface, or launch it explicitly with `picgo tui`. Use
+`picgo -c /path/to/config.json` to open a specific configuration. For local development, run `yarn build` and then
+`yarn start`.
 
-The interface supports file/URL and clipboard uploads, uploader switching, named configuration management,
-secondary uploads, image processing, transformers, plugins, upload proxies and language settings. Start with
-**Set up a destination** to add your upload destination. Quote pasted paths containing spaces, for example
+The interface supports file/URL and clipboard uploads, uploader switching, named configuration management, secondary
+uploads, image processing, transformers, plugins, upload proxies and language settings. Start with **Set up a
+destination** to add your upload destination. Quote pasted paths containing spaces, for example
 `"C:\My Pictures\photo.png"` or `"/home/me/My Pictures/photo.png"`. Upload progress and resulting URLs appear in the UI.
 
-The workspace groups actions into **Upload**, **Destinations**, **Processing** and **Settings**. Use **Tab**,
-**←/→** or **1–4** to change sections, **↑/↓** to navigate, and **Enter** to open an action. Press **/** to
-search all actions. New users can choose **Set up a destination** for guided setup.
+The workspace groups actions into **Upload**, **Destinations**, **Processing** and **Settings**. Use **Tab**, **←/→** or
+**1–4** to change sections, **↑/↓** to navigate, and **Enter** to open an action. Press **/** to search all actions. New
+users can choose **Set up a destination** for guided setup.
 
 Readiness checks the uploader's required fields and existing validators, so an empty saved token still needs setup.
-Under **Destinations**, **Check connection** offers a small test upload using the current processing and backup settings.
-It asks before uploading and leaves the test image at each destination; local temporary input files are removed.
+Under **Destinations**, **Check connection** offers a small test upload using the current processing and backup
+settings. It asks before uploading and leaves the test image at each destination; local temporary input files are
+removed.
 
 Forms show field progress, inline validation and searchable options (**/**). Use **Space** to toggle checkboxes,
 **Ctrl+U** to clear a text field, and **Esc** to cancel the current form. **r** reopens recent results even after
-changing settings; select a result with **↑/↓**, copy its URL with **c**, copy a Markdown image link with **m**,
-and scroll a long link with **PgUp/PgDn**. Clipboard copying uses PowerShell on Windows/WSL, `pbcopy` on macOS,
-or `wl-copy`, `xclip` or `xsel` on Linux. If unavailable, the link remains visible for manual copying.
-**q** quits from the menu. **Ctrl+C** cancels a
-form and exits; if an upload or npm operation is already running, PicList waits for it to finish before exiting.
-Credentials are masked in forms, and TUI operations do not write provider payloads or form values to PicList logs.
-Restart PicList after changing plugins to reload their code. **Settings → Language** updates navigation, search,
-shortcuts and forms immediately, using the existing English, Simplified Chinese and Traditional Chinese locales.
+changing settings; select a result with **↑/↓**, copy its URL with **c**, copy a Markdown image link with **m**, and
+scroll a long link with **PgUp/PgDn**. Clipboard copying uses PowerShell on Windows/WSL, `pbcopy` on macOS, or
+`wl-copy`, `xclip` or `xsel` on Linux. If unavailable, the link remains visible for manual copying. **q** quits from the
+menu. **Ctrl+C** cancels a form and exits; if an upload or npm operation is already running, PicList waits for it to
+finish before exiting. Credentials are masked in forms, and TUI operations do not write provider payloads or form values
+to PicList logs. Restart PicList after changing plugins to reload their code. **Settings → Language** updates
+navigation, search, shortcuts and forms immediately, using the existing English, Simplified Chinese and Traditional
+Chinese locales.
 
 See the [UI design](docs/tui-design.md) and [interactive design study](docs/tui-design.html).
 
-Explicit commands such as `picgo upload ...`, `picgo set ...`, and plugin-provided commands remain available.
-Without a terminal (for example, piped output), bare `picgo` prints help; `picgo tui` reports that a terminal is required.
-The `picgo-server` command and Node API retain their existing behavior.
+Explicit commands such as `picgo upload ...`, `picgo set ...`, and plugin-provided commands remain available. Without a
+terminal (for example, piped output), bare `picgo` prints help; `picgo tui` reports that a terminal is required. The
+`picgo-server` command and Node API retain their existing behavior.
 
 Show help:
 

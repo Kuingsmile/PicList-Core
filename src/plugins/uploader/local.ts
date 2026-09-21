@@ -36,11 +36,10 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'local')
       const fileImgTempPath = path.join(imgTempPath, img.fileName)
       const fileUploadPath = path.join(uploadPath, img.fileName)
-      try {
-        // simply ensure the directory exists, ignore errors
-        ensureDirSync(path.dirname(fileUploadPath))
-        ensureDirSync(path.dirname(fileImgTempPath))
-      } catch (_e) {}
+      const uploadDir = path.dirname(fileUploadPath)
+      // Recursive mkdir on an existing Windows drive root can fail with EPERM.
+      if (!fs.existsSync(uploadDir)) ensureDirSync(uploadDir)
+      ensureDirSync(path.dirname(fileImgTempPath))
       fs.writeFileSync(fileUploadPath, imageBuffer)
       fs.copyFileSync(fileUploadPath, fileImgTempPath)
       delete img.base64Image

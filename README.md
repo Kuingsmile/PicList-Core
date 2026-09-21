@@ -7,7 +7,8 @@
 
 ![picgo-core](https://cdn.jsdelivr.net/gh/Molunerfinn/test/picgo/picgo-core-fix.jpg)
 
-PicList-Core 是一个功能强大的图片上传工具，提供 CLI 和 API 两种调用方式。它在 PicGo-Core 的基础上增强了功能，同时保持插件兼容性。查看 [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) 获取丰富的插件资源。
+PicList-Core 是一个功能强大的图片上传工具，提供 CLI 和 API 两种调用方式。它在 PicGo-Core 的基础上增强了功能，同时保持插件兼容性。查看
+[Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) 获取丰富的插件资源。
 
 你可以查看 [PiclList-Core 的 DeepWiki](https://deepwiki.com/Kuingsmile/PicList-Core/) 获取更多信息。
 
@@ -24,10 +25,12 @@ PicList-Core 是一个功能强大的图片上传工具，提供 CLI 和 API 两
   - 通过 `picgo config-show <uploader> [configName]` 查看配置详情
 
 - **第二图床上传**：
-  - 通过 `picgo set secondUploader [uploader] [configName]`（或 `picgo config secondUploader`）启用或禁用第二图床上传，并选择已有图床配置
+  - 通过 `picgo set secondUploader [uploader] [configName]`（或
+    `picgo config secondUploader`）启用或禁用第二图床上传，并选择已有图床配置
   - 示例：`picgo set secondUploader github "Backup account"`；省略图床或配置名称时会显示选择提示
-  - 支持共享主图床处理后的文件（`shared`）或独立处理原始文件（`seperate`，为兼容已有配置保留此拼写）
-  - 修改或重命名所选原始配置时会同步更新 `picBed.secondUploaderConfig`；删除原始配置时会清空第二图床选择并禁用第二图床上传
+  - 支持共享主图床处理后的文件（`shared`）或独立处理原始文件（`separate`，旧配置中的 `seperate` 会自动迁移）
+  - 修改或重命名所选原始配置时会同步更新
+    `picBed.secondUploaderConfig`；删除原始配置时会清空第二图床选择并禁用第二图床上传
 
 - **图像处理能力**：
   - 添加水印、压缩图片和转换格式
@@ -95,16 +98,18 @@ docker build -t piclist:local .
 docker run --rm piclist:local node -p "require('/usr/local/lib/node_modules/piclist/package.json').version"
 ```
 
-构建使用固定版本的 Node 22 镜像，按照 `yarn.lock` 安装依赖，运行类型检查和测试后打包当前源码。
-运行镜像安装该压缩包及锁定版本的生产依赖。构建和发布流程都会在发布前检查镜像中安装的包版本是否与当前源码的 `package.json` 一致。
+构建使用固定版本的 Node 22 镜像，按照 `yarn.lock`
+安装依赖，运行类型检查和测试后打包当前源码。运行镜像安装该压缩包及锁定版本的生产依赖。构建和发布流程都会在发布前检查镜像中安装的包版本是否与当前源码的
+`package.json` 一致。
 
 #### 使用 GitHub Actions 构建和下载镜像
 
-打开 **Actions → Build Docker Image → Run workflow**，选择要测试的分支（通常为 `dev`）。将 `tag` 留空，即可构建该分支在触发时的最新提交；
-也可以输入已有的 Git 标签（例如 `v2.4.2`）来构建发布版本。分支构建使用 `sha-<12 位提交哈希>` 作为镜像标签和构建产物文件名的一部分。
-推送标签不会自动触发此工作流。GitHub 的自定义下拉选项是静态的，因此这里使用可选的文本输入指定标签，再显式检出对应源码；两个架构使用同一个解析后的源码提交。
-Dockerfile 和 `.dockerignore` 使用工作流所在提交的版本，避免历史 Dockerfile 安装最新 npm 包而不是构建指定标签的源码。
-大小报告会同时记录源码提交和构建配置提交。
+打开 **Actions → Build Docker Image → Run workflow**，选择要测试的分支（通常为 `dev`）。将 `tag`
+留空，即可构建该分支在触发时的最新提交；也可以输入已有的 Git 标签（例如 `v2.4.2`）来构建发布版本。分支构建使用
+`sha-<12 位提交哈希>`
+作为镜像标签和构建产物文件名的一部分。推送标签不会自动触发此工作流。GitHub 的自定义下拉选项是静态的，因此这里使用可选的文本输入指定标签，再显式检出对应源码；两个架构使用同一个解析后的源码提交。Dockerfile 和
+`.dockerignore`
+使用工作流所在提交的版本，避免历史 Dockerfile 安装最新 npm 包而不是构建指定标签的源码。大小报告会同时记录源码提交和构建配置提交。
 
 保持 `enable_push` 未勾选，即可在不配置 Docker Hub 凭据、不发布镜像的情况下构建。AMD64 在 `ubuntu-24.04`
 上构建和测试，ARM64 在 `ubuntu-24.04-arm` 上原生构建和测试，无需 QEMU；两个架构使用独立的构建缓存。运行摘要会显示各
@@ -226,36 +231,35 @@ $ picgo-server -h
 
 > PicList-Core使用`SM.MS`作为默认上传图床。
 
-在交互式终端中运行 `picgo` 即可打开基于 Ink 的终端界面，也可以使用 `picgo tui` 显式启动。
-使用 `picgo -c /path/to/config.json` 指定配置文件。本地开发时先运行 `yarn build`，再运行 `yarn start`。
+在交互式终端中运行 `picgo` 即可打开基于 Ink 的终端界面，也可以使用 `picgo tui` 显式启动。使用
+`picgo -c /path/to/config.json` 指定配置文件。本地开发时先运行 `yarn build`，再运行 `yarn start`。
 
-首次使用也可以运行 `picgo init`，按提示选择图床、输入配置名称和图床参数。完成后，该配置会成为当前默认上传目标。
-运行 `picgo -c /path/to/config.json init` 可将设置保存到指定配置文件；默认使用 `~/.piclist/config.json`。
-同名配置会在确认后更新，其他配置和设置会保留。凭据输入会隐藏，更新已有配置时需要重新输入凭据。
-按 **Ctrl+C** 可取消设置；此命令需要交互式终端。
+首次使用也可以运行 `picgo init`，按提示选择图床、输入配置名称和图床参数。完成后，该配置会成为当前默认上传目标。运行
+`picgo -c /path/to/config.json init` 可将设置保存到指定配置文件；默认使用
+`~/.piclist/config.json`。同名配置会在确认后更新，其他配置和设置会保留。凭据输入会隐藏，更新已有配置时需要重新输入凭据。按
+**Ctrl+C** 可取消设置；此命令需要交互式终端。
 
-界面支持文件/URL 和剪贴板上传、图床切换、多配置管理、第二图床、图片处理、转换器、插件、上传代理和语言设置。
-首次使用请选择 **设置上传目标（Set up a destination）** 添加图床配置。粘贴包含空格的路径时请加引号，例如
-`"C:\My Pictures\photo.png"` 或 `"/home/me/My Pictures/photo.png"`。上传进度和结果链接会显示在界面中。
+界面支持文件/URL 和剪贴板上传、图床切换、多配置管理、第二图床、图片处理、转换器、插件、上传代理和语言设置。首次使用请选择
+**设置上传目标（Set up a destination）** 添加图床配置。粘贴包含空格的路径时请加引号，例如 `"C:\My Pictures\photo.png"`
+或 `"/home/me/My Pictures/photo.png"`。上传进度和结果链接会显示在界面中。
 
 工作区按 **Upload**、**Destinations**、**Processing**、**Settings** 分组。用 **Tab**、**←/→** 或 **1–4**
 切换分组，**↑/↓** 移动，**Enter** 打开操作，**/** 搜索所有操作。首次使用可选择 **Set up a destination** 完成引导设置。
 
-就绪状态会检查上传器的必填字段及已有验证规则，已保存的空令牌仍会提示需要设置。
-在 **上传目标 → 检查连接** 中可确认上传小型测试图片，使用当前图片处理和备份设置。
-测试图片会保留在各上传目标中，本地临时输入文件会自动清理。
+就绪状态会检查上传器的必填字段及已有验证规则，已保存的空令牌仍会提示需要设置。在 **上传目标 → 检查连接**
+中可确认上传小型测试图片，使用当前图片处理和备份设置。测试图片会保留在各上传目标中，本地临时输入文件会自动清理。
 
-表单提供字段进度、即时校验和选项搜索（**/**）。用 **Space** 切换多选项、**Ctrl+U** 清空输入、**Esc** 取消表单。
-按 **r** 查看最近的结果，修改设置后结果仍保留；用 **↑/↓** 选择结果，**c** 复制链接，**m** 复制 Markdown 图片链接，**PgUp/PgDn** 滚动查看长链接。
-复制功能在 Windows/WSL 使用 PowerShell，在 macOS 使用 `pbcopy`，在 Linux 使用 `wl-copy`、`xclip` 或 `xsel`。剪贴板不可用时仍可手动复制显示的链接。
-在菜单中按 **q** 退出。**Ctrl+C** 会取消表单并退出；如果上传或 npm 操作已经开始，
-则等待操作完成后退出。凭据字段会隐藏输入内容，TUI 操作不会将服务商响应或表单值写入 PicList 日志。
-修改插件后请重启 PicList 以重新加载插件代码。**设置 → 语言** 会立即更新导航、搜索、快捷键说明和表单，使用已有的英文、简体中文和繁体中文语言系统。
+表单提供字段进度、即时校验和选项搜索（**/**）。用 **Space** 切换多选项、**Ctrl+U** 清空输入、**Esc** 取消表单。按 **r**
+查看最近的结果，修改设置后结果仍保留；用 **↑/↓** 选择结果，**c** 复制链接，**m** 复制 Markdown 图片链接，**PgUp/PgDn**
+滚动查看长链接。复制功能在 Windows/WSL 使用 PowerShell，在 macOS 使用 `pbcopy`，在 Linux 使用 `wl-copy`、`xclip` 或
+`xsel`。剪贴板不可用时仍可手动复制显示的链接。在菜单中按 **q** 退出。**Ctrl+C**
+会取消表单并退出；如果上传或 npm 操作已经开始，则等待操作完成后退出。凭据字段会隐藏输入内容，TUI 操作不会将服务商响应或表单值写入 PicList 日志。修改插件后请重启 PicList 以重新加载插件代码。**设置 → 语言**
+会立即更新导航、搜索、快捷键说明和表单，使用已有的英文、简体中文和繁体中文语言系统。
 
 参见 [UI 设计说明](docs/tui-design.md) 和 [交互设计预览](docs/tui-design.html)。
 
-`picgo upload ...`、`picgo set ...` 以及插件提供的命令仍可使用。在非交互环境（如输出被重定向）中，
-直接运行 `picgo` 将显示帮助，`picgo tui` 将提示需要交互式终端。`picgo-server` 和 Node API 的使用方式保持不变。
+`picgo upload ...`、`picgo set ...` 以及插件提供的命令仍可使用。在非交互环境（如输出被重定向）中，直接运行 `picgo`
+将显示帮助，`picgo tui` 将提示需要交互式终端。`picgo-server` 和 Node API 的使用方式保持不变。
 
 显示帮助:
 
@@ -349,8 +353,9 @@ ctx.i18n.addLocale('en', { PIC_MIGRATER_CHOOSE_FILE: 'Choose File' })
 ctx.i18n.translate('PIC_MIGRATER_CHOOSE_FILE')
 ```
 
-`addLocale()` 合并已有语言的翻译，新增语言请使用 `addLanguage()`。两种翻译方法都会读取更新后的翻译，并在消息缺失或为空时返回翻译键。
-仍然支持 `i18n-cli/*.yml` 自定义语言文件，注册的翻译仅作用于当前 PicGo 实例。
+`addLocale()` 合并已有语言的翻译，新增语言请使用
+`addLanguage()`。两种翻译方法都会读取更新后的翻译，并在消息缺失或为空时返回翻译键。仍然支持 `i18n-cli/*.yml`
+自定义语言文件，注册的翻译仅作用于当前 PicGo 实例。
 
 CLI 命令和选项的说明也会使用配置的语言。运行 `picgo i18n zh-CN`（或 `zh-TW` / `en`），然后查看 `picgo --help` 或
 `picgo install --help`。自定义语言可以覆盖 `CLI_*` 翻译键。
