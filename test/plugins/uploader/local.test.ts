@@ -136,12 +136,55 @@ describe('Local uploader', () => {
     })
   })
 
-  it.each(['destination', 'gallery'] as const)('reports %s directory errors before writing the image', async stage => {
+  it.each(['copy', 'rename'] as const)(
+    'keeps a successful upload when the gallery %s fails and warns without returning a stale preview',
+    async stage => {
+      const uploadPath = path.join(baseDir, 'destination')
+      const fileName = 'photo.png'
+      const original = Buffer.from('original-image')
+      const replacement = Buffer.from('replacement-image')
+      const { ctx, upload } = createUploader(registerLocalUploader, 'picBed.local', { path: uploadPath }, [
+        { fileName, buffer: original },
+      ])
+      ctx.baseDir = baseDir
+      await upload()
+      const galleryPath = ctx.output[0].galleryPath!
+      const cachePath = getGalleryCachePath(baseDir, galleryPath)
+      ctx.output = [{ fileName, buffer: replacement, galleryPath }]
+      const failure = Object.assign(new Error(`Gallery ${stage} denied`), { code: 'EACCES' })
+      if (stage === 'copy') {
+        vi.spyOn(fs, 'copyFileSync').mockImplementation((_source, target) => {
+          fs.writeFileSync(target, 'partial-copy')
+          throw failure
+        })
+      } else {
+        const rename = fs.renameSync
+        vi.spyOn(fs, 'renameSync').mockImplementation((source, target) => {
+          if (target === cachePath) throw failure
+          return rename(source, target)
+        })
+      }
+
+      await expect(upload()).resolves.toBe(ctx)
+
+      const destination = path.join(uploadPath, fileName)
+      expect(await fs.readFile(destination)).toEqual(replacement)
+      expect(await fs.readFile(cachePath)).toEqual(original)
+      expect(ctx.output).toEqual([{ fileName, imgUrl: destination, hash: destination }])
+      expect(ctx.log.warn).toHaveBeenCalledExactlyOnceWith(
+        'Local upload succeeded, but the gallery cache could not be updated.',
+      )
+      expect(ctx.emit).not.toHaveBeenCalled()
+      expect(await fs.readdir(uploadPath)).toEqual([fileName])
+      expect(await fs.readdir(path.dirname(cachePath))).toEqual([fileName])
+    },
+  )
+
+  it('reports destination directory errors before writing the image', async () => {
     const uploadPath = path.join(baseDir, 'destination')
-    const failure = Object.assign(new Error(`${stage} directory creation denied`), { code: 'EACCES' })
-    const blockedDirectory = stage === 'destination' ? uploadPath : path.join(baseDir, 'imgTemp', 'local')
+    const failure = Object.assign(new Error('Destination directory creation denied'), { code: 'EACCES' })
     vi.mocked(ensureDirSync).mockImplementation(directory => {
-      if (directory === blockedDirectory || directory.startsWith(`${blockedDirectory}${path.sep}`)) throw failure
+      if (directory === uploadPath) throw failure
       return fs.ensureDirSync(directory)
     })
     const image = { fileName: 'photo.png', buffer: Buffer.from('synthetic-image') }
@@ -157,6 +200,136 @@ describe('Local uploader', () => {
       body: 'failed to upload image',
     })
     expect(ctx.output).toEqual([image])
+  })
+
+  it('warns and continues uploading the batch when the gallery directory cannot be created', async () => {
+    const uploadPath = path.join(baseDir, 'destination')
+    const cacheRoot = path.join(baseDir, 'imgTemp', 'local')
+    vi.mocked(ensureDirSync).mockImplementation(directory => {
+      if (directory.startsWith(`${cacheRoot}${path.sep}`)) {
+        throw Object.assign(new Error('Gallery directory creation denied'), { code: 'EACCES' })
+      }
+      return fs.ensureDirSync(directory)
+    })
+    const images = ['first.png', 'second.png'].map(fileName => ({ fileName, buffer: Buffer.from(fileName) }))
+    const { ctx, upload } = createUploader(registerLocalUploader, 'picBed.local', { path: uploadPath }, [
+      ...images.map(image => ({ ...image })),
+    ])
+    ctx.baseDir = baseDir
+
+    await expect(upload()).resolves.toBe(ctx)
+
+    for (const [index, image] of images.entries()) {
+      const destination = path.join(uploadPath, image.fileName)
+      expect(await fs.readFile(destination)).toEqual(image.buffer)
+      expect(ctx.output[index]).toEqual({ fileName: image.fileName, imgUrl: destination, hash: destination })
+    }
+    expect(ctx.log.warn).toHaveBeenCalledTimes(2)
+    expect(ctx.log.warn).toHaveBeenCalledWith('Local upload succeeded, but the gallery cache could not be updated.')
+    expect(ctx.emit).not.toHaveBeenCalled()
+    expect(await fs.readdir(uploadPath)).toEqual(['first.png', 'second.png'])
+  })
+
+  it.each(['staging', 'write', 'rename'] as const)(
+    'preserves the existing destination and gallery on a destination %s failure',
+    async stage => {
+      const uploadPath = path.join(baseDir, 'destination')
+      const fileName = 'photo.png'
+      const destination = path.join(uploadPath, fileName)
+      const original = Buffer.from('original-image')
+      const { ctx, upload } = createUploader(registerLocalUploader, 'picBed.local', { path: uploadPath }, [
+        { fileName, buffer: original },
+      ])
+      ctx.baseDir = baseDir
+      await upload()
+      const cachePath = getGalleryCachePath(baseDir, ctx.output[0].galleryPath!)
+      const image = { fileName, buffer: Buffer.from('replacement-image'), base64Image: 'cmVwbGFjZW1lbnQ=' }
+      ctx.output = [{ ...image }]
+      const failure = Object.assign(new Error(`Destination ${stage} failed`), { code: 'EIO' })
+      if (stage === 'staging') {
+        vi.spyOn(fs, 'mkdtempSync').mockImplementation(() => {
+          throw failure
+        })
+      } else if (stage === 'write') {
+        const write = fs.writeFileSync
+        vi.spyOn(fs, 'writeFileSync').mockImplementation(filePath => {
+          write(filePath, 'partial-image')
+          throw failure
+        })
+      } else {
+        vi.spyOn(fs, 'renameSync').mockImplementation(() => {
+          throw failure
+        })
+      }
+
+      await expect(upload()).rejects.toMatchObject({ cause: failure })
+
+      expect(await fs.readFile(destination)).toEqual(original)
+      expect(await fs.readFile(cachePath)).toEqual(original)
+      expect(ctx.output).toEqual([image])
+      expect(ctx.emit).toHaveBeenCalledExactlyOnceWith(IBuildInEvent.NOTIFICATION, {
+        title: 'UPLOAD_FAILED',
+        body: 'failed to upload image',
+      })
+      expect(ctx.log.warn).not.toHaveBeenCalled()
+      expect(await fs.readdir(uploadPath)).toEqual([fileName])
+      expect(await fs.readdir(path.dirname(cachePath))).toEqual([fileName])
+    },
+  )
+
+  it.each([false, true])('does not change the upload result when cleanup fails (write fails: %s)', async writeFails => {
+    const uploadPath = path.join(baseDir, 'destination')
+    const destination = path.join(uploadPath, 'photo.png')
+    const original = Buffer.from('original-image')
+    const replacement = Buffer.from('replacement-image')
+    await fs.outputFile(destination, original)
+    const { ctx, upload } = createUploader(registerLocalUploader, 'picBed.local', { path: uploadPath }, [
+      { fileName: 'photo.png', buffer: replacement },
+    ])
+    ctx.baseDir = baseDir
+    const failure = Object.assign(new Error('Destination write failed'), { code: 'ENOSPC' })
+    if (writeFails) {
+      vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {
+        throw failure
+      })
+    }
+    vi.spyOn(fs, 'removeSync').mockImplementation(() => {
+      throw Object.assign(new Error('Cleanup failed'), { code: 'EACCES' })
+    })
+
+    if (writeFails) {
+      await expect(upload()).rejects.toMatchObject({ cause: failure })
+      expect(await fs.readFile(destination)).toEqual(original)
+      expect(ctx.output[0].buffer).toEqual(replacement)
+    } else {
+      await expect(upload()).resolves.toBe(ctx)
+      expect(await fs.readFile(destination)).toEqual(replacement)
+      expect(await fs.readFile(getGalleryCachePath(baseDir, ctx.output[0].galleryPath!))).toEqual(replacement)
+      expect(ctx.output[0].buffer).toBeUndefined()
+      expect(ctx.emit).not.toHaveBeenCalled()
+    }
+    expect(ctx.log.warn).toHaveBeenCalledWith('Failed to clean up local upload staging files.')
+  })
+
+  it('rejects invalid URL text before replacing the destination', async () => {
+    const uploadPath = path.join(baseDir, 'destination')
+    const destination = path.join(uploadPath, 'photo.png')
+    const original = Buffer.from('original-image')
+    await fs.outputFile(destination, original)
+    const image = { fileName: 'photo.png', buffer: Buffer.from('replacement-image') }
+    const { ctx, upload } = createUploader(
+      registerLocalUploader,
+      'picBed.local',
+      { path: uploadPath, customUrl: 'https://cdn.example.invalid', webPath: '\uD800' },
+      [{ ...image }],
+    )
+    ctx.baseDir = baseDir
+
+    await expect(upload()).rejects.toMatchObject({ cause: expect.any(URIError) })
+
+    expect(await fs.readFile(destination)).toEqual(original)
+    expect(ctx.output).toEqual([image])
+    expect(await fs.readdir(uploadPath)).toEqual(['photo.png'])
   })
 
   it('rejects a traversal rename without overwriting files outside either directory', async () => {

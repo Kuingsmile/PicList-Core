@@ -20,6 +20,7 @@ export function createUploader(
     getConfig: vi.fn((key: string) => (key === configKey ? structuredClone(config) : undefined)),
     request: vi.fn<(_options: IOldReqOptions) => Promise<any>>(),
     emit: vi.fn(),
+    log: { warn: vi.fn() },
     i18n: { t: (key: string) => key, translate: (key: string) => key },
     helper: { uploader: registry },
   }

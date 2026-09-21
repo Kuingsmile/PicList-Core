@@ -34,9 +34,29 @@ const getFilePathWithinRoot = (root: string, fileName: string): string => {
   return filePath
 }
 
+/** Stages on the target filesystem so a failed write or rename leaves the existing file intact. */
+const replaceFile = (ctx: IPicGo, filePath: string, write: (stagedPath: string) => void): void => {
+  const directory = path.dirname(filePath)
+  // Recursive mkdir on an existing Windows drive root can fail with EPERM.
+  if (!fs.existsSync(directory)) ensureDirSync(directory)
+  const stagingDirectory = fs.mkdtempSync(path.join(directory, '.piclist-upload-'))
+  const stagedPath = path.join(stagingDirectory, 'image')
+  try {
+    write(stagedPath)
+    fs.renameSync(stagedPath, filePath)
+  } finally {
+    try {
+      fs.removeSync(stagingDirectory)
+    } catch (_error) {
+      // Cleanup must not turn a committed replacement into an upload failure or hide its cause.
+      ctx.log.warn('Failed to clean up local upload staging files.')
+    }
+  }
+}
+
 /**
- * Writes images to the configured directory and gallery cache, returning local paths or custom public
- * URLs.
+ * Atomically replaces destination images, returning local paths or custom public URLs. The gallery
+ * cache is best effort: failures log a warning and omit galleryPath without failing the upload.
  */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const localConfig = getAndCheckConfig<ILocalConfig>(ctx, 'picBed.local', [])
@@ -57,21 +77,21 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       const fileName = img.fileName.replace(/\\/g, '/')
       const fileImgTempPath = getFilePathWithinRoot(imgTempPath, fileName)
       const fileUploadPath = getFilePathWithinRoot(uploadPath, fileName)
-      const uploadDir = path.dirname(fileUploadPath)
-      // Recursive mkdir on an existing Windows drive root can fail with EPERM.
-      if (!fs.existsSync(uploadDir)) ensureDirSync(uploadDir)
-      ensureDirSync(path.dirname(fileImgTempPath))
-      fs.writeFileSync(fileUploadPath, imageBuffer)
-      fs.copyFileSync(fileUploadPath, fileImgTempPath)
+      // Finish potentially fallible URL encoding before committing the destination.
+      const imgUrl = customUrl ? `${customUrl}/${encodePath(`${webPath}${fileName}`)}` : fileUploadPath
+      const galleryPath = `http://localhost:36699/local/${destinationKey}/${encodePath(fileName)}`
+      replaceFile(ctx, fileUploadPath, stagedPath => fs.writeFileSync(stagedPath, imageBuffer))
       delete img.base64Image
       delete img.buffer
-      if (customUrl) {
-        img.imgUrl = `${customUrl}/${encodePath(`${webPath}${fileName}`)}`
-      } else {
-        img.imgUrl = fileUploadPath
-      }
+      img.imgUrl = imgUrl
       img.hash = fileUploadPath
-      img.galleryPath = `http://localhost:36699/local/${destinationKey}/${encodePath(fileName)}`
+      delete img.galleryPath
+      try {
+        replaceFile(ctx, fileImgTempPath, stagedPath => fs.copyFileSync(fileUploadPath, stagedPath))
+        img.galleryPath = galleryPath
+      } catch (_error) {
+        ctx.log.warn('Local upload succeeded, but the gallery cache could not be updated.')
+      }
     } catch (e: any) {
       ctx.emit(IBuildInEvent.NOTIFICATION, {
         title: ctx.i18n.t('UPLOAD_FAILED'),
