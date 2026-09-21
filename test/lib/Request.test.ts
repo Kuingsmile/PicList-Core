@@ -4,12 +4,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { Request } from '../../src/lib/Request'
 import type { IPicGo } from '../../src/types'
-import { IBusEvent } from '../../src/utils/enum'
-import { eventBus } from '../../src/utils/eventBus'
 
 describe('Request', () => {
   const payload = { message: 'upload complete' }
-  const originalListeners = new Set(eventBus.listeners(IBusEvent.CONFIG_CHANGE))
   const request = new Request({ getConfig: () => undefined } as unknown as IPicGo)
   const server = createServer((req, res) => {
     req.resume()
@@ -29,9 +26,6 @@ describe('Request', () => {
   })
 
   afterAll(async () => {
-    for (const listener of eventBus.listeners(IBusEvent.CONFIG_CHANGE)) {
-      if (!originalListeners.has(listener)) eventBus.removeListener(IBusEvent.CONFIG_CHANGE, listener)
-    }
     await new Promise<void>((resolve, reject) => server.close(error => (error ? reject(error) : resolve())))
   })
 
@@ -63,5 +57,37 @@ describe('Request', () => {
 
     expect(Buffer.isBuffer(response)).toBe(true)
     expect(response.toString()).toBe(JSON.stringify(payload))
+  })
+
+  it.each(['http', 'https'])('uses the current proxy for each %s request, including removal', async protocol => {
+    let proxy: string | undefined = 'http://initial.invalid:8080'
+    const request = new Request({ getConfig: () => proxy } as unknown as IPicGo)
+    const readProxy = () =>
+      request.request({
+        url: `${protocol}://example.invalid/upload`,
+        adapter: async config => ({
+          data: { proxy: config.proxy, tunnel: config.httpsAgent?.proxyOptions },
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config,
+        }),
+      })
+
+    const expectedProxy = (host: string, port: number) =>
+      protocol === 'https'
+        ? { proxy: false, tunnel: { host, port } }
+        : { proxy: { host, port, protocol: 'http:' }, tunnel: undefined }
+
+    expect(await readProxy()).toEqual(expectedProxy('initial.invalid', 8080))
+    proxy = 'http://updated.invalid:8081'
+    expect(await readProxy()).toEqual(expectedProxy('updated.invalid', 8081))
+
+    for (const absentProxy of [undefined, '', 'invalid proxy']) {
+      proxy = 'http://updated.invalid:8081'
+      await readProxy()
+      proxy = absentProxy
+      expect(await readProxy()).toEqual({ proxy: false, tunnel: undefined })
+    }
   })
 })

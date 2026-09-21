@@ -6,19 +6,7 @@ import axios from 'axios'
 import FormData from 'form-data'
 import { httpsOverHttp } from 'tunnel'
 
-import type {
-  IConfig,
-  IConfigChangePayload,
-  IFullResponse,
-  IOldReqOptions,
-  IPicGo,
-  IRequest,
-  IRequestConfig,
-  IResponse,
-  Undefinable,
-} from '../types'
-import { IBusEvent } from '../utils/enum'
-import { eventBus } from '../utils/eventBus'
+import type { IFullResponse, IOldReqOptions, IPicGo, IRequest, IRequestConfig, IResponse, Undefinable } from '../types'
 
 /** Default compatibility agent restricted to TLS 1.2 with certificate verification disabled. */
 const httpsAgent = new https.Agent({
@@ -138,44 +126,22 @@ function responseErrorHandler(error: any) {
 /** HTTP adapter that preserves legacy request options while using Axios and live proxy settings. */
 export class Request implements IRequest {
   private readonly ctx: IPicGo
-  /** Cached proxy setting updated by configuration-change events. */
-  private proxy: Undefinable<string> = ''
   /** Mutable Axios defaults applied to each request before call-specific options are merged. */
   options: AxiosRequestConfig<any> = {}
-  /** Loads proxy settings and subscribes to later configuration changes. */
+  /** Retains the client so requests can resolve its active configuration snapshot. */
   constructor(ctx: IPicGo) {
     this.ctx = ctx
-    this.init()
-    eventBus.on(IBusEvent.CONFIG_CHANGE, (data: IConfigChangePayload<string | IConfig['picBed']>) => {
-      switch (data.configName) {
-        case 'picBed':
-          if ((data.value as IConfig['picBed'])?.proxy) {
-            this.proxy = (data.value as IConfig['picBed']).proxy
-          }
-          break
-        case 'picBed.proxy':
-          this.proxy = data.value as string
-          break
-      }
-    })
-  }
-
-  /** Seeds the cached proxy from the client configuration. */
-  private init(): void {
-    const proxy = this.ctx.getConfig<Undefinable<string>>('picBed.proxy')
-    if (proxy) {
-      this.proxy = proxy
-    }
   }
 
   /**
-   * Converts the configured proxy URL to Axios options, or disables proxying for an absent or invalid
-   * URL.
+   * Resolves the proxy from the active upload snapshot or client defaults for each request, disabling
+   * proxying for an absent or invalid URL.
    */
   private handleProxy(): AxiosRequestConfig['proxy'] | false {
-    if (this.proxy) {
+    const proxy = this.ctx.getConfig<Undefinable<string>>('picBed.proxy')
+    if (proxy) {
       try {
-        const proxyOptions = new URL(this.proxy)
+        const proxyOptions = new URL(proxy)
         return {
           host: proxyOptions.hostname,
           port: parseInt(proxyOptions.port || '0', 10),

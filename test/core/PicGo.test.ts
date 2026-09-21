@@ -24,6 +24,13 @@ const deferred = () => {
   return { promise, resolve }
 }
 
+/** Inspects the proxy passed to Axios without sending a network request. */
+const requestProxy = (ctx: IPicGo) =>
+  ctx.request({
+    url: 'http://example.invalid/upload',
+    adapter: async config => ({ data: config.proxy, status: 200, statusText: 'OK', headers: {}, config }),
+  })
+
 describe('PicGo runtime configuration', () => {
   let baseDir: string
   let picgo: PicGo
@@ -229,6 +236,69 @@ describe('PicGo upload configuration isolation', () => {
       expect(await fs.readJson(picgo.configPath)).toMatchObject({ silent: false, debug: false })
     },
   )
+
+  describe.each(['upload', 'uploadReturnCtx'] as const)('%s proxy isolation', method => {
+    it.each([false, true])('restores the default proxy after an upload (failure: %s)', async failure => {
+      picgo.setConfig({ 'picBed.proxy': 'http://default.invalid:8080' })
+      const savedConfig = await fs.readFile(picgo.configPath, 'utf8')
+      beforeUpload = async ctx => {
+        ctx.setConfig({ 'picBed.proxy': 'http://temporary.invalid:8081' })
+        expect(await requestProxy(ctx)).toEqual({ host: 'temporary.invalid', port: 8081, protocol: 'http:' })
+        if (failure) throw new Error('Upload failed')
+      }
+
+      if (failure) {
+        await expect(picgo[method](['first.png'])).rejects.toThrow('Upload failed')
+      } else {
+        await picgo[method](['first.png'])
+      }
+
+      expect(picgo.getConfig('picBed.proxy')).toBe('http://default.invalid:8080')
+      expect(await requestProxy(picgo)).toEqual({ host: 'default.invalid', port: 8080, protocol: 'http:' })
+      beforeUpload = async ctx => {
+        expect(await requestProxy(ctx)).toEqual({ host: 'default.invalid', port: 8080, protocol: 'http:' })
+      }
+      await picgo[method](['next.png'])
+      expect(await fs.readFile(picgo.configPath, 'utf8')).toBe(savedConfig)
+    })
+
+    it('isolates proxies between overlapping uploads and clients', async () => {
+      picgo.setConfig({ 'picBed.proxy': 'http://default.invalid:8080' })
+      const otherConfigPath = path.join(baseDir, 'other', 'config.json')
+      await fs.outputJson(otherConfigPath, {
+        silent: true,
+        picBed: { proxy: 'http://other.invalid:8082' },
+        picgoPlugins: {},
+      })
+      const other = await PicGo.create(otherConfigPath)
+      const started = deferred()
+      const release = deferred()
+      beforeUpload = async ctx => {
+        if (ctx.input[0] === 'first.png') {
+          ctx.setConfig({ 'picBed.proxy': 'http://temporary.invalid:8081' })
+          started.resolve()
+          await release.promise
+          expect(await requestProxy(ctx)).toEqual({ host: 'temporary.invalid', port: 8081, protocol: 'http:' })
+        } else {
+          expect(await requestProxy(ctx)).toEqual({ host: 'default.invalid', port: 8080, protocol: 'http:' })
+        }
+      }
+
+      const pending = picgo[method](['first.png'])
+      try {
+        await started.promise
+        expect(await requestProxy(other)).toEqual({ host: 'other.invalid', port: 8082, protocol: 'http:' })
+        expect(await requestProxy(picgo)).toEqual({ host: 'default.invalid', port: 8080, protocol: 'http:' })
+        await picgo[method](['second.png'])
+        picgo.setConfig({ 'picBed.proxy': 'http://updated.invalid:8083' })
+      } finally {
+        release.resolve()
+        await pending
+      }
+      expect(await requestProxy(picgo)).toEqual({ host: 'updated.invalid', port: 8083, protocol: 'http:' })
+      expect(await requestProxy(other)).toEqual({ host: 'other.invalid', port: 8082, protocol: 'http:' })
+    })
+  })
 
   it.each([
     { picBed: 'test-b', destination: 'b' },
