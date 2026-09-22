@@ -79,7 +79,7 @@ const uploadImage = async (
   return await client.putFileContents(filePath, imageBuffer, { overwrite: true })
 }
 
-/** Uploads output images to WebDAV, caches gallery copies, and assigns their public and gallery URLs. */
+/** Uploads output images to WebDAV, assigns public URLs, and caches gallery copies on a best-effort basis. */
 const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
   const webdavOptions = getAndCheckConfig<IWebdavPlistConfig>(ctx, 'picBed.webdavplist', [])
 
@@ -102,11 +102,16 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
 
       const uploadResult = await uploadImage(client, webdavOptions.path, img.fileName, imageBuffer)
       if (!uploadResult) throw new Error('Upload failed')
-      saveImageToTemp(ctx, destinationKey, img.fileName, imageBuffer)
       delete img.base64Image
       delete img.buffer
       img.imgUrl = buildImageUrl(baseUrl, webdavOptions.path, webpath, img.fileName, suffix, !!webdavOptions.webpath)
-      img.galleryPath = `http://localhost:${GALLERY_PORT}/webdavplist/${destinationKey}/${encodePath(img.fileName)}`
+      delete img.galleryPath
+      try {
+        saveImageToTemp(ctx, destinationKey, img.fileName, imageBuffer)
+        img.galleryPath = `http://localhost:${GALLERY_PORT}/webdavplist/${destinationKey}/${encodePath(img.fileName)}`
+      } catch (_error) {
+        ctx.log.warn('WebDAV upload succeeded, but the gallery cache could not be updated.')
+      }
     }
     return ctx
   } catch (err: any) {

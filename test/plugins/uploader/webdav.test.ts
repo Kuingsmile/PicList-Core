@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import os from 'node:os'
 import path from 'node:path'
 
+import fs from 'fs-extra'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthType, createClient } from 'webdav'
 
@@ -40,6 +41,7 @@ describe('WebDAV uploader', () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     if (!path.resolve(baseDir).startsWith(path.resolve(tempPrefix))) throw new Error('Unexpected test directory')
     rmSync(baseDir, { recursive: true, force: true })
   })
@@ -212,7 +214,56 @@ describe('WebDAV uploader', () => {
     expect(client.putFileContents).toHaveBeenCalledWith('uploads/photo #1.png', expect.any(Buffer), { overwrite: true })
   })
 
-  it.each(['client', 'directory', 'transfer', 'false result', 'gallery'])(
+  it.each(['directory', 'write'])(
+    'preserves public URLs and continues the batch when gallery %s fails',
+    async stage => {
+      if (stage === 'directory') {
+        writeFileSync(path.join(baseDir, 'imgTemp'), 'blocks gallery directory creation')
+      } else {
+        vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {
+          throw Object.assign(new Error('Gallery write denied'), { code: 'EACCES' })
+        })
+      }
+      const { ctx, upload } = createUploader(
+        registerWebdavUploader,
+        'picBed.webdavplist',
+        { ...config, customUrl: 'https://cdn.example.invalid', webpath: '/public/', options: '?download=1' },
+        [
+          {
+            fileName: 'first #1.png',
+            buffer: Buffer.from('first-image'),
+            galleryPath: 'http://localhost:36699/webdavplist/stale.png',
+          },
+          { fileName: 'nested/second.png', base64Image: Buffer.from('second-image').toString('base64') },
+        ],
+      )
+      ctx.baseDir = baseDir
+
+      await expect(upload()).resolves.toBe(ctx)
+
+      expect(client.putFileContents).toHaveBeenCalledTimes(2)
+      expect(client.putFileContents).toHaveBeenNthCalledWith(1, 'uploads/first #1.png', Buffer.from('first-image'), {
+        overwrite: true,
+      })
+      expect(client.putFileContents).toHaveBeenNthCalledWith(
+        2,
+        'uploads/nested/second.png',
+        Buffer.from('second-image'),
+        {
+          overwrite: true,
+        },
+      )
+      expect(ctx.output).toEqual([
+        { fileName: 'first #1.png', imgUrl: 'https://cdn.example.invalid/public/first%20%231.png?download=1' },
+        { fileName: 'nested/second.png', imgUrl: 'https://cdn.example.invalid/public/nested/second.png?download=1' },
+      ])
+      expect(ctx.log.warn).toHaveBeenCalledTimes(2)
+      expect(ctx.log.warn).toHaveBeenCalledWith('WebDAV upload succeeded, but the gallery cache could not be updated.')
+      expect(ctx.emit).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each(['client', 'directory', 'transfer', 'false result'])(
     'reports a %s failure and preserves image data',
     async stage => {
       const failure = new Error(`${stage} failed`)
@@ -223,20 +274,18 @@ describe('WebDAV uploader', () => {
       if (stage === 'directory') client.createDirectory.mockRejectedValueOnce(failure)
       if (stage === 'transfer') client.putFileContents.mockRejectedValueOnce(failure)
       if (stage === 'false result') client.putFileContents.mockResolvedValueOnce(false)
-      if (stage === 'gallery') writeFileSync(path.join(baseDir, 'imgTemp'), 'blocks gallery directory creation')
       const image = { fileName: 'photo.png', buffer: Buffer.from('synthetic-image') }
       const { ctx, upload } = createUploader(registerWebdavUploader, 'picBed.webdavplist', config, [{ ...image }])
       ctx.baseDir = baseDir
 
-      await expect(upload()).rejects.toThrow(
-        stage === 'gallery' ? undefined : stage === 'false result' ? 'Upload failed' : failure.message,
-      )
+      await expect(upload()).rejects.toThrow(stage === 'false result' ? 'Upload failed' : failure.message)
 
       expect(ctx.emit).toHaveBeenCalledExactlyOnceWith(IBuildInEvent.NOTIFICATION, {
         title: 'UPLOAD_FAILED',
         body: 'CHECK_SETTINGS',
       })
       expect(ctx.output).toEqual([image])
+      expect(ctx.log.warn).not.toHaveBeenCalled()
       expect(existsSync(path.join(baseDir, 'imgTemp', 'webdavplist'))).toBe(false)
       if (stage === 'client' || stage === 'directory') expect(client.putFileContents).not.toHaveBeenCalled()
     },
