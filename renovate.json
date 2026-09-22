@@ -16,7 +16,7 @@
       "matchManagers": ["npm"],
       "matchDepTypes": ["devDependencies"],
       "matchUpdateTypes": ["minor", "patch"],
-      "matchPackageNames": ["rollup", "@rollup/**", "rollup-plugin-*", "typescript", "tslib"],
+      "matchPackageNames": ["rolldown", "@rolldown/**", "typescript"],
       "groupName": "build tooling"
     },
     {

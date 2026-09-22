@@ -7,6 +7,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import spawn from 'cross-spawn'
 
+import { checkArtifacts } from './artifacts.mjs'
+
 const root = fileURLToPath(new URL('../../', import.meta.url))
 /** Dedicated package-consumer sandbox owned by this check and removed in its final cleanup. */
 const temporary = mkdtempSync(path.join(tmpdir(), 'piclist-package-'))
@@ -43,6 +45,8 @@ try {
   assert.equal(realpathSync(installed), installed, 'The consumer must use the tarball, not a workspace link')
   const installedPackage = JSON.parse(readFileSync(path.join(installed, 'package.json'), 'utf8'))
   assert.equal(installedPackage.exports, undefined, 'Do not restrict existing package subpaths')
+  console.log('Checking packaged declarations, assets, source maps, and clipboard scripts...')
+  checkArtifacts(root, installed, packed[0].files)
 
   const tsc = path.join(consumer, 'node_modules/typescript/bin/tsc')
   console.log('Checking NodeNext declarations with skipLibCheck disabled...')

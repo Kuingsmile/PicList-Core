@@ -8,7 +8,8 @@ src/
 test/
 docs/
 
-rollup.config.js
+rolldown.config.js
+scripts/
 eslint.config.js
 .prettierrc
 
