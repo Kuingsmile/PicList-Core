@@ -13,6 +13,7 @@ const ssh = vi.hoisted(() => ({
   putFile: vi.fn(),
   execCommand: vi.fn(),
   dispose: vi.fn(),
+  rename: vi.fn(),
 }))
 
 vi.mock('node-ssh-no-cpu-features', () => ({
@@ -36,6 +37,19 @@ vi.mock('node-ssh-no-cpu-features', () => ({
 
     async execCommand(script: string) {
       return ssh.execCommand(this, script)
+    }
+
+    async requestSFTP() {
+      return {
+        open: (_path: string, _flags: string, callback: (error: Error | null, handle: Buffer) => void) =>
+          callback(null, Buffer.from('handle')),
+        close: (_handle: Buffer, callback: (error: Error | null) => void) => callback(null),
+        unlink: (_path: string, callback: (error: Error | null) => void) => callback(null),
+        ext_openssh_rename: (source: string, destination: string, callback: (error: Error | null) => void) => {
+          ssh.rename(this, source, destination)
+          callback(null)
+        },
+      }
     }
 
     dispose() {
@@ -133,6 +147,9 @@ describe('SFTP upload isolation and cleanup', () => {
         if (!client.connected) throw new Error('Connection closed during upload')
         transfers.push({ host: client.host, remote, contents: readFileSync(local, 'utf8') })
       })
+      ssh.rename.mockImplementation((_client, source, destination) => {
+        transfers.find(transfer => transfer.remote === source)!.remote = destination
+      })
       const first = createUploader(baseDir, { ...config, uploadPath: '/a' }, [
         { fileName, buffer: Buffer.from('contents-a') },
       ])
@@ -226,6 +243,9 @@ describe('SFTP upload isolation and cleanup', () => {
     ssh.putFile.mockImplementation(async (_client, local: string, remote: string) => {
       transfers.push({ remote, contents: readFileSync(local, 'utf8') })
     })
+    ssh.rename.mockImplementation((_client, source, destination) => {
+      transfers.find(transfer => transfer.remote === source)!.remote = destination
+    })
     const uploader = createUploader(baseDir, config, [
       { fileName: 'first.png', buffer: Buffer.from('first image') },
       { fileName: 'skip.png' },
@@ -318,7 +338,7 @@ describe('SFTP upload isolation and cleanup', () => {
 
     await uploader.upload()
 
-    expect(ssh.putFile.mock.calls[0][2]).toBe(remote)
+    expect(ssh.rename.mock.calls[0][2]).toBe(remote)
     expect(uploader.ctx.output[0].imgUrl).toBe(`${customUrl || config.host}${url}`)
     expect(uploader.ctx.output[0].galleryPath).toBe('http://localhost:36699/sftpplist/photo%20one.png')
   })
@@ -330,7 +350,7 @@ describe('SFTP upload isolation and cleanup', () => {
 
     await uploader.upload()
 
-    expect(ssh.putFile.mock.calls[0][2]).toBe('/images/nested/album/photo.png')
+    expect(ssh.rename.mock.calls[0][2]).toBe('/images/nested/album/photo.png')
   })
 
   it.each([

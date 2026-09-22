@@ -76,7 +76,6 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         await writeFile(tempFilePath, image)
         if (!client.isConnected) await client.connect(sftpplistConfig)
         await client.upload(tempFilePath, remotePath, sftpplistConfig)
-        sftpplistConfig.fileUser && (await client.chown(remotePath, sftpplistConfig.fileUser))
         delete img.base64Image
         delete img.buffer
         img.imgUrl = `${baseUrl}/${encodePath(`${urlPath === '/' ? '' : urlPath}${img.fileName}`)}`
