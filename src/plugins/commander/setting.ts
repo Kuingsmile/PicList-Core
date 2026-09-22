@@ -29,7 +29,14 @@ const handleConfig = async (
   configName?: string,
   uploaderName?: string,
 ): Promise<void> => {
-  if (module === 'buildin' && uploaderName) {
+  const actualConfigName = configName || 'Default'
+  const existingConfig = module === 'uploader' ? ctx.configManager.getConfigByName(name, actualConfigName) : null
+  if (existingConfig) {
+    prompts = prompts.map(question => ({
+      ...question,
+      default: question.name in existingConfig ? existingConfig[question.name] : question.default,
+    }))
+  } else if (module === 'buildin' && uploaderName) {
     const config = ctx.configManager.getConfigByName(uploaderName, configName || 'Default')
     const linked = (ctx.getConfig<any[]>('buildIn.list') || []).find(item => item.id === config?._id)?.[name]
     if (linked) {
@@ -42,10 +49,8 @@ const handleConfig = async (
   const answer = await ctx.cmd.inquirer.prompt(prompts)
   const configKey = getConfigName(module, name)
   if (module === 'uploader') {
-    const actualConfigName = configName || 'Default'
-    const existingConfig = ctx.configManager.getConfigByName(name, actualConfigName)
     if (existingConfig) {
-      ctx.configManager.updateUploaderConfig(name, existingConfig._id, answer)
+      ctx.configManager.updateUploaderConfig(name, existingConfig._id, { ...existingConfig, ...answer })
       ctx.log.success(`Updated config "${actualConfigName}" for ${name}`)
     } else {
       const newConfig = ctx.configManager.addUploaderConfig(name, actualConfigName, answer)
