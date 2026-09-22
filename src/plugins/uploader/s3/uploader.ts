@@ -90,7 +90,8 @@ async function createUploadTask(opts: ICreateUploadTaskOpts): Promise<IUploadRes
     if (!opts.urlPrefix) {
       url = await getFileURL(opts, output.VersionId)
     } else {
-      url = appendUrlOptions(`${opts.urlPrefix}/${opts.path}`, opts.options)
+      const encodedPath = opts.path.split('/').map(encodeURIComponent).join('/')
+      url = appendUrlOptions(`${opts.urlPrefix}/${encodedPath}`, opts.options)
     }
 
     return {

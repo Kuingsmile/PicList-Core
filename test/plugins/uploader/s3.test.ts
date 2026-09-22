@@ -146,4 +146,45 @@ describe('S3 download URLs', () => {
     expect(result.url).toBe(`https://cdn.example.invalid/images/photo.png${options ? '?width=100' : ''}`)
     expect(result.imgURL).toBe(result.url)
   })
+
+  it.each([
+    ['photo#one.png', 'photo%23one.png'],
+    ['photo?one.png', 'photo%3Fone.png'],
+    ['photo%one.png', 'photo%25one.png'],
+    ['photo%23one.png', 'photo%2523one.png'],
+    ['albums 2026/旅行/photo + #?%&=.png', 'albums%202026/%E6%97%85%E8%A1%8C/photo%20%2B%20%23%3F%25%26%3D.png'],
+    ['albums//photo#one.png', 'albums//photo%23one.png'],
+  ])('keeps the uploaded key "%s" intact in custom-domain URLs', async (path, encodedPath) => {
+    const result = await upload({ path, urlPrefix: 'https://cdn.example.invalid' })
+    const downloadUrl = new URL(result.url)
+
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({ input: expect.objectContaining({ Bucket: bucketName, Key: path }) }),
+    )
+    expect(result.key).toBe(path)
+    expect(result.url).toBe(`https://cdn.example.invalid/${encodedPath}`)
+    expect(result.imgURL).toBe(result.url)
+    expect(decodeURIComponent(downloadUrl.pathname)).toBe(`/${path}`)
+    expect(downloadUrl.search).toBe('')
+    expect(downloadUrl.hash).toBe('')
+  })
+
+  it.each(['', '?'])('appends custom URL options with prefix "%s" after the encoded key', async prefix => {
+    const result = await upload({
+      path: 'photos/photo#one?100%.png',
+      urlPrefix: 'https://cdn.example.invalid/images%20archive',
+      options: `${prefix}width=100&format=webp`,
+    })
+    const downloadUrl = new URL(result.url)
+
+    expect(result.url).toBe(
+      'https://cdn.example.invalid/images%20archive/photos/photo%23one%3F100%25.png?width=100&format=webp',
+    )
+    expect(decodeURIComponent(downloadUrl.pathname)).toBe('/images archive/photos/photo#one?100%.png')
+    expect([...downloadUrl.searchParams]).toEqual([
+      ['width', '100'],
+      ['format', 'webp'],
+    ])
+    expect(downloadUrl.hash).toBe('')
+  })
 })
