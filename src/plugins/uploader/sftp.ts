@@ -1,4 +1,5 @@
 import { mkdtemp, rename, writeFile } from 'node:fs/promises'
+import { isIP } from 'node:net'
 import path from 'node:path'
 
 import { ensureDir, remove } from 'fs-extra/esm'
@@ -8,7 +9,31 @@ import { getSha256 } from '../../utils/common/hash'
 import { IBuildInEvent } from '../../utils/enum'
 import SSHClient from '../../utils/sshClient'
 import { getAndCheckConfig, getImageBuffer } from './helper'
-import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
+import { buildInUploaderNames, encodePath } from './utils'
+
+/** Requires a usable HTTP(S) base URL and supplies HTTPS for a bare SSH host. */
+const getPublicBaseUrl = (config: ISftpPlistConfig): string => {
+  const host = config.host.trim()
+  const value = config.customUrl || `https://${isIP(host) === 6 ? `[${host}]` : host}`
+  const invalidUrl = new Error(
+    'SFTP public URL must be an absolute HTTP(S) URL without credentials, query, or fragment',
+  )
+  if (!URL.canParse(value)) throw invalidUrl
+  const url = new URL(value)
+  if (
+    !/^https?:\/\//i.test(value) ||
+    /[\\\s]/.test(value) ||
+    !url.hostname ||
+    url.username ||
+    url.password ||
+    value.includes('?') ||
+    value.includes('#') ||
+    (!config.customUrl && (url.pathname !== '/' || url.port))
+  ) {
+    throw invalidUrl
+  }
+  return url.href.replace(/\/+$/, '')
+}
 
 /** Resolves only relative filenames whose normalized destination stays inside its root. */
 const getFilePathWithinRoot = (root: string, fileName: string, paths: typeof path): string => {
@@ -42,17 +67,10 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   if (sftpplistConfig.port < 0 || sftpplistConfig.port > 65535) {
     sftpplistConfig.port = 22
   }
-  sftpplistConfig.uploadPath = formatPathHelper({
-    path: sftpplistConfig.uploadPath,
-    rootToEmpty: false,
-  })
-  const webPath = formatPathHelper({
-    path: sftpplistConfig.webPath,
-    rootToEmpty: false,
-  })
-  const baseUrl = sftpplistConfig.customUrl || sftpplistConfig.host
-  const urlPath = sftpplistConfig.webPath ? webPath : sftpplistConfig.uploadPath
-  const remoteDirectory = `/${sftpplistConfig.uploadPath}`.replace(/\\/g, '/')
+  const remoteDirectory = path.posix.resolve('/', sftpplistConfig.uploadPath?.replace(/\\/g, '/') || '/')
+  const urlPath = sftpplistConfig.webPath
+    ? path.posix.resolve('/', sftpplistConfig.webPath.replace(/\\/g, '/'))
+    : remoteDirectory
   const destinationKey = getSha256(
     JSON.stringify([
       sftpplistConfig.host.toLowerCase(),
@@ -62,6 +80,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     ]),
   )
   try {
+    const baseUrl = getPublicBaseUrl(sftpplistConfig)
     let client: SSHClient | undefined
     let uploadTempPath: string | undefined
     try {
@@ -70,20 +89,21 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         const image = getImageBuffer(img)
         if (!image) continue
         const remotePath = getFilePathWithinRoot(remoteDirectory, img.fileName, path.posix)
+        const fileName = path.posix.relative(remoteDirectory, remotePath)
         const imgTempFilePath = getFilePathWithinRoot(
           path.join(ctx.baseDir, 'imgTemp', 'sftpplist', destinationKey),
           img.fileName,
           path,
         )
-        const imgUrl = `${baseUrl}/${encodePath(`${urlPath === '/' ? '' : urlPath}${img.fileName}`)}`
-        const galleryPath = `http://localhost:36699/sftpplist/${destinationKey}/${encodePath(path.posix.normalize(img.fileName.replace(/\\/g, '/')))}`
+        const imgUrl = `${baseUrl}/${encodePath(path.posix.join(urlPath, fileName).slice(1))}`
+        const galleryPath = `http://localhost:36699/sftpplist/${destinationKey}/${encodePath(fileName)}`
         if (!client) client = new SSHClient()
         if (!uploadTempPath) {
           const uploadTempRoot = path.join(ctx.baseDir, 'uploadTemp')
           await ensureDir(uploadTempRoot)
           uploadTempPath = await mkdtemp(path.join(uploadTempRoot, 'sftp-'))
         }
-        const tempFilePath = path.join(uploadTempPath, path.basename(img.fileName))
+        const tempFilePath = path.join(uploadTempPath, path.posix.basename(fileName))
         await writeFile(tempFilePath, image)
         if (!client.isConnected) await client.connect(sftpplistConfig)
         await client.upload(tempFilePath, remotePath, sftpplistConfig)

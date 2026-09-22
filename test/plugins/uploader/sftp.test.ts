@@ -192,8 +192,8 @@ describe('SFTP upload isolation and cleanup', () => {
       expect(path.dirname(firstLocal)).not.toBe(path.dirname(secondLocal))
       expect(ssh.dispose.mock.calls).toEqual([[firstClient], [secondClient]])
       expect(readdirSync(path.join(baseDir, 'uploadTemp'))).toEqual([])
-      expect(first.ctx.output[0].imgUrl).toBe(`${config.host}/a/${fileName}`)
-      expect(second.ctx.output[0].imgUrl).toBe(`sftp-b.example.invalid/b/${fileName}`)
+      expect(first.ctx.output[0].imgUrl).toBe(`https://${config.host}/a/${fileName}`)
+      expect(second.ctx.output[0].imgUrl).toBe(`https://sftp-b.example.invalid/b/${fileName}`)
       expect(first.ctx.output[0].buffer).toBeUndefined()
       expect(second.ctx.output[0].base64Image).toBeUndefined()
       const firstGallery = first.ctx.output[0].galleryPath!
@@ -238,7 +238,7 @@ describe('SFTP upload isolation and cleanup', () => {
     await expect(uploader.upload()).resolves.toBe(uploader.ctx)
 
     expect(ssh.rename).toHaveBeenCalledTimes(2)
-    expect(uploader.ctx.output[0].imgUrl).toBe(`${config.host}/images/photo.png`)
+    expect(uploader.ctx.output[0].imgUrl).toBe(`https://${config.host}/images/photo.png`)
     expect(uploader.ctx.output.every(img => !img.galleryPath && !img.buffer)).toBe(true)
     expect(uploader.ctx.log.warn).toHaveBeenCalledTimes(2)
     expect(uploader.ctx.log.warn).toHaveBeenCalledWith(
@@ -259,7 +259,7 @@ describe('SFTP upload isolation and cleanup', () => {
 
     expect(readFileSync(galleryFilePath(baseDir, oldGalleryPath), 'utf8')).toBe('original')
     expect(uploader.ctx.output[0].galleryPath).toBeUndefined()
-    expect(uploader.ctx.output[0].imgUrl).toBe(`${config.host}/images/photo.png`)
+    expect(uploader.ctx.output[0].imgUrl).toBe(`https://${config.host}/images/photo.png`)
     expect(uploader.ctx.emit).not.toHaveBeenCalled()
     expect(uploader.ctx.log.warn).toHaveBeenCalledTimes(1)
     expect(readdirSync(path.join(baseDir, 'uploadTemp'))).toEqual([])
@@ -398,7 +398,7 @@ describe('SFTP upload isolation and cleanup', () => {
     expect(ssh.putFile).toHaveBeenCalledTimes(2)
     expect(ssh.dispose).toHaveBeenCalledTimes(1)
     expect(readdirSync(path.join(baseDir, 'uploadTemp'))).toEqual([])
-    expect(uploader.ctx.output[0].imgUrl).toBe(`${config.host}/images/first.png`)
+    expect(uploader.ctx.output[0].imgUrl).toBe(`https://${config.host}/images/first.png`)
     expect(uploader.ctx.output[1].buffer?.toString()).toBe('second image')
     expect(uploader.ctx.output[2].buffer?.toString()).toBe('third image')
     expect(uploader.ctx.emit).toHaveBeenCalledTimes(1)
@@ -430,7 +430,7 @@ describe('SFTP upload isolation and cleanup', () => {
     await uploader.upload()
 
     expect(ssh.rename.mock.calls[0][2]).toBe(remote)
-    expect(uploader.ctx.output[0].imgUrl).toBe(`${customUrl || config.host}${url}`)
+    expect(uploader.ctx.output[0].imgUrl).toBe(`${customUrl || `https://${config.host}`}${url}`)
     expect(uploader.ctx.output[0].galleryPath).toMatch(
       /^http:\/\/localhost:36699\/sftpplist\/[a-f\d]{64}\/photo%20one.png$/,
     )
@@ -444,6 +444,94 @@ describe('SFTP upload isolation and cleanup', () => {
     await uploader.upload()
 
     expect(ssh.rename.mock.calls[0][2]).toBe('/images/nested/album/photo.png')
+    expect(uploader.ctx.output[0].imgUrl).toBe(`https://${config.host}/images/nested/album/photo.png`)
+  })
+
+  it.each([
+    ['album\\photo.png', '/album/photo.png'],
+    ['album//./photo.png', '/album/photo.png'],
+    ['album/../photo.png', '/photo.png'],
+    ['album/雪 #100%.png', '/album/%E9%9B%AA%20%23100%25.png'],
+  ])('uses the same normalized filename for remote, public and gallery paths: %j', async (fileName, expectedPath) => {
+    const uploader = createUploader(
+      baseDir,
+      {
+        ...config,
+        uploadPath: '\\images\\nested',
+        webPath: '\\public\\nested\\..',
+        customUrl: 'https://cdn.example.invalid/base///',
+      },
+      [{ fileName, buffer: Buffer.from('contents') }],
+    )
+
+    await uploader.upload()
+
+    expect(ssh.rename.mock.calls[0][2]).toBe(`/images/nested${decodeURIComponent(expectedPath)}`)
+    expect(uploader.ctx.output[0].imgUrl).toBe(`https://cdn.example.invalid/base/public${expectedPath}`)
+    expect(uploader.ctx.output[0].galleryPath!.endsWith(expectedPath)).toBe(true)
+    expect(readFileSync(galleryFilePath(baseDir, uploader.ctx.output[0].galleryPath!), 'utf8')).toBe('contents')
+  })
+
+  it.each([
+    'cdn.example.invalid',
+    '//cdn.example.invalid',
+    'ftp://cdn.example.invalid',
+    'javascript:alert(1)',
+    'https:cdn.example.invalid',
+    'https://',
+    'https://user:password@cdn.example.invalid',
+    'https://cdn.example.invalid/?query=1',
+    'https://cdn.example.invalid/#fragment',
+    'https://cdn.example.invalid/back\\slash',
+    '   ',
+  ])('rejects an invalid custom public URL before uploading: %j', async customUrl => {
+    const uploader = createUploader(baseDir, { ...config, customUrl }, [
+      { fileName: 'photo.png', buffer: Buffer.from('contents') },
+    ])
+
+    await expect(uploader.upload()).rejects.toThrow('SFTP public URL must be an absolute HTTP(S) URL')
+
+    expect(ssh.connect).not.toHaveBeenCalled()
+    expect(ssh.putFile).not.toHaveBeenCalled()
+    expect(uploader.ctx.output[0].buffer?.toString()).toBe('contents')
+    expect(uploader.ctx.emit).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(['example.invalid', '192.0.2.1', '2001:db8::1'])(
+    'builds an absolute HTTPS fallback for host %s',
+    async host => {
+      const uploader = createUploader(baseDir, { ...config, host, port: 2222 }, [
+        { fileName: 'photo.png', buffer: Buffer.from('contents') },
+      ])
+
+      await uploader.upload()
+
+      const url = new URL(uploader.ctx.output[0].imgUrl!)
+      expect(url.protocol).toBe('https:')
+      expect(url.hostname.replace(/^\[|\]$/g, '')).toBe(host)
+      expect(url.port).toBe('')
+      expect(url.pathname).toBe('/images/photo.png')
+    },
+  )
+
+  it('accepts a custom HTTP base URL with a port and an encoded path prefix', async () => {
+    const uploader = createUploader(baseDir, { ...config, customUrl: 'http://cdn.example.invalid:8080/base%20path/' }, [
+      { fileName: 'photo.png', buffer: Buffer.from('contents') },
+    ])
+
+    await uploader.upload()
+
+    expect(uploader.ctx.output[0].imgUrl).toBe('http://cdn.example.invalid:8080/base%20path/images/photo.png')
+  })
+
+  it('rejects a filename that cannot be URL encoded before uploading', async () => {
+    const uploader = createUploader(baseDir, config, [{ fileName: '\uD800.png', buffer: Buffer.from('contents') }])
+
+    await expect(uploader.upload()).rejects.toThrow()
+
+    expect(ssh.connect).not.toHaveBeenCalled()
+    expect(ssh.putFile).not.toHaveBeenCalled()
+    expect(uploader.ctx.output[0].buffer?.toString()).toBe('contents')
   })
 
   it.each([
