@@ -1,10 +1,10 @@
 import https from 'node:https'
 import { URL } from 'node:url'
 
-import type { AxiosRequestConfig, AxiosResponse } from 'axios'
+import type { AxiosProxyConfig, AxiosRequestConfig, AxiosResponse } from 'axios'
 import axios from 'axios'
 import FormData from 'form-data'
-import { httpsOverHttp } from 'tunnel'
+import { httpsOverHttp, httpsOverHttps } from 'tunnel'
 
 import type { IFullResponse, IOldReqOptions, IPicGo, IRequest, IRequestConfig, IResponse, Undefinable } from '../types'
 
@@ -14,6 +14,30 @@ const httpsAgent = new https.Agent({
   minVersion: 'TLSv1.2',
   rejectUnauthorized: false,
 })
+
+/** Converts proxy URLs to Axios options without reinterpreting existing Axios proxy objects. */
+function normalizeProxy(proxy: string | URL | AxiosProxyConfig | false | undefined): AxiosProxyConfig | false {
+  if (!proxy) return false
+  if (typeof proxy !== 'string' && !(proxy instanceof URL)) return proxy
+
+  try {
+    const proxyUrl = typeof proxy === 'string' ? new URL(proxy) : proxy
+    const result: AxiosProxyConfig = {
+      host: proxyUrl.hostname.replace(/^\[|\]$/g, ''),
+      port: Number(proxyUrl.port || (proxyUrl.protocol === 'https:' ? 443 : 80)),
+      protocol: proxyUrl.protocol,
+    }
+    if (proxyUrl.username || proxyUrl.password) {
+      result.auth = {
+        username: decodeURIComponent(proxyUrl.username),
+        password: decodeURIComponent(proxyUrl.password),
+      }
+    }
+    return result
+  } catch {
+    return false
+  }
+}
 
 // thanks for https://github.dev/request/request/blob/master/index.js
 /** Appends a multipart value, unpacking legacy value/options descriptors when supplied. */
@@ -29,47 +53,32 @@ function appendFormData(form: FormData, key: string, data: any): void {
  * Converts legacy proxy, multipart, body, and query options into Axios options and marks legacy
  * requests.
  */
-function requestInterceptor(options: IOldReqOptions | AxiosRequestConfig): AxiosRequestConfig & {
+function requestInterceptor(
+  options: IOldReqOptions | AxiosRequestConfig,
+  defaultProxy: AxiosRequestConfig['proxy'],
+): AxiosRequestConfig & {
   __isOldOptions?: boolean
 } {
-  let __isOldOptions = false
+  let __isOldOptions = typeof options.proxy === 'string'
+  const proxy = normalizeProxy(options.proxy === undefined ? defaultProxy : options.proxy)
   const opt: AxiosRequestConfig<any> & {
     __isOldOptions?: boolean
   } = {
     ...options,
+    proxy,
     url: (options.url as string) || '',
     headers: options.headers || {},
   }
-  // user request config proxy
-  if (options.proxy) {
-    let proxyOptions = options.proxy
-    if (typeof proxyOptions === 'string') {
-      try {
-        proxyOptions = new URL(options.proxy)
-      } catch (e) {
-        proxyOptions = false
-        opt.proxy = false
-        console.error(e)
-      }
-      __isOldOptions = true
-    }
-    if (proxyOptions) {
-      if (options.url?.startsWith('https://')) {
-        opt.proxy = false
-        opt.httpsAgent = httpsOverHttp({
-          proxy: {
-            host: proxyOptions?.hostname,
-            port: parseInt(proxyOptions?.port, 10),
-          },
-        })
-      } else {
-        opt.proxy = {
-          host: proxyOptions.hostname,
-          port: parseInt(proxyOptions.port, 10),
-          protocol: 'http',
-        }
-      }
-    }
+  if (proxy && options.url?.startsWith('https://')) {
+    const createTunnel = proxy.protocol === 'https' || proxy.protocol === 'https:' ? httpsOverHttps : httpsOverHttp
+    opt.proxy = false
+    opt.httpsAgent = createTunnel({
+      proxy: {
+        host: proxy.host,
+        port: proxy.port,
+        ...(proxy.auth ? { proxyAuth: `${proxy.auth.username}:${proxy.auth.password}` } : {}),
+      },
+    })
   }
   if ('formData' in options) {
     const form = new FormData()
@@ -138,20 +147,7 @@ export class Request implements IRequest {
    * proxying for an absent or invalid URL.
    */
   private handleProxy(): AxiosRequestConfig['proxy'] | false {
-    const proxy = this.ctx.getConfig<Undefinable<string>>('picBed.proxy')
-    if (proxy) {
-      try {
-        const proxyOptions = new URL(proxy)
-        return {
-          host: proxyOptions.hostname,
-          port: parseInt(proxyOptions.port || '0', 10),
-          protocol: proxyOptions.protocol,
-        }
-      } catch (_e) {
-        /* empty */
-      }
-    }
-    return false
+    return normalizeProxy(this.ctx.getConfig<Undefinable<string>>('picBed.proxy'))
   }
 
   // #64 dynamic get proxy value
@@ -173,28 +169,17 @@ export class Request implements IRequest {
         ? AxiosRequestConfig
         : never),
   >(options: U): Promise<IResponse<T, U>> {
-    this.options.proxy = this.handleProxy()
+    const opt = requestInterceptor(options, this.handleProxy())
+    // Resolve proxy overrides before Axios can merge credentials from different proxy servers.
+    this.options.proxy = opt.proxy
     this.options.headers = options.headers || {}
     this.options.maxBodyLength = Infinity
     this.options.maxContentLength = Infinity
-    if (this.options.proxy && options.url?.startsWith('https://')) {
-      this.options.httpsAgent = httpsOverHttp({
-        proxy: {
-          host: this.options.proxy.host,
-          port: this.options.proxy.port,
-        },
-      })
-      this.options.proxy = false
-    } else {
-      this.options.httpsAgent = httpsAgent
-    }
+    this.options.httpsAgent = httpsAgent
     // !NOTICE this.options !== options
     // this.options is the default options
     const instance = axios.create(this.options)
     instance.interceptors.response.use(responseInterceptor, responseErrorHandler)
-
-    // compatible with old request options to new options
-    const opt = requestInterceptor(options)
 
     instance.interceptors.request.use(function (obj) {
       // handle Content-Type
