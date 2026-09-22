@@ -1,7 +1,7 @@
-import { mkdtempSync } from 'node:fs'
+import { mkdtemp, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { ensureDirSync, moveSync, outputFileSync, removeSync } from 'fs-extra/esm'
+import { ensureDir, move, remove } from 'fs-extra/esm'
 
 import { IPicGo, IPluginConfig, ISftpPlistConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
@@ -10,11 +10,10 @@ import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
 
 /**
- * Stages each image in an isolated directory, uploads over SSH, and retains a gallery copy.
+ * Stages images in an isolated batch directory, uploads over SSH, and retains gallery copies.
  *
  * @remarks
- * Each image connection and its staging directory are released in finally blocks, including on
- * failure.
+ * A connection and staging directory are reused within each batch and released even on failure.
  */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const sftpplistConfig = { ...getAndCheckConfig<ISftpPlistConfig>(ctx, 'picBed.sftpplist', []) }
@@ -30,43 +29,41 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     path: sftpplistConfig.webPath,
     rootToEmpty: false,
   })
+  const baseUrl = sftpplistConfig.customUrl || sftpplistConfig.host
+  const urlPath = sftpplistConfig.webPath ? webPath : sftpplistConfig.uploadPath
+  const remoteDirectory = `/${sftpplistConfig.uploadPath}`.replace(/\\/g, '/')
   try {
-    for (const img of ctx.output) {
-      if (!img.fileName) continue
-      const image = getImageBuffer(img)
-      if (!image) continue
-      const client = new SSHClient()
-      /** Per-image staging directory owned by this upload and removed after the SSH operation. */
-      let uploadTempPath: string | undefined
-      try {
-        const uploadTempRoot = path.join(ctx.baseDir, 'uploadTemp')
-        ensureDirSync(uploadTempRoot)
-        uploadTempPath = mkdtempSync(path.join(uploadTempRoot, 'sftp-'))
+    let client: SSHClient | undefined
+    let uploadTempPath: string | undefined
+    try {
+      for (const img of ctx.output) {
+        if (!img.fileName) continue
+        const image = getImageBuffer(img)
+        if (!image) continue
+        if (!client) client = new SSHClient()
+        if (!uploadTempPath) {
+          const uploadTempRoot = path.join(ctx.baseDir, 'uploadTemp')
+          await ensureDir(uploadTempRoot)
+          uploadTempPath = await mkdtemp(path.join(uploadTempRoot, 'sftp-'))
+        }
         const tempFilePath = path.join(uploadTempPath, path.basename(img.fileName))
-        outputFileSync(tempFilePath, image)
-        await client.connect(sftpplistConfig)
-        const remotePath = path.join(`/${sftpplistConfig.uploadPath}`.replace(/\/\/+/g, '/'), img.fileName)
+        await writeFile(tempFilePath, image)
+        if (!client.isConnected) await client.connect(sftpplistConfig)
+        const remotePath = path.posix.join(remoteDirectory, img.fileName.replace(/\\/g, '/'))
         await client.upload(tempFilePath, remotePath, sftpplistConfig)
         sftpplistConfig.fileUser && (await client.chown(remotePath, sftpplistConfig.fileUser))
         delete img.base64Image
         delete img.buffer
-        const baseUrl = sftpplistConfig.customUrl || sftpplistConfig.host
-        if (sftpplistConfig.webPath) {
-          img.imgUrl = `${baseUrl}/${encodePath(`${webPath === '/' ? '' : webPath}${img.fileName}`)}`
-        } else {
-          img.imgUrl = `${baseUrl}/${encodePath(`${sftpplistConfig.uploadPath === '/' ? '' : sftpplistConfig.uploadPath}${img.fileName}`)}`
-        }
+        img.imgUrl = `${baseUrl}/${encodePath(`${urlPath === '/' ? '' : urlPath}${img.fileName}`)}`
         const imgTempFilePath = path.join(ctx.baseDir, 'imgTemp', 'sftpplist', img.fileName)
-        ensureDirSync(path.dirname(imgTempFilePath))
-        removeSync(imgTempFilePath)
-        moveSync(tempFilePath, imgTempFilePath)
+        await move(tempFilePath, imgTempFilePath, { overwrite: true })
         img.galleryPath = `http://localhost:36699/sftpplist/${encodeURIComponent(img.fileName)}`
+      }
+    } finally {
+      try {
+        client?.close()
       } finally {
-        try {
-          client.close()
-        } finally {
-          if (uploadTempPath) removeSync(uploadTempPath)
-        }
+        if (uploadTempPath) await remove(uploadTempPath)
       }
     }
     return ctx

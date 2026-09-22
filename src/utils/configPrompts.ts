@@ -1,6 +1,6 @@
 import type { IInquirerQuestion } from './inquirerShim'
 
-/** Identifies password fields and credential-like question names for masked display and redaction. */
+/** Identifies password fields and credential-like question names for validation-message redaction. */
 export const isSecretQuestion = (question: IInquirerQuestion): boolean =>
   question.type === 'password' ||
   /password|passwd|secret|token|credential|authorization|api.?key|private.?key|access.?key|^key$|^auth$/i.test(

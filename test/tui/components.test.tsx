@@ -9,17 +9,45 @@ afterEach(cleanup)
 const ready = () => new Promise(resolve => setTimeout(resolve, 40))
 
 describe('Ink forms', () => {
+  it.each([false, true])('shows the field label, config key and example with compact=%s', compact => {
+    const ui = render(
+      <PromptForm
+        question={{
+          name: 'fileUser',
+          type: 'input',
+          prefix: '文件用户',
+          alias: '文件用户',
+          message: '例如: www:data',
+          required: false,
+        }}
+        compact={compact}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    )
+    expect(ui.lastFrame()).toContain('文件用户 (fileUser) · optional')
+    expect(ui.lastFrame()).toContain('例如: www:data')
+  })
+
   it('filters long option lists before selecting a value', async () => {
     const onSubmit = vi.fn()
     const ui = render(
       <PromptForm
-        question={{ name: 'uploader', type: 'list', choices: ['GitHub', 'S3', 'Local storage'] }}
+        question={{
+          name: 'uploader',
+          type: 'list',
+          prefix: 'Destination',
+          message: 'Choose an uploader',
+          choices: ['GitHub', 'S3', 'Local storage'],
+        }}
         position={{ current: 2, total: 4 }}
         onSubmit={onSubmit}
         onCancel={vi.fn()}
       />,
     )
     await ready()
+    expect(ui.lastFrame()).toContain('Destination (uploader)')
+    expect(ui.lastFrame()).toContain('Choose an uploader')
     expect(ui.lastFrame()).toContain('Field 2 / 4')
     ui.stdin.write('/')
     await ready()
@@ -55,20 +83,33 @@ describe('Ink forms', () => {
     await ready()
     expect(onSubmit).not.toHaveBeenCalled()
   })
-  it('masks existing credentials and validates required fields before submitting', async () => {
+  it.each([
+    { name: 'token', type: 'input' },
+    { name: 'password', type: 'input' },
+    { name: 'credential', type: 'password' },
+  ])('shows saved and edited $name values and validates before submitting', async question => {
     const onSubmit = vi.fn()
     const ui = render(
       <PromptForm
-        question={{ name: 'token', type: 'input', default: 'test-sensitive-value', required: true }}
+        question={{ ...question, default: 'test-sensitive-value', required: true }}
         onSubmit={onSubmit}
         onCancel={vi.fn()}
       />,
     )
     await ready()
-    expect(ui.lastFrame()).toContain('*****')
-    expect(ui.frames.join('')).not.toContain('test-sensitive-value')
+    expect(ui.lastFrame()).toContain('test-sensitive-value')
+    expect(ui.lastFrame()).not.toContain('*****')
+    expect(ui.lastFrame()).not.toContain('PRIVATE INPUT')
+    expect(ui.lastFrame()).not.toContain('Input stays hidden')
+    ui.stdin.write('\u0015')
+    await ready()
     ui.stdin.write('\r')
-    await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledWith('test-sensitive-value'))
+    await vi.waitFor(() => expect(ui.lastFrame()).toContain('This field is required.'))
+    expect(onSubmit).not.toHaveBeenCalled()
+    ui.stdin.write('test-replacement-value')
+    await vi.waitFor(() => expect(ui.lastFrame()).toContain('test-replacement-value'))
+    ui.stdin.write('\r')
+    await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledWith('test-replacement-value'))
   })
 
   it('keeps an invalid field open and accepts corrected input', async () => {

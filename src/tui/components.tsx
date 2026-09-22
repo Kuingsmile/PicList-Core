@@ -112,10 +112,7 @@ export function Spinner() {
   return <Text color={theme.accent}>{['◐', '◓', '◑', '◒'][frame]}</Text>
 }
 
-/**
- * Renders and validates one legacy question with masked secrets, cancellable input, and filtered
- * choices.
- */
+/** Renders a labeled legacy question with visible input, validation, cancellation, and filtered choices. */
 export function PromptForm({
   question,
   position,
@@ -156,6 +153,8 @@ export function PromptForm({
       : (question.choices || []).map(choice => (typeof choice === 'string' ? { name: choice, value: choice } : choice))
   const filtered = choices.filter(choice => choice.name.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
   const isSelection = ['list', 'rawlist', 'checkbox', 'confirm'].includes(question.type)
+  const fieldLabel = question.prefix || question.alias
+  const title = fieldLabel || question.message || question.name
   const secret = isSecretQuestion(question)
   /**
    * Validates an answer once, hides sensitive validation details, and ignores stale or cancelled
@@ -203,9 +202,7 @@ export function PromptForm({
   return (
     <Box flexDirection='column' gap={compact ? 0 : 1}>
       <Box justifyContent='space-between'>
-        <Text color={secret ? theme.warning : theme.muted}>
-          {t(secret ? '◆ PRIVATE INPUT' : isSelection ? 'SELECT AN OPTION' : 'ENTER DETAILS')}
-        </Text>
+        <Text color={theme.muted}>{t(isSelection ? 'SELECT AN OPTION' : 'ENTER DETAILS')}</Text>
         {position && (
           <Text color={theme.muted}>
             {t('Field ${current} / ${total}', { current: String(position.current), total: String(position.total) })}
@@ -213,9 +210,11 @@ export function PromptForm({
         )}
       </Box>
       <Text bold>
-        {question.message || question.alias || question.name}
+        {title}
+        {fieldLabel && question.name !== title && <Text color={theme.muted}> ({question.name})</Text>}
         <Text color={theme.muted}>{!isSelection && ` · ${t(question.required ? 'required' : 'optional')}`}</Text>
       </Text>
+      {question.message && question.message !== title && <Text color={theme.muted}>{question.message}</Text>}
       {question.description && <Text color={theme.muted}>{question.description}</Text>}
       {isSelection ? (
         <Box flexDirection='column' gap={compact ? 0 : 1}>
@@ -277,15 +276,11 @@ export function PromptForm({
               void submit(answer)
             }}
             focus={!validating}
-            mask={secret ? '*' : undefined}
-            placeholder={secret ? t('Enter a value…') : question.placeholder || t('Type here…')}
+            placeholder={question.placeholder || t('Type here…')}
           />
         </Box>
       )}
       {error && <Text color={theme.error}>! {error}</Text>}
-      {secret && !compact && (
-        <Text color={theme.muted}>{t('Input stays hidden. Use Ctrl+U to replace the current value.')}</Text>
-      )}
       <Box flexWrap='wrap'>
         {validating ? (
           <Text color={theme.accent}>{t('Validating…')}</Text>

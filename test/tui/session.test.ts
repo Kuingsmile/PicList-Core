@@ -21,7 +21,7 @@ describe('Ink prompt adapter', () => {
   })
 
   it.each(['password', 'secretAccessKey', 'token', 'apiKey', 'privateKey', 'access_key'])(
-    'masks %s even for legacy input questions',
+    'identifies %s for validation-message redaction even for legacy input questions',
     name => {
       expect(isSecretQuestion({ name, type: 'input' })).toBe(true)
     },

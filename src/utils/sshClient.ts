@@ -17,6 +17,7 @@ const quoteShellArgument = (value: string): string => {
 /** SSH/SFTP connection wrapper used to create remote directories, upload files, and set ownership. */
 class SSHClient {
   private client = new NodeSSH()
+  private preparedDirectories = new Set<string>()
   isConnected = false
 
   private static changeWinStylePathToUnix(path: string): string {
@@ -25,6 +26,8 @@ class SSHClient {
 
   /** Connects using a private-key file or password and records successful connection state. */
   public async connect(config: ISftpPlistConfig): Promise<void> {
+    this.isConnected = false
+    this.preparedDirectories.clear()
     const { host, port, username, password, privateKey, passphrase } = config
     const loginInfo: Config = privateKey
       ? {
@@ -57,7 +60,7 @@ class SSHClient {
     }
     try {
       remote = SSHClient.changeWinStylePathToUnix(remote)
-      await this.mkdir(path.dirname(remote).replace(/^\/+|\/+$/g, ''), config)
+      await this.mkdir(path.posix.dirname(remote).replace(/^\/+|\/+$/g, ''), config)
       await this.client.putFile(local, remote)
       const fileMode = config.fileMode || '0644'
       if (fileMode !== '0644') {
@@ -68,26 +71,31 @@ class SSHClient {
     }
   }
 
-  /** Creates remote parent directories, applying custom permissions when configured. */
+  /** Prepares each remote directory once per connection and mode, leaving existing permissions intact. */
   private async mkdir(dirPath: string, config: ISftpPlistConfig): Promise<void> {
     if (!this.client.isConnected()) {
       throw new Error('sftp client is not connected')
     }
+    if (!dirPath) return
     const directoryMode = config.dirMode || '0755'
+    const cacheKey = `${directoryMode}\0${dirPath}`
     if (directoryMode !== '0755') {
       const dirs = dirPath.split('/')
       let currentPath = ''
       for (const dir of dirs) {
         if (dir) {
           currentPath += `/${dir}`
+          const directoryKey = `${directoryMode}\0${currentPath.slice(1)}`
+          if (this.preparedDirectories.has(directoryKey)) continue
           const quotedPath = quoteShellArgument(currentPath)
-          const script = `mkdir -- ${quotedPath} && chmod -- ${quoteShellArgument(String(directoryMode))} ${quotedPath}`
-          await this.exec(script)
+          const script = `test -d ${quotedPath} || (mkdir -- ${quotedPath} && chmod -- ${quoteShellArgument(String(directoryMode))} ${quotedPath})`
+          if (await this.exec(script)) this.preparedDirectories.add(directoryKey)
         }
       }
     } else {
+      if (this.preparedDirectories.has(cacheKey)) return
       const script = `cd / && mkdir -p -- ${quoteShellArgument(dirPath)}`
-      await this.exec(script)
+      if (await this.exec(script)) this.preparedDirectories.add(cacheKey)
     }
   }
 
@@ -107,8 +115,12 @@ class SSHClient {
 
   /** Disposes the SSH connection and resets the wrapper's connection state. */
   public close(): void {
-    this.client.dispose()
-    this.isConnected = false
+    try {
+      this.client.dispose()
+    } finally {
+      this.isConnected = false
+      this.preparedDirectories.clear()
+    }
   }
 }
 

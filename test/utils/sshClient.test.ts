@@ -47,8 +47,8 @@ describe('SSHClient shell arguments', () => {
     await client.upload('local.png', '/images/nested/photo.png', { ...config, fileMode, dirMode })
 
     expect(ssh.execCommand.mock.calls).toEqual([
-      [`mkdir -- '/images' && chmod -- '${dirMode}' '/images'`],
-      [`mkdir -- '/images/nested' && chmod -- '${dirMode}' '/images/nested'`],
+      [`test -d '/images' || (mkdir -- '/images' && chmod -- '${dirMode}' '/images')`],
+      [`test -d '/images/nested' || (mkdir -- '/images/nested' && chmod -- '${dirMode}' '/images/nested')`],
       [`chmod -- '${fileMode}' '/images/nested/photo.png'`],
     ])
     expect(ssh.putFile).toHaveBeenCalledWith('local.png', '/images/nested/photo.png')
@@ -68,7 +68,7 @@ describe('SSHClient shell arguments', () => {
       [
         dirMode === '0755'
           ? `cd / && mkdir -p -- ${quotedDirectory}`
-          : `mkdir -- ${quotedAbsoluteDirectory} && chmod -- '0700' ${quotedAbsoluteDirectory}`,
+          : `test -d ${quotedAbsoluteDirectory} || (mkdir -- ${quotedAbsoluteDirectory} && chmod -- '0700' ${quotedAbsoluteDirectory})`,
       ],
       [`chmod -- '0600' ${quotedRemote}`],
     ])
@@ -80,7 +80,7 @@ describe('SSHClient shell arguments', () => {
     await client.upload('local.png', '/images/photo.png', { ...config, dirMode: mode, fileMode: mode })
 
     expect(ssh.execCommand.mock.calls).toEqual([
-      ["mkdir -- '/images' && chmod -- 'u+r; printf injected' '/images'"],
+      ["test -d '/images' || (mkdir -- '/images' && chmod -- 'u+r; printf injected' '/images')"],
       ["chmod -- 'u+r; printf injected' '/images/photo.png'"],
     ])
   })
@@ -118,5 +118,132 @@ describe('SSHClient shell arguments', () => {
   it('rejects null bytes before sending an ownership command', async () => {
     await expect(client.chown('/images/photo\0.png', 'www-data')).rejects.toThrow('null bytes')
     expect(ssh.execCommand).not.toHaveBeenCalled()
+  })
+
+  it('only prepares a shared directory once while applying each file mode', async () => {
+    await client.upload('first.png', '/images/first.png', { ...config, fileMode: '0600' })
+    await client.upload('second.png', '\\images\\second.png', { ...config, fileMode: '0600' })
+
+    expect(ssh.execCommand.mock.calls).toEqual([
+      ["cd / && mkdir -p -- 'images'"],
+      ["chmod -- '0600' '/images/first.png'"],
+      ["chmod -- '0600' '/images/second.png'"],
+    ])
+    expect(ssh.putFile).toHaveBeenCalledTimes(2)
+  })
+
+  it('reuses shared parents with custom permissions across sibling directories', async () => {
+    const options = { ...config, dirMode: '0700' }
+    await client.upload('first.png', '/images/first/photo.png', options)
+    await client.upload('second.png', '/images/second/photo.png', options)
+    await client.upload('third.png', '/images/first/other.png', options)
+
+    expect(ssh.execCommand.mock.calls).toEqual([
+      ["test -d '/images' || (mkdir -- '/images' && chmod -- '0700' '/images')"],
+      ["test -d '/images/first' || (mkdir -- '/images/first' && chmod -- '0700' '/images/first')"],
+      ["test -d '/images/second' || (mkdir -- '/images/second' && chmod -- '0700' '/images/second')"],
+    ])
+    expect(ssh.putFile).toHaveBeenCalledTimes(3)
+  })
+
+  it('prepares directories again when the requested mode changes', async () => {
+    await client.upload('first.png', '/images/first.png', config)
+    await client.upload('second.png', '/images/second.png', { ...config, dirMode: '0700' })
+
+    expect(ssh.execCommand.mock.calls).toEqual([
+      ["cd / && mkdir -p -- 'images'"],
+      ["test -d '/images' || (mkdir -- '/images' && chmod -- '0700' '/images')"],
+    ])
+  })
+
+  it.each(['0755', '0700'])('does not cache unsuccessful directory setup with mode %s', async dirMode => {
+    ssh.execCommand.mockResolvedValueOnce({ code: 1 })
+    await client.upload('first.png', '/images/first.png', { ...config, dirMode })
+    await client.upload('second.png', '/images/second.png', { ...config, dirMode })
+    await client.upload('third.png', '/images/third.png', { ...config, dirMode })
+
+    expect(ssh.execCommand).toHaveBeenCalledTimes(2)
+    expect(ssh.execCommand.mock.calls[0]).toEqual(ssh.execCommand.mock.calls[1])
+    expect(ssh.putFile).toHaveBeenCalledTimes(3)
+  })
+
+  it('retries a failed parent setup even if preparing its child succeeded', async () => {
+    ssh.execCommand.mockResolvedValueOnce({ code: 1 })
+    const options = { ...config, dirMode: '0700' }
+    await client.upload('first.png', '/images/nested/first.png', options)
+    await client.upload('second.png', '/images/nested/second.png', options)
+
+    expect(ssh.execCommand).toHaveBeenCalledTimes(3)
+    expect(ssh.execCommand.mock.calls[2]).toEqual(ssh.execCommand.mock.calls[0])
+  })
+
+  it.each(['0755', '0700'])('does not try to create the remote root with mode %s', async dirMode => {
+    await client.upload('local.png', '/photo.png', { ...config, dirMode })
+
+    expect(ssh.execCommand).not.toHaveBeenCalled()
+    expect(ssh.putFile).toHaveBeenCalledWith('local.png', '/photo.png')
+  })
+
+  it('does not reuse directory state after reconnecting', async () => {
+    await client.upload('first.png', '/images/first.png', config)
+    client.close()
+    expect(client.isConnected).toBe(false)
+    await client.connect({ ...config, host: 'another.example.invalid' })
+    await client.upload('second.png', '/images/second.png', config)
+
+    expect(ssh.execCommand.mock.calls).toEqual([["cd / && mkdir -p -- 'images'"], ["cd / && mkdir -p -- 'images'"]])
+  })
+
+  it('keeps directory caches isolated between clients', async () => {
+    await client.upload('first.png', '/images/first.png', config)
+    const other = new SSHClient()
+    await other.connect(config)
+    await other.upload('second.png', '/images/second.png', config)
+
+    expect(ssh.execCommand).toHaveBeenCalledTimes(2)
+  })
+
+  it('checks the connection even when a directory has already been prepared', async () => {
+    await client.upload('first.png', '/images/first.png', config)
+    ssh.isConnected.mockReturnValue(false)
+
+    await expect(client.upload('second.png', '/images/second.png', config)).rejects.toThrow('not connected')
+    expect(ssh.putFile).toHaveBeenCalledTimes(1)
+  })
+
+  it('resets the connection state if reconnecting fails', async () => {
+    const failure = new Error('connect failed')
+    ssh.connect.mockRejectedValueOnce(failure)
+
+    await expect(client.connect(config)).rejects.toThrow(failure.message)
+    expect(client.isConnected).toBe(false)
+    await expect(client.upload('local.png', '/images/photo.png', config)).rejects.toThrow('not connected')
+    expect(ssh.putFile).not.toHaveBeenCalled()
+  })
+
+  it('resets the connection state even if disposal throws', () => {
+    ssh.dispose.mockImplementationOnce(() => {
+      throw new Error('dispose failed')
+    })
+
+    expect(() => client.close()).toThrow('dispose failed')
+    expect(client.isConnected).toBe(false)
+  })
+
+  it('preserves password authentication and the default port', async () => {
+    await client.connect({ ...config, password: 'fixture-password', port: 0 })
+
+    expect(ssh.connect).toHaveBeenLastCalledWith({ ...config, password: 'fixture-password', port: 22 })
+  })
+
+  it.each(['fixture-passphrase', ''])('preserves private-key authentication with passphrase %j', async passphrase => {
+    await client.connect({ ...config, password: 'unused', privateKey: 'fixture-key', passphrase, port: 2222 })
+
+    expect(ssh.connect).toHaveBeenLastCalledWith({
+      ...config,
+      port: 2222,
+      privateKeyPath: 'fixture-key',
+      passphrase: passphrase || undefined,
+    })
   })
 })

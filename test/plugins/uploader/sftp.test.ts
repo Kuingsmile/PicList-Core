@@ -54,7 +54,7 @@ function createUploader(baseDir: string, config: ISftpPlistConfig, output: IImgI
   const ctx = {
     baseDir,
     output,
-    getConfig: () => ({ ...config }),
+    getConfig: () => config,
     emit: vi.fn(),
     i18n: { t: (key: string) => key, translate: (key: string) => key },
     helper: {
@@ -119,8 +119,11 @@ describe('SFTP upload isolation and cleanup', () => {
         { host: config.host, remote: `/a/${fileName}`, contents: 'contents-a' },
         { host: 'sftp-b.example.invalid', remote: `/b/${fileName}`, contents: 'contents-b' },
       ])
-      const [firstClient, firstLocal] = ssh.putFile.mock.calls[0]
-      const [secondClient, secondLocal] = ssh.putFile.mock.calls[1]
+      // Asynchronous staging can start either transfer first; identify each by its destination.
+      const [firstClient, firstLocal] = ssh.putFile.mock.calls.find(([client]) => client.host === config.host)!
+      const [secondClient, secondLocal] = ssh.putFile.mock.calls.find(
+        ([client]) => client.host === 'sftp-b.example.invalid',
+      )!
       expect(firstClient).not.toBe(secondClient)
       expect(path.dirname(firstLocal)).not.toBe(path.dirname(secondLocal))
       expect(ssh.dispose.mock.calls).toEqual([[firstClient], [secondClient]])
@@ -180,5 +183,153 @@ describe('SFTP upload isolation and cleanup', () => {
     expect(ssh.connect).not.toHaveBeenCalled()
     expect(ssh.dispose).not.toHaveBeenCalled()
     expect(existsSync(path.join(baseDir, 'uploadTemp'))).toBe(false)
+  })
+
+  it('reuses a connection and staging directory for a batch while preserving each image', async () => {
+    const transfers: { remote: string; contents: string }[] = []
+    ssh.putFile.mockImplementation(async (_client, local: string, remote: string) => {
+      transfers.push({ remote, contents: readFileSync(local, 'utf8') })
+    })
+    const uploader = createUploader(baseDir, config, [
+      { fileName: 'first.png', buffer: Buffer.from('first image') },
+      { fileName: 'skip.png' },
+      { fileName: 'second.png', base64Image: Buffer.from('second image').toString('base64') },
+    ])
+
+    expect(await uploader.upload()).toBe(uploader.ctx)
+
+    expect(ssh.connect).toHaveBeenCalledTimes(1)
+    expect(ssh.dispose).toHaveBeenCalledTimes(1)
+    expect(ssh.execCommand.mock.calls.map(([_client, script]) => script)).toEqual(["cd / && mkdir -p -- 'images'"])
+    const [firstClient, firstLocal] = ssh.putFile.mock.calls[0]
+    const [secondClient, secondLocal] = ssh.putFile.mock.calls[1]
+    expect(secondClient).toBe(firstClient)
+    expect(path.dirname(secondLocal)).toBe(path.dirname(firstLocal))
+    expect(transfers).toEqual([
+      { remote: '/images/first.png', contents: 'first image' },
+      { remote: '/images/second.png', contents: 'second image' },
+    ])
+    expect(readFileSync(path.join(baseDir, 'imgTemp', 'sftpplist', 'first.png'), 'utf8')).toBe('first image')
+    expect(readFileSync(path.join(baseDir, 'imgTemp', 'sftpplist', 'second.png'), 'utf8')).toBe('second image')
+    expect(uploader.ctx.output[0].buffer).toBeUndefined()
+    expect(uploader.ctx.output[2].base64Image).toBeUndefined()
+    expect(readdirSync(path.join(baseDir, 'uploadTemp'))).toEqual([])
+    expect(config.uploadPath).toBe('/images')
+    expect(config).not.toHaveProperty('port')
+  })
+
+  it('handles duplicate basenames in different directories within one batch', async () => {
+    const contents: string[] = []
+    ssh.putFile.mockImplementation(async (_client, local: string) => {
+      contents.push(readFileSync(local, 'utf8'))
+    })
+    const uploader = createUploader(baseDir, config, [
+      { fileName: 'first/photo.png', buffer: Buffer.from('first image') },
+      { fileName: 'second/photo.png', buffer: Buffer.from('second image') },
+    ])
+
+    await uploader.upload()
+
+    expect(contents).toEqual(['first image', 'second image'])
+    expect(readFileSync(path.join(baseDir, 'imgTemp', 'sftpplist', 'first', 'photo.png'), 'utf8')).toBe('first image')
+    expect(readFileSync(path.join(baseDir, 'imgTemp', 'sftpplist', 'second', 'photo.png'), 'utf8')).toBe('second image')
+    expect(ssh.connect).toHaveBeenCalledTimes(1)
+    expect(ssh.dispose).toHaveBeenCalledTimes(1)
+  })
+
+  it('stops and cleans up a shared batch after a later upload fails', async () => {
+    ssh.putFile.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('second upload failed'))
+    const uploader = createUploader(baseDir, config, [
+      { fileName: 'first.png', buffer: Buffer.from('first image') },
+      { fileName: 'second.png', buffer: Buffer.from('second image') },
+      { fileName: 'third.png', buffer: Buffer.from('third image') },
+    ])
+
+    await expect(uploader.upload()).rejects.toThrow('second upload failed')
+
+    expect(ssh.connect).toHaveBeenCalledTimes(1)
+    expect(ssh.putFile).toHaveBeenCalledTimes(2)
+    expect(ssh.dispose).toHaveBeenCalledTimes(1)
+    expect(readdirSync(path.join(baseDir, 'uploadTemp'))).toEqual([])
+    expect(uploader.ctx.output[0].imgUrl).toBe(`${config.host}/images/first.png`)
+    expect(uploader.ctx.output[1].buffer?.toString()).toBe('second image')
+    expect(uploader.ctx.output[2].buffer?.toString()).toBe('third image')
+    expect(uploader.ctx.emit).toHaveBeenCalledTimes(1)
+  })
+
+  it('cleans up without connecting when staging setup fails', async () => {
+    writeFileSync(path.join(baseDir, 'uploadTemp'), 'blocks staging directory creation')
+    const uploader = createUploader(baseDir, config, [{ fileName: 'photo.png', buffer: Buffer.from('contents') }])
+
+    await expect(uploader.upload()).rejects.toThrow()
+
+    expect(ssh.connect).not.toHaveBeenCalled()
+    expect(ssh.dispose).toHaveBeenCalledTimes(1)
+    expect(uploader.ctx.emit).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    [undefined, undefined, undefined, '/photo%20one.png', '/photo one.png'],
+    ['/', '/', undefined, '/photo%20one.png', '/photo one.png'],
+    ['//images///nested//', undefined, undefined, '/images/nested/photo%20one.png', '/images/nested/photo one.png'],
+    ['/images', '/public', 'https://cdn.example.invalid', '/public/photo%20one.png', '/images/photo one.png'],
+    ['/images', '/', 'https://cdn.example.invalid', '/photo%20one.png', '/images/photo one.png'],
+    ['/images', '', 'https://cdn.example.invalid', '/images/photo%20one.png', '/images/photo one.png'],
+  ])('preserves upload path %j, web path %j and custom URL %j', async (uploadPath, webPath, customUrl, url, remote) => {
+    const uploader = createUploader(baseDir, { ...config, uploadPath, webPath, customUrl }, [
+      { fileName: 'photo one.png', buffer: Buffer.from('contents') },
+    ])
+
+    await uploader.upload()
+
+    expect(ssh.putFile.mock.calls[0][2]).toBe(remote)
+    expect(uploader.ctx.output[0].imgUrl).toBe(`${customUrl || config.host}${url}`)
+    expect(uploader.ctx.output[0].galleryPath).toBe('http://localhost:36699/sftpplist/photo%20one.png')
+  })
+
+  it('normalizes Windows separators in remote paths', async () => {
+    const uploader = createUploader(baseDir, { ...config, uploadPath: '\\images\\nested' }, [
+      { fileName: 'album\\photo.png', buffer: Buffer.from('contents') },
+    ])
+
+    await uploader.upload()
+
+    expect(ssh.putFile.mock.calls[0][2]).toBe('/images/nested/album/photo.png')
+  })
+
+  it.each([
+    [-1, 22],
+    [65536, 22],
+    [0, 22],
+    [2222, 2222],
+  ])('preserves port normalization from %s to %s', async (port, expectedPort) => {
+    const uploader = createUploader(baseDir, { ...config, port }, [
+      { fileName: 'photo.png', buffer: Buffer.from('contents') },
+    ])
+
+    await uploader.upload()
+
+    expect(ssh.connect.mock.calls[0][1].port).toBe(expectedPort)
+  })
+
+  it('preserves best-effort permissions and ownership handling for nonzero shell exit codes', async () => {
+    ssh.execCommand.mockResolvedValue({ code: 1 })
+    const uploader = createUploader(baseDir, { ...config, fileMode: '0600', dirMode: '0700', fileUser: 'uploads' }, [
+      { fileName: 'first.png', buffer: Buffer.from('first image') },
+      { fileName: 'second.png', buffer: Buffer.from('second image') },
+    ])
+
+    await expect(uploader.upload()).resolves.toBe(uploader.ctx)
+
+    expect(ssh.execCommand.mock.calls.map(([_client, script]) => script)).toEqual([
+      "test -d '/images' || (mkdir -- '/images' && chmod -- '0700' '/images')",
+      "chmod -- '0600' '/images/first.png'",
+      "chown -- 'uploads:uploads' '/images/first.png'",
+      "test -d '/images' || (mkdir -- '/images' && chmod -- '0700' '/images')",
+      "chmod -- '0600' '/images/second.png'",
+      "chown -- 'uploads:uploads' '/images/second.png'",
+    ])
+    expect(ssh.putFile).toHaveBeenCalledTimes(2)
+    expect(uploader.ctx.emit).not.toHaveBeenCalled()
   })
 })
