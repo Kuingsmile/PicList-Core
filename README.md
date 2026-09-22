@@ -130,7 +130,7 @@ docker run --rm kuingsmile/piclist:v2.4.2-amd64 picgo --version
 
 #### docker run
 
-将`./piclist`更改为你自己的路径，该路径是放置`config.json`文件的位置，并将`piclist123456`更改为你自己的密钥。
+将`./piclist`更改为你自己的路径，该路径是放置`data.json`（或旧版`config.json`）文件的位置，并将`piclist123456`更改为你自己的密钥。
 
 ```bash
 docker run -d \
@@ -161,7 +161,7 @@ services:
     command: node /usr/local/bin/picgo-server -k piclist123456
 ```
 
-你可以将`./piclist`更改为你自己的路径，该路径是放置`config.json`文件的位置，并在`command`中更改密钥。
+你可以将`./piclist`更改为你自己的路径，该路径是放置`data.json`（或旧版`config.json`）文件的位置，并在`command`中更改密钥。
 
 然后运行:
 
@@ -217,9 +217,9 @@ $ picgo-server -h
     -v, --version       显示版本号
 
   Examples:
-    picgo-server -c /path/to/config.json
+    picgo-server -c /path/to/data.json
     picgo-server -k 123456
-    picgo-server -c /path/to/config.json -k 123456
+    picgo-server -c /path/to/data.json -k 123456
 ```
 
 #### 接口
@@ -232,11 +232,14 @@ $ picgo-server -h
 > PicList-Core使用`SM.MS`作为默认上传图床。
 
 在交互式终端中运行 `picgo` 即可打开基于 Ink 的终端界面，也可以使用 `picgo tui` 显式启动。使用
-`picgo -c /path/to/config.json` 指定配置文件。本地开发时先运行 `yarn build`，再运行 `yarn start`。
+`picgo -c /path/to/data.json` 指定配置文件。本地开发时先运行 `yarn build`，再运行 `yarn start`。
+
+CLI 和服务端默认使用 `~/.piclist/data.json`。如果该文件不存在，则继续读取和更新已有的 `~/.piclist/config.json`。
+两个文件同时存在时，优先使用 `data.json`。显式指定的配置路径（包括 `-c /path/to/config.json`）仍然有效。
 
 首次使用也可以运行 `picgo init`，按提示选择图床、输入配置名称和图床参数。完成后，该配置会成为当前默认上传目标。运行
-`picgo -c /path/to/config.json init` 可将设置保存到指定配置文件；默认使用
-`~/.piclist/config.json`。同名配置会在确认后更新，其他配置和设置会保留。凭据输入会隐藏，更新已有配置时需要重新输入凭据。按
+`picgo -c /path/to/data.json init` 可将设置保存到指定配置文件；默认按上述规则选择配置文件。
+同名配置会在确认后更新，其他配置和设置会保留。凭据输入会隐藏，更新已有配置时需要重新输入凭据。按
 **Ctrl+C** 可取消设置；此命令需要交互式终端。
 
 界面支持文件/URL 和剪贴板上传、图床切换、多配置管理、第二图床、图片处理、转换器、插件、上传代理和语言设置。首次使用请选择

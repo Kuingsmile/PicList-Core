@@ -137,7 +137,7 @@ repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_ACCESS_TOKEN`.
 
 #### docker run
 
-Change the `./piclist` to your own path, this path is where you put your `config.json` file, and change the
+Change the `./piclist` to your own path, this path is where you put your `data.json` file (or legacy `config.json`), and change the
 `piclist123456` to your own secret key.
 
 ```bash
@@ -169,7 +169,7 @@ services:
     command: node /usr/local/bin/picgo-server -k piclist123456
 ```
 
-You can change the `./piclist` to your own path, this path is where you put your `config.json` file, and change the
+You can change the `./piclist` to your own path, this path is where you put your `data.json` file (or legacy `config.json`), and change the
 `command` to your own secret key.
 
 Then run:
@@ -226,9 +226,9 @@ $ picgo-server -h
     -v, --version       Print version number
 
   Examples:
-    picgo-server -c /path/to/config.json
+    picgo-server -c /path/to/data.json
     picgo-server -k 123456
-    picgo-server -c /path/to/config.json -k 123456
+    picgo-server -c /path/to/data.json -k 123456
 ```
 
 #### endpoints
@@ -241,8 +241,12 @@ $ picgo-server -h
 > PicList-Core uses `SM.MS` as the default upload pic-bed.
 
 Run `picgo` in an interactive terminal to open the Ink interface, or launch it explicitly with `picgo tui`. Use
-`picgo -c /path/to/config.json` to open a specific configuration. For local development, run `yarn build` and then
+`picgo -c /path/to/data.json` to open a specific configuration. For local development, run `yarn build` and then
 `yarn start`.
+
+The default configuration is `~/.piclist/data.json` for both the CLI and server. If it does not exist, an existing
+`~/.piclist/config.json` is used and updated instead. If both files exist, `data.json` takes precedence. Explicit
+configuration paths, including `-c /path/to/config.json`, continue to work.
 
 The interface supports file/URL and clipboard uploads, uploader switching, named configuration management, secondary
 uploads, image processing, transformers, plugins, upload proxies and language settings. Start with **Set up a

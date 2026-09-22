@@ -34,9 +34,9 @@ function showHelp() {
       -v, --version       Print version number
 
     Example:
-      picgo-server -c /path/to/config.json
+      picgo-server -c /path/to/data.json
       picgo-server -k 123456
-      picgo-server -c /path/to/config.json -k 123456
+      picgo-server -c /path/to/data.json -k 123456
   `)
 }
 

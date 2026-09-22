@@ -87,7 +87,7 @@ export class PicGo extends EventEmitter implements IPicGo {
    * Creates synchronous configuration and service state. Call {@link PicGo.create} for a ready client.
    *
    * @param configPath - JSON configuration path; an empty string uses the user's
-   * `.piclist/config.json`.
+   * `.piclist/data.json`, falling back to an existing `.piclist/config.json`.
    */
   constructor(configPath: string = '') {
     super()
@@ -128,7 +128,13 @@ export class PicGo extends EventEmitter implements IPicGo {
 
   /** Resolves and creates the configuration file and base directory; rejects non-JSON paths. */
   private initConfigPath(): void {
-    this.configPath = this.configPath || path.join(homedir(), '.piclist/config.json')
+    if (!this.configPath) {
+      const baseDir = path.join(homedir(), '.piclist')
+      const defaultConfigPath = path.join(baseDir, 'data.json')
+      const legacyConfigPath = path.join(baseDir, 'config.json')
+      this.configPath =
+        !pathExistsSync(defaultConfigPath) && pathExistsSync(legacyConfigPath) ? legacyConfigPath : defaultConfigPath
+    }
     if (path.extname(this.configPath).toUpperCase() !== '.JSON') {
       this.configPath = ''
       throw Error('The configuration file only supports JSON format.')
