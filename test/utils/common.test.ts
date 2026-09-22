@@ -290,6 +290,33 @@ describe('getImageTypeByMagicNumber', () => {
 })
 
 describe('imageCompress', () => {
+  it.each([
+    { name: 'JPG output', rawFormat: '.jpg', options: { convertFormat: 'jpg' } },
+    { name: 'JPEG output', rawFormat: '.jpeg', options: { convertFormat: 'jpeg' } },
+    { name: 'uppercase JPG input', rawFormat: '.JPG', options: { convertFormat: 'jpg' } },
+    {
+      name: 'a format-map override preserving JPG',
+      rawFormat: '.jpg',
+      options: { convertFormat: 'png', formatConvertObj: { jpg: 'jpg' } },
+    },
+  ] as const)('should honor JPEG quality for $name', async ({ rawFormat, options }) => {
+    const pixels = Buffer.from(Array.from({ length: 64 * 64 * 3 }, (_, index) => (index * 37) % 256))
+    const input = await sharp(pixels, { raw: { width: 64, height: 64, channels: 3 } })
+      .jpeg({ quality: 100 })
+      .toBuffer()
+    const logger = { error: vi.fn() } as any
+
+    const lowQuality = await imageCompress(input, { ...options, isConvert: true, quality: 10 }, rawFormat, logger)
+    const highQuality = await imageCompress(input, { ...options, isConvert: true, quality: 95 }, rawFormat, logger)
+
+    expect(lowQuality.equals(highQuality)).toBe(false)
+    expect(lowQuality.length).toBeLessThan(highQuality.length)
+    for (const output of [lowQuality, highQuality]) {
+      expect(await sharp(output).metadata()).toMatchObject({ format: 'jpeg', width: 64, height: 64 })
+    }
+    expect(logger.error).not.toHaveBeenCalled()
+  })
+
   it('should convert images to HEIF with explicit AV1 compression', async () => {
     const input = await sharp({
       create: {

@@ -263,7 +263,7 @@ async function applyOutputFormat(
 ): Promise<sharp.Sharp> {
   if (options.isConvert) {
     const newFormat = getConvertedFormat(options, rawFormat) as any
-    return newFormat !== rawFormat ? image.toFormat(newFormat, getSharpFormatOptions(newFormat, quality)) : image
+    return image.toFormat(newFormat, getSharpFormatOptions(newFormat, quality))
   }
 
   if (rawFormat === 'heic' || rawFormat === 'heif') {
