@@ -18,6 +18,10 @@ const sftp = vi.hoisted(() => ({
   lstat: vi.fn(),
   rename: vi.fn(),
   ext_openssh_rename: vi.fn(),
+  stat: vi.fn(),
+  mkdir: vi.fn(),
+  chmod: vi.fn(),
+  chown: vi.fn(),
 }))
 
 /** Finds the temporary destination for a particular transfer. */
@@ -34,12 +38,14 @@ vi.mock('node-ssh-no-cpu-features', () => ({
   },
 }))
 
-describe('SSHClient shell arguments', () => {
+describe('SSHClient SFTP operations and shell fallbacks', () => {
   const client = new SSHClient()
   const config = { host: 'example.invalid', username: 'test' }
+  const directories = new Set<string>()
 
   beforeEach(async () => {
     vi.resetAllMocks()
+    directories.clear()
     ssh.connect.mockResolvedValue(undefined)
     ssh.isConnected.mockReturnValue(true)
     ssh.putFile.mockResolvedValue(undefined)
@@ -49,6 +55,15 @@ describe('SSHClient shell arguments', () => {
     sftp.close.mockImplementation((_handle, callback) => callback(null))
     sftp.unlink.mockImplementation((_path, callback) => callback(null))
     sftp.ext_openssh_rename.mockImplementation((_source, _destination, callback) => callback(null))
+    sftp.stat.mockImplementation((directory, callback) =>
+      directories.has(directory) ? callback(null, { isDirectory: () => true }) : callback({ code: 2 }),
+    )
+    sftp.mkdir.mockImplementation((directory, _attributes, callback) => {
+      directories.add(directory)
+      callback(null)
+    })
+    sftp.chmod.mockImplementation((_path, _mode, callback) => callback(null))
+    sftp.chown.mockImplementation((_path, _uid, _gid, callback) => callback(null))
     await client.connect(config)
   })
 
@@ -57,7 +72,94 @@ describe('SSHClient shell arguments', () => {
 
     expect(stagedPath()).toMatch(/^\/images\/\.piclist-upload-[\da-f-]+\.tmp$/)
     expect(sftp.ext_openssh_rename).toHaveBeenCalledWith(stagedPath(), '/images/photo.png', expect.any(Function))
-    expect(ssh.execCommand.mock.calls).toEqual([["cd / && mkdir -p -- 'images'"]])
+    expect(ssh.execCommand).not.toHaveBeenCalled()
+    expect(sftp.mkdir).toHaveBeenCalledWith('/images', {}, expect.any(Function))
+    expect(sftp.chmod).not.toHaveBeenCalled()
+  })
+
+  it.each([true, false])('uploads without shell access when the destination exists: %s', async exists => {
+    ssh.execCommand.mockRejectedValue(new Error('SSH exec is disabled'))
+    if (exists) directories.add('/images/nested')
+
+    await client.upload('local.png', '/images/nested/photo.png', {
+      ...config,
+      fileMode: '0644',
+      dirMode: '0755',
+      fileUser: '1000:1001',
+    })
+
+    expect(ssh.execCommand).not.toHaveBeenCalled()
+    expect(sftp.mkdir).toHaveBeenCalledTimes(exists ? 0 : 2)
+    expect(sftp.chmod).toHaveBeenCalledWith(stagedPath(), 0o644, expect.any(Function))
+    expect(sftp.chown).toHaveBeenCalledWith(stagedPath(), 1000, 1001, expect.any(Function))
+    expect(sftp.ext_openssh_rename).toHaveBeenCalledTimes(1)
+    expect(ssh.requestSFTP).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves existing directory permissions unchanged', async () => {
+    directories.add('/images/nested')
+
+    await client.upload('local.png', '/images/nested/photo.png', { ...config, dirMode: '0700' })
+
+    expect(sftp.stat.mock.calls.map(([directory]) => directory)).toEqual(['/images/nested'])
+    expect(sftp.mkdir).not.toHaveBeenCalled()
+    expect(sftp.chmod).not.toHaveBeenCalled()
+  })
+
+  it('rejects a parent that is a regular file', async () => {
+    sftp.stat.mockImplementationOnce((_directory, callback) => callback(null, { isDirectory: () => false }))
+
+    await expect(client.upload('local.png', '/images/photo.png', config)).rejects.toThrow('not a directory')
+    expect(ssh.putFile).not.toHaveBeenCalled()
+  })
+
+  it('does not interpret a stat permission error as a missing directory', async () => {
+    sftp.stat.mockImplementationOnce((_directory, callback) =>
+      callback(Object.assign(new Error('denied'), { code: 3 })),
+    )
+
+    await expect(client.upload('local.png', '/images/photo.png', config)).rejects.toThrow('denied')
+    expect(sftp.mkdir).not.toHaveBeenCalled()
+    expect(ssh.putFile).not.toHaveBeenCalled()
+  })
+
+  it('accepts a directory created concurrently without altering its permissions', async () => {
+    sftp.mkdir.mockImplementationOnce((directory, _attributes, callback) => {
+      directories.add(directory)
+      callback(Object.assign(new Error('already exists'), { code: 4 }))
+    })
+
+    await client.upload('local.png', '/images/photo.png', { ...config, dirMode: '0700' })
+
+    expect(ssh.putFile).toHaveBeenCalledTimes(1)
+    expect(sftp.stat).toHaveBeenCalledTimes(2)
+    expect(sftp.chmod).not.toHaveBeenCalled()
+  })
+
+  it('retries failed permissions on a directory this connection just created', async () => {
+    sftp.chmod.mockImplementationOnce((_path, _mode, callback) => callback(new Error('permission update failed')))
+    const options = { ...config, dirMode: '0755' }
+
+    await expect(client.upload('first.png', '/images/first.png', options)).rejects.toThrow(
+      'Setting directory permissions failed',
+    )
+    expect(ssh.putFile).not.toHaveBeenCalled()
+    await client.upload('second.png', '/images/second.png', options)
+
+    expect(sftp.mkdir).toHaveBeenCalledTimes(1)
+    expect(sftp.chmod).toHaveBeenCalledTimes(2)
+    expect(ssh.putFile).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports numeric ownership failures before publishing', async () => {
+    sftp.chown.mockImplementationOnce((_path, _uid, _gid, callback) => callback(new Error('denied')))
+
+    await expect(client.upload('local.png', '/images/photo.png', { ...config, fileUser: '1000' })).rejects.toThrow(
+      'Setting file ownership failed',
+    )
+
+    expect(ssh.execCommand).not.toHaveBeenCalled()
+    expect(sftp.ext_openssh_rename).not.toHaveBeenCalled()
   })
 
   it.each([
@@ -67,34 +169,35 @@ describe('SSHClient shell arguments', () => {
   ])('preserves file mode %s and directory mode %s', async (fileMode, dirMode) => {
     await client.upload('local.png', '/images/nested/photo.png', { ...config, fileMode, dirMode })
 
-    expect(ssh.execCommand.mock.calls).toEqual([
-      ...(dirMode === '0755'
-        ? [["cd / && mkdir -p -- 'images/nested'"]]
-        : [
-            [`test -d '/images' || (mkdir -- '/images' && chmod -- '${dirMode}' '/images')`],
-            [`test -d '/images/nested' || (mkdir -- '/images/nested' && chmod -- '${dirMode}' '/images/nested')`],
-          ]),
-      [`chmod -- '${fileMode}' '${stagedPath()}'`],
-    ])
+    if (fileMode.startsWith('0')) {
+      expect(sftp.chmod.mock.calls.map(([remote, mode]) => [remote, mode])).toEqual([
+        ['/images', Number.parseInt(dirMode, 8)],
+        ['/images/nested', Number.parseInt(dirMode, 8)],
+        [stagedPath(), Number.parseInt(fileMode, 8)],
+      ])
+      expect(ssh.execCommand).not.toHaveBeenCalled()
+    } else {
+      expect(ssh.execCommand.mock.calls).toEqual([
+        [`chmod -- '${dirMode}' '/images'`],
+        [`chmod -- '${dirMode}' '/images/nested'`],
+        [`chmod -- '${fileMode}' '${stagedPath()}'`],
+      ])
+    }
     expect(sftp.ext_openssh_rename).toHaveBeenCalledWith(stagedPath(), '/images/nested/photo.png', expect.any(Function))
   })
 
-  it.each(['0755', '0700'])('quotes directory and file names with directory mode %s', async dirMode => {
+  it.each(['0755', '0700'])('passes metacharacters directly to SFTP with directory mode %s', async dirMode => {
     const directory = 'album\'s "$(printf injected)" `printf injected`; &\n文件'
     const remote = `/${directory}/photo'$(printf injected).png`
-    const quotedDirectory = "'album'\\''s \"$(printf injected)\" `printf injected`; &\n文件'"
-    const quotedAbsoluteDirectory = "'/album'\\''s \"$(printf injected)\" `printf injected`; &\n文件'"
     await client.upload('local.png', remote, { ...config, dirMode, fileMode: '0600' })
-    const quotedStagedPath = `'${stagedPath().replace(/'/g, "'\\''")}'`
 
-    expect(ssh.execCommand.mock.calls).toEqual([
-      [
-        dirMode === '0755'
-          ? `cd / && mkdir -p -- ${quotedDirectory}`
-          : `test -d ${quotedAbsoluteDirectory} || (mkdir -- ${quotedAbsoluteDirectory} && chmod -- '0700' ${quotedAbsoluteDirectory})`,
-      ],
-      [`chmod -- '0600' ${quotedStagedPath}`],
-    ])
+    expect(sftp.mkdir).toHaveBeenCalledWith(
+      `/${directory}`,
+      { mode: Number.parseInt(dirMode, 8) },
+      expect.any(Function),
+    )
+    expect(sftp.chmod).toHaveBeenCalledWith(stagedPath(), 0o600, expect.any(Function))
+    expect(ssh.execCommand).not.toHaveBeenCalled()
     expect(sftp.ext_openssh_rename).toHaveBeenCalledWith(stagedPath(), remote, expect.any(Function))
   })
 
@@ -103,7 +206,7 @@ describe('SSHClient shell arguments', () => {
     await client.upload('local.png', '/images/photo.png', { ...config, dirMode: mode, fileMode: mode })
 
     expect(ssh.execCommand.mock.calls).toEqual([
-      ["test -d '/images' || (mkdir -- '/images' && chmod -- 'u+r; printf injected' '/images')"],
+      ["chmod -- 'u+r; printf injected' '/images'"],
       [`chmod -- 'u+r; printf injected' '${stagedPath()}'`],
     ])
   })
@@ -116,7 +219,12 @@ describe('SSHClient shell arguments', () => {
   ])('preserves ownership syntax for %s and %s', async (user, group, owner) => {
     await client.chown('\\images\\photo.png', user!, group)
 
-    expect(ssh.execCommand).toHaveBeenCalledWith(`chown -- '${owner}' '/images/photo.png'`)
+    if (user === '1000:1001') {
+      expect(sftp.chown).toHaveBeenCalledWith('/images/photo.png', 1000, 1001, expect.any(Function))
+      expect(ssh.execCommand).not.toHaveBeenCalled()
+    } else {
+      expect(ssh.execCommand).toHaveBeenCalledWith(`chown -- '${owner}' '/images/photo.png'`)
+    }
   })
 
   it('quotes owner, group and filename metacharacters', async () => {
@@ -132,7 +240,6 @@ describe('SSHClient shell arguments', () => {
     await client.chown('-photo.png', '--reference=other')
 
     expect(ssh.execCommand.mock.calls).toEqual([
-      ["cd / && mkdir -p -- '-images'"],
       [`chmod -- '-w' '${stagedPath()}'`],
       ["chown -- '--reference=other:--reference=other' '-photo.png'"],
     ])
@@ -147,10 +254,11 @@ describe('SSHClient shell arguments', () => {
     await client.upload('first.png', '/images/first.png', { ...config, fileMode: '0600' })
     await client.upload('second.png', '\\images\\second.png', { ...config, fileMode: '0600' })
 
-    expect(ssh.execCommand.mock.calls).toEqual([
-      ["cd / && mkdir -p -- 'images'"],
-      [`chmod -- '0600' '${stagedPath()}'`],
-      [`chmod -- '0600' '${stagedPath(1)}'`],
+    expect(sftp.stat).toHaveBeenCalledTimes(1)
+    expect(sftp.mkdir).toHaveBeenCalledTimes(1)
+    expect(sftp.chmod.mock.calls.map(([remote, mode]) => [remote, mode])).toEqual([
+      [stagedPath(), 0o600],
+      [stagedPath(1), 0o600],
     ])
     expect(ssh.putFile).toHaveBeenCalledTimes(2)
   })
@@ -161,55 +269,53 @@ describe('SSHClient shell arguments', () => {
     await client.upload('second.png', '/images/second/photo.png', options)
     await client.upload('third.png', '/images/first/other.png', options)
 
-    expect(ssh.execCommand.mock.calls).toEqual([
-      ["test -d '/images' || (mkdir -- '/images' && chmod -- '0700' '/images')"],
-      ["test -d '/images/first' || (mkdir -- '/images/first' && chmod -- '0700' '/images/first')"],
-      ["test -d '/images/second' || (mkdir -- '/images/second' && chmod -- '0700' '/images/second')"],
+    expect(sftp.chmod.mock.calls.map(([remote, mode]) => [remote, mode])).toEqual([
+      ['/images', 0o700],
+      ['/images/first', 0o700],
+      ['/images/second', 0o700],
     ])
     expect(ssh.putFile).toHaveBeenCalledTimes(3)
   })
 
-  it('prepares directories again when the requested mode changes', async () => {
+  it('rechecks existing directories without changing their permissions when the mode changes', async () => {
     await client.upload('first.png', '/images/first.png', config)
     await client.upload('second.png', '/images/second.png', { ...config, dirMode: '0700' })
 
-    expect(ssh.execCommand.mock.calls).toEqual([
-      ["cd / && mkdir -p -- 'images'"],
-      ["test -d '/images' || (mkdir -- '/images' && chmod -- '0700' '/images')"],
-    ])
+    expect(sftp.stat).toHaveBeenCalledTimes(2)
+    expect(sftp.mkdir).toHaveBeenCalledTimes(1)
+    expect(sftp.chmod).not.toHaveBeenCalled()
   })
 
   it.each(['0755', '0700'])('does not cache unsuccessful directory setup with mode %s', async dirMode => {
-    ssh.execCommand.mockResolvedValueOnce({ code: 1 })
+    sftp.mkdir.mockImplementationOnce((_directory, _attributes, callback) => callback(new Error('denied')))
     await expect(client.upload('first.png', '/images/first.png', { ...config, dirMode })).rejects.toThrow(
-      'Preparing upload directory failed (exit code: 1)',
+      'Preparing upload directory failed',
     )
     expect(ssh.putFile).not.toHaveBeenCalled()
     await client.upload('second.png', '/images/second.png', { ...config, dirMode })
     await client.upload('third.png', '/images/third.png', { ...config, dirMode })
 
-    expect(ssh.execCommand).toHaveBeenCalledTimes(2)
-    expect(ssh.execCommand.mock.calls[0]).toEqual(ssh.execCommand.mock.calls[1])
+    expect(sftp.mkdir).toHaveBeenCalledTimes(2)
     expect(ssh.putFile).toHaveBeenCalledTimes(2)
   })
 
   it('stops at a failed parent setup and retries it on the next upload', async () => {
-    ssh.execCommand.mockResolvedValueOnce({ code: 1 })
+    sftp.mkdir.mockImplementationOnce((_directory, _attributes, callback) => callback(new Error('denied')))
     const options = { ...config, dirMode: '0700' }
     await expect(client.upload('first.png', '/images/nested/first.png', options)).rejects.toThrow(
       'Preparing upload directory failed',
     )
-    expect(ssh.execCommand).toHaveBeenCalledTimes(1)
+    expect(sftp.mkdir).toHaveBeenCalledTimes(1)
     await client.upload('second.png', '/images/nested/second.png', options)
 
-    expect(ssh.execCommand).toHaveBeenCalledTimes(3)
-    expect(ssh.execCommand.mock.calls[1]).toEqual(ssh.execCommand.mock.calls[0])
+    expect(sftp.mkdir).toHaveBeenCalledTimes(3)
+    expect(sftp.mkdir.mock.calls[1][0]).toEqual(sftp.mkdir.mock.calls[0][0])
   })
 
   it.each([1, null])('rejects file permission failures with exit code %j', async code => {
-    ssh.execCommand.mockResolvedValueOnce({ code: 0 }).mockResolvedValueOnce({ code })
+    ssh.execCommand.mockResolvedValueOnce({ code })
 
-    await expect(client.upload('local.png', '/images/photo.png', { ...config, fileMode: '0644' })).rejects.toThrow(
+    await expect(client.upload('local.png', '/images/photo.png', { ...config, fileMode: 'u=rw,go=r' })).rejects.toThrow(
       'Setting file permissions failed',
     )
   })
@@ -230,12 +336,10 @@ describe('SSHClient shell arguments', () => {
         if (stage === 'transfer') throw new Error('transfer failed')
       })
       ssh.execCommand.mockImplementation(async script => ({
-        code:
-          (stage === 'permissions' && script.startsWith('chmod ')) ||
-          (stage === 'ownership' && script.startsWith('chown '))
-            ? 1
-            : 0,
+        code: stage === 'ownership' && script.startsWith('chown ') ? 1 : 0,
       }))
+      if (stage === 'permissions')
+        sftp.chmod.mockImplementationOnce((_path, _mode, callback) => callback(new Error('denied')))
       sftp.ext_openssh_rename.mockImplementation((_source, _destination, callback) =>
         callback(new Error('rename failed')),
       )
@@ -274,10 +378,10 @@ describe('SSHClient shell arguments', () => {
     expect([...files]).toEqual([[remote, 'replacement image']])
     expect(sftp.open).toHaveBeenCalledWith(stagedPath(), 'wx', expect.any(Function))
     expect(ssh.putFile).toHaveBeenCalledWith('local.png', stagedPath(), sftp)
-    expect(ssh.execCommand.mock.calls.slice(-2)).toEqual([
-      [`chown -- 'uploads:uploads' '${stagedPath()}'`],
-      [`chmod -- '0644' '${stagedPath()}'`],
-    ])
+    expect(ssh.execCommand).toHaveBeenCalledWith(`chown -- 'uploads:uploads' '${stagedPath()}'`)
+    expect(sftp.chmod).toHaveBeenCalledWith(stagedPath(), 0o644, expect.any(Function))
+    expect(ssh.execCommand.mock.invocationCallOrder[0]).toBeLessThan(sftp.chmod.mock.invocationCallOrder[0])
+    expect(sftp.chmod.mock.invocationCallOrder[0]).toBeLessThan(sftp.ext_openssh_rename.mock.invocationCallOrder[0])
     expect(sftp.unlink).not.toHaveBeenCalled()
   })
 
@@ -341,6 +445,7 @@ describe('SSHClient shell arguments', () => {
     await client.upload('local.png', '/photo.png', { ...config, dirMode })
 
     expect(ssh.execCommand).not.toHaveBeenCalled()
+    expect(sftp.mkdir).not.toHaveBeenCalled()
     expect(sftp.ext_openssh_rename).toHaveBeenCalledWith(stagedPath(), '/photo.png', expect.any(Function))
   })
 
@@ -351,7 +456,8 @@ describe('SSHClient shell arguments', () => {
     await client.connect({ ...config, host: 'another.example.invalid' })
     await client.upload('second.png', '/images/second.png', config)
 
-    expect(ssh.execCommand.mock.calls).toEqual([["cd / && mkdir -p -- 'images'"], ["cd / && mkdir -p -- 'images'"]])
+    expect(sftp.stat).toHaveBeenCalledTimes(2)
+    expect(ssh.requestSFTP).toHaveBeenCalledTimes(2)
   })
 
   it('keeps directory caches isolated between clients', async () => {
@@ -360,7 +466,7 @@ describe('SSHClient shell arguments', () => {
     await other.connect(config)
     await other.upload('second.png', '/images/second.png', config)
 
-    expect(ssh.execCommand).toHaveBeenCalledTimes(2)
+    expect(sftp.stat).toHaveBeenCalledTimes(2)
   })
 
   it('checks the connection even when a directory has already been prepared', async () => {

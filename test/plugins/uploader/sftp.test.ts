@@ -24,6 +24,9 @@ const ssh = vi.hoisted(() => ({
   execCommand: vi.fn(),
   dispose: vi.fn(),
   rename: vi.fn(),
+  stat: vi.fn(),
+  chmod: vi.fn(),
+  chown: vi.fn(),
 }))
 
 vi.mock('node-ssh-no-cpu-features', () => ({
@@ -51,6 +54,12 @@ vi.mock('node-ssh-no-cpu-features', () => ({
 
     async requestSFTP() {
       return {
+        stat: (directory: string, callback: (error: Error | null, stats?: { isDirectory: () => boolean }) => void) =>
+          ssh.stat(this, directory, callback),
+        chmod: (remote: string, mode: number, callback: (error: Error | null) => void) =>
+          ssh.chmod(this, remote, mode, callback),
+        chown: (remote: string, uid: number, gid: number, callback: (error: Error | null) => void) =>
+          ssh.chown(this, remote, uid, gid, callback),
         open: (_path: string, _flags: string, callback: (error: Error | null, handle: Buffer) => void) =>
           callback(null, Buffer.from('handle')),
         close: (_handle: Buffer, callback: (error: Error | null) => void) => callback(null),
@@ -101,6 +110,9 @@ describe('SFTP upload isolation and cleanup', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     ssh.execCommand.mockResolvedValue({ code: 0 })
+    ssh.stat.mockImplementation((_client, _path, callback) => callback(null, { isDirectory: () => true }))
+    ssh.chmod.mockImplementation((_client, _path, _mode, callback) => callback(null))
+    ssh.chown.mockImplementation((_client, _path, _uid, _gid, callback) => callback(null))
     baseDir = mkdtempSync(path.join(os.tmpdir(), 'piclist-sftp-test-'))
   })
 
@@ -347,7 +359,8 @@ describe('SFTP upload isolation and cleanup', () => {
 
     expect(ssh.connect).toHaveBeenCalledTimes(1)
     expect(ssh.dispose).toHaveBeenCalledTimes(1)
-    expect(ssh.execCommand.mock.calls.map(([_client, script]) => script)).toEqual(["cd / && mkdir -p -- 'images'"])
+    expect(ssh.execCommand).not.toHaveBeenCalled()
+    expect(ssh.stat).toHaveBeenCalledTimes(1)
     const [firstClient, firstLocal] = ssh.putFile.mock.calls[0]
     const [secondClient, secondLocal] = ssh.putFile.mock.calls[1]
     expect(secondClient).toBe(firstClient)
@@ -549,22 +562,41 @@ describe('SFTP upload isolation and cleanup', () => {
     expect(ssh.connect.mock.calls[0][1].port).toBe(expectedPort)
   })
 
-  it.each(['test -d', 'chmod', 'chown'])('reports a nonzero exit code from %s as an upload failure', async command => {
+  it.each(['chmod', 'chown'])('reports a nonzero exit code from %s as an upload failure', async command => {
     ssh.execCommand.mockImplementation(async (_client, script: string) => ({
       code: script.startsWith(command) ? 1 : 0,
     }))
-    const uploader = createUploader(baseDir, { ...config, fileMode: '0600', dirMode: '0700', fileUser: 'uploads' }, [
+    const uploader = createUploader(baseDir, { ...config, fileMode: 'u=rw,go=', fileUser: 'uploads' }, [
       { fileName: 'first.png', buffer: Buffer.from('first image') },
       { fileName: 'second.png', buffer: Buffer.from('second image') },
     ])
 
     await expect(uploader.upload()).rejects.toThrow('failed (exit code: 1)')
 
-    expect(ssh.putFile).toHaveBeenCalledTimes(command === 'test -d' ? 0 : 1)
+    expect(ssh.putFile).toHaveBeenCalledTimes(1)
     expect(uploader.ctx.output[0].imgUrl).toBeUndefined()
     expect(uploader.ctx.output[0].buffer?.toString()).toBe('first image')
     expect(uploader.ctx.output[1].buffer?.toString()).toBe('second image')
     expect(uploader.ctx.emit).toHaveBeenCalledTimes(1)
     expect(readdirSync(path.join(baseDir, 'uploadTemp'))).toEqual([])
   })
+
+  it.each(['stat', 'chmod', 'chown'] as const)(
+    'reports native SFTP %s failures without discarding the image',
+    async operation => {
+      ssh[operation].mockImplementationOnce((...args) => args.at(-1)(new Error(`${operation} failed`)))
+      const uploader = createUploader(baseDir, { ...config, fileMode: '0644', fileUser: '1000:1001' }, [
+        { fileName: 'photo.png', buffer: Buffer.from('contents') },
+      ])
+
+      await expect(uploader.upload()).rejects.toThrow('failed')
+
+      expect(ssh.execCommand).not.toHaveBeenCalled()
+      expect(ssh.rename).not.toHaveBeenCalled()
+      expect(uploader.ctx.output[0].buffer?.toString()).toBe('contents')
+      expect(uploader.ctx.output[0].imgUrl).toBeUndefined()
+      expect(uploader.ctx.emit).toHaveBeenCalledTimes(1)
+      expect(readdirSync(path.join(baseDir, 'uploadTemp'))).toEqual([])
+    },
+  )
 })

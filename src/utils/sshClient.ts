@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import type { Config } from 'node-ssh-no-cpu-features'
 import { NodeSSH } from 'node-ssh-no-cpu-features'
+import type { Stats } from 'ssh2-no-cpu-features'
 
 import type { ISftpPlistConfig } from '../types'
 
@@ -20,8 +21,9 @@ const quoteShellArgument = (value: string): string => {
 /** SSH/SFTP connection wrapper used to create remote directories, upload files, and set ownership. */
 class SSHClient {
   private client = new NodeSSH()
-  private sftp?: SFTP
+  private sftp?: Promise<SFTP>
   private preparedDirectories = new Set<string>()
+  private pendingDirectoryModes = new Map<string, string>()
   isConnected = false
 
   private static changeWinStylePathToUnix(path: string): string {
@@ -33,6 +35,7 @@ class SSHClient {
     this.isConnected = false
     this.sftp = undefined
     this.preparedDirectories.clear()
+    this.pendingDirectoryModes.clear()
     const { host, port, username, password, privateKey, passphrase } = config
     const loginInfo: Config = privateKey
       ? {
@@ -64,7 +67,7 @@ class SSHClient {
     }
     try {
       remote = SSHClient.changeWinStylePathToUnix(remote)
-      await this.mkdir(path.posix.dirname(remote).replace(/^\/+|\/+$/g, ''), config)
+      await this.mkdir(path.posix.dirname(remote), config)
       const sftp = await this.getSftp()
       const stagedPath = path.posix.join(path.posix.dirname(remote), `.piclist-upload-${randomUUID()}.tmp`)
       let created = false
@@ -78,12 +81,7 @@ class SSHClient {
         })
         await this.client.putFile(local, stagedPath, sftp)
         if (config.fileUser) await this.chown(stagedPath, config.fileUser)
-        if (config.fileMode) {
-          await this.exec(
-            `chmod -- ${quoteShellArgument(String(config.fileMode))} ${quoteShellArgument(stagedPath)}`,
-            'Setting file permissions',
-          )
-        }
+        if (config.fileMode) await this.chmod(stagedPath, config.fileMode, 'Setting file permissions')
         await this.rename(sftp, stagedPath, remote)
       } catch (err) {
         if (created) {
@@ -102,7 +100,10 @@ class SSHClient {
   /** Reuses a single SFTP channel for this connection. */
   private async getSftp(): Promise<SFTP> {
     if (!this.client.isConnected()) throw new Error('sftp client is not connected')
-    return (this.sftp ||= await this.client.requestSFTP())
+    return (this.sftp ||= this.client.requestSFTP().catch(err => {
+      this.sftp = undefined
+      throw err
+    }))
   }
 
   /** Uses POSIX replacement when supported; standard SFTP rename may only publish a new file. */
@@ -130,31 +131,59 @@ class SSHClient {
 
   /** Prepares each remote directory once per connection and mode, leaving existing permissions intact. */
   private async mkdir(dirPath: string, config: ISftpPlistConfig): Promise<void> {
-    if (!this.client.isConnected()) {
-      throw new Error('sftp client is not connected')
-    }
-    if (!dirPath) return
-    const directoryMode = config.dirMode || '0755'
-    const cacheKey = `${directoryMode}\0${dirPath}`
-    if (directoryMode !== '0755') {
-      const dirs = dirPath.split('/')
-      let currentPath = ''
-      for (const dir of dirs) {
-        if (dir) {
-          currentPath += `/${dir}`
-          const directoryKey = `${directoryMode}\0${currentPath.slice(1)}`
-          if (this.preparedDirectories.has(directoryKey)) continue
-          const quotedPath = quoteShellArgument(currentPath)
-          const script = `test -d ${quotedPath} || (mkdir -- ${quotedPath} && chmod -- ${quoteShellArgument(String(directoryMode))} ${quotedPath})`
-          await this.exec(script, 'Preparing upload directory')
-          this.preparedDirectories.add(directoryKey)
-        }
+    const sftp = await this.getSftp()
+    if (dirPath === '/' || dirPath === '.') return
+    const cacheKey = `${config.dirMode || ''}\0${dirPath}`
+    if (this.preparedDirectories.has(cacheKey)) return
+    const stats = await this.statDirectory(sftp, dirPath)
+    if (stats && !stats.isDirectory()) throw new Error('Remote upload parent is not a directory')
+    if (!stats) {
+      await this.mkdir(path.posix.dirname(dirPath), config)
+      try {
+        const attributes =
+          config.dirMode && /^[0-7]{1,4}$/.test(config.dirMode) ? { mode: Number.parseInt(config.dirMode, 8) } : {}
+        await new Promise<void>((resolve, reject) => {
+          sftp.mkdir(dirPath, attributes, err => (err ? reject(err) : resolve()))
+        })
+        if (config.dirMode) this.pendingDirectoryModes.set(dirPath, config.dirMode)
+      } catch (cause) {
+        // Another uploader may have created this directory after the initial stat.
+        const racedDirectory = await this.statDirectory(sftp, dirPath)
+        if (!racedDirectory?.isDirectory()) throw new Error('Preparing upload directory failed', { cause })
       }
-    } else {
-      if (this.preparedDirectories.has(cacheKey)) return
-      const script = `cd / && mkdir -p -- ${quoteShellArgument(dirPath)}`
-      await this.exec(script, 'Preparing upload directory')
-      this.preparedDirectories.add(cacheKey)
+    }
+    const pendingMode = this.pendingDirectoryModes.get(dirPath)
+    if (pendingMode) {
+      await this.chmod(dirPath, pendingMode, 'Setting directory permissions')
+      this.pendingDirectoryModes.delete(dirPath)
+    }
+    this.preparedDirectories.add(cacheKey)
+  }
+
+  /** Only a missing-path status permits creation; permission and connection errors must propagate. */
+  private async statDirectory(sftp: SFTP, directory: string): Promise<Stats | undefined> {
+    return new Promise((resolve, reject) => {
+      sftp.stat(directory, (err, stats) => {
+        if (!err) resolve(stats)
+        else if ('code' in err && err.code === 2) resolve(undefined)
+        else reject(err)
+      })
+    })
+  }
+
+  /** SFTP accepts octal modes; symbolic chmod syntax retains its checked shell fallback. */
+  private async chmod(remote: string, mode: string, operation: string): Promise<void> {
+    if (!/^[0-7]{1,4}$/.test(mode)) {
+      await this.exec(`chmod -- ${quoteShellArgument(mode)} ${quoteShellArgument(remote)}`, operation)
+      return
+    }
+    const sftp = await this.getSftp()
+    try {
+      await new Promise<void>((resolve, reject) => {
+        sftp.chmod(remote, Number.parseInt(mode, 8), err => (err ? reject(err) : resolve()))
+      })
+    } catch (cause) {
+      throw new Error(`${operation} failed`, { cause })
     }
   }
 
@@ -163,6 +192,18 @@ class SSHClient {
     remote = SSHClient.changeWinStylePathToUnix(remote)
     const [_user, _group] = group ? [user, group] : user.includes(':') ? user.split(':') : [user, user]
 
+    if ([_user, _group].every(value => /^\d+$/.test(value) && Number(value) < 0xffffffff)) {
+      const sftp = await this.getSftp()
+      try {
+        await new Promise<void>((resolve, reject) => {
+          sftp.chown(remote, Number(_user), Number(_group), err => (err ? reject(err) : resolve()))
+        })
+      } catch (cause) {
+        throw new Error('Setting file ownership failed', { cause })
+      }
+      return
+    }
+    // SFTP v3 only accepts numeric IDs; resolving account names still requires server shell support.
     await this.exec(
       `chown -- ${quoteShellArgument(`${_user}:${_group}`)} ${quoteShellArgument(remote)}`,
       'Setting file ownership',
@@ -185,6 +226,7 @@ class SSHClient {
       this.isConnected = false
       this.sftp = undefined
       this.preparedDirectories.clear()
+      this.pendingDirectoryModes.clear()
     }
   }
 }
