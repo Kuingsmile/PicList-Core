@@ -9,6 +9,26 @@ import SSHClient from '../../utils/sshClient'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, encodePath, formatPathHelper } from './utils'
 
+/** Resolves only relative filenames whose normalized destination stays inside its root. */
+const getFilePathWithinRoot = (root: string, fileName: string, paths: typeof path): string => {
+  const normalizedName = path.posix.normalize(fileName.replace(/\\/g, '/'))
+  const filePath = paths.resolve(root, normalizedName)
+  const relativePath = paths.relative(paths.resolve(root), filePath)
+  if (
+    fileName.includes('\0') ||
+    path.win32.parse(fileName).root ||
+    normalizedName === '..' ||
+    normalizedName.startsWith('../') ||
+    relativePath === '' ||
+    relativePath === '..' ||
+    relativePath.startsWith(`..${paths.sep}`) ||
+    paths.isAbsolute(relativePath)
+  ) {
+    throw new Error('Image filename must resolve to a file within the configured directory')
+  }
+  return filePath
+}
+
 /**
  * Stages images in an isolated batch directory, uploads over SSH, and retains gallery copies.
  *
@@ -40,6 +60,12 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         if (!img.fileName) continue
         const image = getImageBuffer(img)
         if (!image) continue
+        const remotePath = getFilePathWithinRoot(remoteDirectory, img.fileName, path.posix)
+        const imgTempFilePath = getFilePathWithinRoot(
+          path.join(ctx.baseDir, 'imgTemp', 'sftpplist'),
+          img.fileName,
+          path,
+        )
         if (!client) client = new SSHClient()
         if (!uploadTempPath) {
           const uploadTempRoot = path.join(ctx.baseDir, 'uploadTemp')
@@ -49,13 +75,11 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         const tempFilePath = path.join(uploadTempPath, path.basename(img.fileName))
         await writeFile(tempFilePath, image)
         if (!client.isConnected) await client.connect(sftpplistConfig)
-        const remotePath = path.posix.join(remoteDirectory, img.fileName.replace(/\\/g, '/'))
         await client.upload(tempFilePath, remotePath, sftpplistConfig)
         sftpplistConfig.fileUser && (await client.chown(remotePath, sftpplistConfig.fileUser))
         delete img.base64Image
         delete img.buffer
         img.imgUrl = `${baseUrl}/${encodePath(`${urlPath === '/' ? '' : urlPath}${img.fileName}`)}`
-        const imgTempFilePath = path.join(ctx.baseDir, 'imgTemp', 'sftpplist', img.fileName)
         await move(tempFilePath, imgTempFilePath, { overwrite: true })
         img.galleryPath = `http://localhost:36699/sftpplist/${encodeURIComponent(img.fileName)}`
       }

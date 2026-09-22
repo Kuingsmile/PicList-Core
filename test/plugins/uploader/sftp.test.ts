@@ -83,6 +83,42 @@ describe('SFTP upload isolation and cleanup', () => {
     rmSync(baseDir, { recursive: true, force: true })
   })
 
+  it.each([
+    '../../outside.png',
+    '..\\..\\outside.png',
+    'nested/../../../outside.png',
+    '../sftpplist-other/outside.png',
+    '/outside.png',
+    '\\outside.png',
+    'C:\\outside.png',
+    'C:outside.png',
+    '\\\\server\\share\\outside.png',
+    '.',
+    'nested/..',
+    'photo\0.png',
+  ])('rejects unsafe filename %j before staging or connecting', async fileName => {
+    const outsidePath = path.join(baseDir, 'outside.png')
+    writeFileSync(outsidePath, 'existing file')
+    const uploader = createUploader(baseDir, config, [{ fileName, buffer: Buffer.from('replacement') }])
+
+    await expect(uploader.upload()).rejects.toThrow('within the configured directory')
+
+    expect(ssh.connect).not.toHaveBeenCalled()
+    expect(ssh.putFile).not.toHaveBeenCalled()
+    expect(existsSync(path.join(baseDir, 'uploadTemp'))).toBe(false)
+    expect(readFileSync(outsidePath, 'utf8')).toBe('existing file')
+    expect(uploader.ctx.output[0].buffer?.toString()).toBe('replacement')
+  })
+
+  it('rejects parent traversal even when the remote upload root is /', async () => {
+    const uploader = createUploader(baseDir, { ...config, uploadPath: '/' }, [
+      { fileName: '../outside.png', buffer: Buffer.from('replacement') },
+    ])
+
+    await expect(uploader.upload()).rejects.toThrow('within the configured directory')
+    expect(ssh.putFile).not.toHaveBeenCalled()
+  })
+
   it.each(['photo.png', 'nested/photo.png'])(
     'isolates overlapping uploads of %s to different servers',
     async fileName => {
