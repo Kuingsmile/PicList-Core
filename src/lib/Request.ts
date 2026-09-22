@@ -158,8 +158,8 @@ export class Request implements IRequest {
    * metadata.
    * @returns The response body or full response according to the supplied options.
    * @remarks
-   * Legacy requests without a json option stringify the response body. Failures reject with normalized
-   * request metadata rather than the original Axios error.
+   * Legacy requests return text unless json is true, stringifying non-string response bodies. Failures
+   * reject with normalized request metadata rather than the original Axios error.
    */
   request<
     T,
@@ -204,17 +204,10 @@ export class Request implements IRequest {
     } else {
       return instance.request(opt).then(res => {
         // use old request option format
-        if (opt.__isOldOptions) {
-          if ('json' in options) {
-            if (options.json) {
-              return res.data
-            }
-          } else {
-            return JSON.stringify(res.data)
-          }
-        } else {
-          return res.data
+        if (opt.__isOldOptions && (!('json' in options) || options.json !== true)) {
+          return typeof res.data === 'string' ? res.data : JSON.stringify(res.data)
         }
+        return res.data
       }) as Promise<IResponse<T, U>>
     }
   }

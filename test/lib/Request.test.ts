@@ -71,6 +71,33 @@ describe('Request', () => {
     expect(await request.request(options)).toBe(JSON.stringify(payload))
   })
 
+  describe.each(['body', 'qs'])('legacy %s response bodies', legacyOption => {
+    it.each([
+      [true, 'literal-response', 'literal-response'],
+      [undefined, 'literal-response', 'literal-response'],
+      [false, 'literal-response', 'literal-response'],
+      [true, payload, payload],
+      [undefined, payload, JSON.stringify(payload)],
+      [false, payload, JSON.stringify(payload)],
+    ] as const)('preserves the response body with json=%s and data=%j', async (json, data, expected) => {
+      const adapter: AxiosAdapter = async config => ({
+        data,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config,
+      })
+      const options = {
+        url: 'http://example.invalid/upload',
+        ...(legacyOption === 'body' ? { body: 'synthetic-body' } : { qs: { test: 'legacy' } }),
+        ...(json === undefined ? {} : { json }),
+        adapter,
+      }
+
+      expect(await request.request(options)).toEqual(expected)
+    })
+  })
+
   it('returns binary response data as a Buffer', async () => {
     const options = { url, responseType: 'arraybuffer' } as const
     const response = await request.request<Buffer, typeof options>(options)
