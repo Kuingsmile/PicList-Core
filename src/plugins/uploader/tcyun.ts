@@ -113,9 +113,9 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
         statusCode: 400,
         body: { msg: ctx.i18n.t('AUTH_FAILED'), err },
       }))
-      const body = useV4 && typeof res === 'string' ? JSON.parse(res) : res
-      if (body.statusCode === 400) {
-        throw body?.body?.err || new Error(body?.body?.msg || body?.body?.message)
+      const body = useV4 && typeof res.body === 'string' ? JSON.parse(res.body) : res.body
+      if (res.statusCode === 400) {
+        throw body?.err || new Error(body?.msg || body?.message)
       }
       const optionUrl = tcYunOptions.options || ''
       const slim = !!tcYunOptions.slim
@@ -125,7 +125,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
         img.imgUrl = customUrl
           ? `${customUrl}/${encodePath(`${webPath || path}${img.fileName}`)}${optionUrl}`
           : `${body.data.source_url}${optionUrl}`
-      } else if (!useV4 && body?.statusCode === 200) {
+      } else if (!useV4 && res.statusCode === 200) {
         if (customUrl) {
           img.imgUrl = `${customUrl}/${encodePath(`${webPath || path}${img.fileName}`)}${optionUrl}`
         } else {
@@ -133,7 +133,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
           img.imgUrl = `https://${tcYunOptions.bucket}.${endpoint}/${encodePath(`${path}${img.fileName}`)}${optionUrl}`
         }
       } else {
-        throw new Error((res as any).body?.msg || 'Upload failed')
+        throw new Error(body?.msg || 'Upload failed')
       }
 
       if (slim) {
