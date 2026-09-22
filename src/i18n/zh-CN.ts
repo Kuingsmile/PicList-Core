@@ -33,6 +33,8 @@ export const ZH_CN = {
   CLI_OPTION_SILENT: '静默模式',
   CLI_OPTION_CONFIG: '设置配置文件路径',
   CLI_OPTION_PROXY: '设置上传代理',
+  CLI_OPTION_UPLOAD_PICBED: '仅本次上传使用指定图床',
+  CLI_OPTION_UPLOAD_CONFIG_NAME: '仅本次上传使用指定配置，所属图床为 --picbed 或当前图床',
   CLI_OPTION_PLUGIN_PROXY: '设置安装插件时使用的代理',
   CLI_OPTION_PLUGIN_REGISTRY: '选择安装插件时使用的镜像源',
   CLI_OPTION_HELP: '显示命令帮助',

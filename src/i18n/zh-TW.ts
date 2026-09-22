@@ -35,6 +35,8 @@ export const ZH_TW: ILocales = {
   CLI_OPTION_SILENT: '靜默模式',
   CLI_OPTION_CONFIG: '設定設定檔路徑',
   CLI_OPTION_PROXY: '設定上傳代理伺服器',
+  CLI_OPTION_UPLOAD_PICBED: '僅本次上傳使用指定圖床',
+  CLI_OPTION_UPLOAD_CONFIG_NAME: '僅本次上傳使用指定設定，所屬圖床為 --picbed 或目前圖床',
   CLI_OPTION_PLUGIN_PROXY: '設定安裝外掛時使用的代理伺服器',
   CLI_OPTION_PLUGIN_REGISTRY: '選擇安裝外掛時使用的套件來源',
   CLI_OPTION_HELP: '顯示命令說明',

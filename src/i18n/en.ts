@@ -35,6 +35,8 @@ export const EN: ILocales = {
   CLI_OPTION_SILENT: 'silent mode',
   CLI_OPTION_CONFIG: 'set config path',
   CLI_OPTION_PROXY: 'set proxy for uploading',
+  CLI_OPTION_UPLOAD_PICBED: 'use an uploader for this upload only',
+  CLI_OPTION_UPLOAD_CONFIG_NAME: 'use a saved config for --picbed or the current uploader for this upload only',
   CLI_OPTION_PLUGIN_PROXY: 'Add proxy for installing plugins',
   CLI_OPTION_PLUGIN_REGISTRY: 'Choose a registry for installing plugins',
   CLI_OPTION_HELP: 'display help for command',

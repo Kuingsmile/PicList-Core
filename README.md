@@ -292,7 +292,7 @@ Commands:
   config-rename <uploader> <oldName> <newName>  rename a config for an uploader
   config-show <uploader> [configName]           show details of a config
   set|config <module> [name] [configName]       configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").
-  upload|u [input...]                           upload, go go go
+  upload|u [options] [input...]                 upload, go go go
   use [module]                                  use modules of picgo
   i18n [lang]                                   change language, zh-CN, zh-TW, en
   help [command]                                display help for command
@@ -310,6 +310,19 @@ picgo upload /xxx/xx/xx.jpg
 
 ```bash
 picgo upload
+```
+
+#### 上传到指定图床或命名配置
+
+使用 `--picbed <uploader>` 指定图床，使用 `--configName <name>` 指定已保存的配置。
+省略 `--picbed` 时，从当前图床中选择配置；省略 `--configName` 时，使用指定图床的当前配置。
+这些选项仅对本次上传生效，不会更改已保存的默认设置，也支持 `u` 别名、URL、多个文件及剪贴板上传。
+
+```bash
+picgo upload /xxx/xx/xx.jpg --picbed github
+picgo upload /xxx/xx/xx.jpg --picbed aws-s3 --configName "Work account"
+picgo upload /xxx/xx/xx.jpg --configName "Work account"
+picgo upload --picbed aws-s3 --configName "Work account"
 ```
 
 ### 在Node项目中使用

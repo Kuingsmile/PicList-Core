@@ -306,7 +306,7 @@ Commands:
   config-rename <uploader> <oldName> <newName>  rename a config for an uploader
   config-show <uploader> [configName]           show details of a config
   set|config <module> [name] [configName]       configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").
-  upload|u [input...]                           upload, go go go
+  upload|u [options] [input...]                 upload, go go go
   use [module]                                  use modules of picgo
   i18n [lang]                                   change language, zh-CN, zh-TW, en
   help [command]                                display help for command
@@ -324,6 +324,20 @@ picgo upload /xxx/xx/xx.jpg
 
 ```bash
 picgo upload
+```
+
+#### Upload to a specific uploader or named configuration
+
+Use `--picbed <uploader>` to select an uploader, or `--configName <name>` to select a saved configuration.
+When `--picbed` is omitted, the configuration is selected from the current uploader. When `--configName` is
+omitted, the selected uploader uses its current configuration. These options apply only to this upload and do
+not change saved defaults. They also work with the `u` alias, URLs, multiple files and clipboard uploads.
+
+```bash
+picgo upload /xxx/xx/xx.jpg --picbed github
+picgo upload /xxx/xx/xx.jpg --picbed aws-s3 --configName "Work account"
+picgo upload /xxx/xx/xx.jpg --configName "Work account"
+picgo upload --picbed aws-s3 --configName "Work account"
 ```
 
 ### Use in node project
