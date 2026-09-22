@@ -1,9 +1,10 @@
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdtemp, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { ensureDir, move, remove } from 'fs-extra/esm'
+import { ensureDir, remove } from 'fs-extra/esm'
 
 import { IPicGo, IPluginConfig, ISftpPlistConfig } from '../../types'
+import { getSha256 } from '../../utils/common/hash'
 import { IBuildInEvent } from '../../utils/enum'
 import SSHClient from '../../utils/sshClient'
 import { getAndCheckConfig, getImageBuffer } from './helper'
@@ -52,6 +53,14 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const baseUrl = sftpplistConfig.customUrl || sftpplistConfig.host
   const urlPath = sftpplistConfig.webPath ? webPath : sftpplistConfig.uploadPath
   const remoteDirectory = `/${sftpplistConfig.uploadPath}`.replace(/\\/g, '/')
+  const destinationKey = getSha256(
+    JSON.stringify([
+      sftpplistConfig.host.toLowerCase(),
+      sftpplistConfig.port,
+      sftpplistConfig.username,
+      path.posix.resolve(remoteDirectory),
+    ]),
+  )
   try {
     let client: SSHClient | undefined
     let uploadTempPath: string | undefined
@@ -62,10 +71,12 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         if (!image) continue
         const remotePath = getFilePathWithinRoot(remoteDirectory, img.fileName, path.posix)
         const imgTempFilePath = getFilePathWithinRoot(
-          path.join(ctx.baseDir, 'imgTemp', 'sftpplist'),
+          path.join(ctx.baseDir, 'imgTemp', 'sftpplist', destinationKey),
           img.fileName,
           path,
         )
+        const imgUrl = `${baseUrl}/${encodePath(`${urlPath === '/' ? '' : urlPath}${img.fileName}`)}`
+        const galleryPath = `http://localhost:36699/sftpplist/${destinationKey}/${encodePath(path.posix.normalize(img.fileName.replace(/\\/g, '/')))}`
         if (!client) client = new SSHClient()
         if (!uploadTempPath) {
           const uploadTempRoot = path.join(ctx.baseDir, 'uploadTemp')
@@ -78,15 +89,24 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         await client.upload(tempFilePath, remotePath, sftpplistConfig)
         delete img.base64Image
         delete img.buffer
-        img.imgUrl = `${baseUrl}/${encodePath(`${urlPath === '/' ? '' : urlPath}${img.fileName}`)}`
-        await move(tempFilePath, imgTempFilePath, { overwrite: true })
-        img.galleryPath = `http://localhost:36699/sftpplist/${encodeURIComponent(img.fileName)}`
+        img.imgUrl = imgUrl
+        delete img.galleryPath
+        try {
+          await ensureDir(path.dirname(imgTempFilePath))
+          await rename(tempFilePath, imgTempFilePath)
+          img.galleryPath = galleryPath
+        } catch (_error) {
+          ctx.log.warn('SFTP upload succeeded, but the gallery cache could not be updated.')
+        }
       }
     } finally {
       try {
         client?.close()
-      } finally {
-        if (uploadTempPath) await remove(uploadTempPath)
+      } catch (_error) {
+        ctx.log.warn('Failed to close the SFTP connection.')
+      }
+      if (uploadTempPath) {
+        await remove(uploadTempPath).catch(() => ctx.log.warn('Failed to clean up SFTP staging files.'))
       }
     }
     return ctx

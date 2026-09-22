@@ -1,4 +1,5 @@
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import * as fsPromises from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -7,6 +8,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import registerSftpUploader from '../../../src/plugins/uploader/sftp'
 import type { IImgInfo, IPicGo, ISftpPlistConfig } from '../../../src/types'
 import { IBuildInEvent } from '../../../src/utils/enum'
+
+/** Resolves the cache location exposed by a gallery URL. */
+const galleryFilePath = (baseDir: string, galleryPath: string): string =>
+  path.join(baseDir, 'imgTemp', decodeURIComponent(new URL(galleryPath).pathname).slice(1))
+
+vi.mock('node:fs/promises', async importOriginal => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>()
+  return { ...actual, rename: vi.fn(actual.rename) }
+})
 
 const ssh = vi.hoisted(() => ({
   connect: vi.fn(),
@@ -70,6 +80,7 @@ function createUploader(baseDir: string, config: ISftpPlistConfig, output: IImgI
     output,
     getConfig: () => config,
     emit: vi.fn(),
+    log: { warn: vi.fn() },
     i18n: { t: (key: string) => key, translate: (key: string) => key },
     helper: {
       uploader: {
@@ -185,12 +196,15 @@ describe('SFTP upload isolation and cleanup', () => {
       expect(second.ctx.output[0].imgUrl).toBe(`sftp-b.example.invalid/b/${fileName}`)
       expect(first.ctx.output[0].buffer).toBeUndefined()
       expect(second.ctx.output[0].base64Image).toBeUndefined()
-      expect(readFileSync(path.join(baseDir, 'imgTemp', 'sftpplist', fileName), 'utf8')).toBe('contents-b')
-      expect(second.ctx.output[0].galleryPath).toBe(`http://localhost:36699/sftpplist/${encodeURIComponent(fileName)}`)
+      const firstGallery = first.ctx.output[0].galleryPath!
+      const secondGallery = second.ctx.output[0].galleryPath!
+      expect(firstGallery).not.toBe(secondGallery)
+      expect(readFileSync(galleryFilePath(baseDir, firstGallery), 'utf8')).toBe('contents-a')
+      expect(readFileSync(galleryFilePath(baseDir, secondGallery), 'utf8')).toBe('contents-b')
     },
   )
 
-  it.each(['connect', 'upload', 'chown', 'gallery'])('cleans up when %s fails', async stage => {
+  it.each(['connect', 'upload', 'chown'])('cleans up when %s fails', async stage => {
     const failure = new Error(`${stage} failed`)
     if (stage === 'connect') ssh.connect.mockRejectedValueOnce(failure)
     if (stage === 'upload') ssh.putFile.mockRejectedValueOnce(failure)
@@ -200,12 +214,11 @@ describe('SFTP upload isolation and cleanup', () => {
         return { code: 0 }
       })
     }
-    if (stage === 'gallery') writeFileSync(path.join(baseDir, 'imgTemp'), 'blocks gallery directory creation')
     const uploader = createUploader(baseDir, { ...config, fileUser: 'uploads' }, [
       { fileName: 'photo.png', buffer: Buffer.from('contents') },
     ])
 
-    await expect(uploader.upload()).rejects.toThrow(stage === 'gallery' ? undefined : failure.message)
+    await expect(uploader.upload()).rejects.toThrow(failure.message)
 
     expect(ssh.dispose).toHaveBeenCalledTimes(1)
     expect(readdirSync(path.join(baseDir, 'uploadTemp'))).toEqual([])
@@ -213,6 +226,84 @@ describe('SFTP upload isolation and cleanup', () => {
       title: 'UPLOAD_FAILED',
       body: 'CHECK_SETTINGS',
     })
+  })
+
+  it('keeps successful remote uploads when the gallery cache is unavailable', async () => {
+    writeFileSync(path.join(baseDir, 'imgTemp'), 'blocks gallery directory creation')
+    const uploader = createUploader(baseDir, config, [
+      { fileName: 'photo.png', buffer: Buffer.from('contents'), galleryPath: 'old-preview' },
+      { fileName: 'next.png', buffer: Buffer.from('next image') },
+    ])
+
+    await expect(uploader.upload()).resolves.toBe(uploader.ctx)
+
+    expect(ssh.rename).toHaveBeenCalledTimes(2)
+    expect(uploader.ctx.output[0].imgUrl).toBe(`${config.host}/images/photo.png`)
+    expect(uploader.ctx.output.every(img => !img.galleryPath && !img.buffer)).toBe(true)
+    expect(uploader.ctx.log.warn).toHaveBeenCalledTimes(2)
+    expect(uploader.ctx.log.warn).toHaveBeenCalledWith(
+      'SFTP upload succeeded, but the gallery cache could not be updated.',
+    )
+    expect(uploader.ctx.emit).not.toHaveBeenCalled()
+    expect(readdirSync(path.join(baseDir, 'uploadTemp'))).toEqual([])
+  })
+
+  it('preserves the old cached file when publishing its replacement fails', async () => {
+    const uploader = createUploader(baseDir, config, [{ fileName: 'photo.png', buffer: Buffer.from('original') }])
+    await uploader.upload()
+    const oldGalleryPath = uploader.ctx.output[0].galleryPath!
+    uploader.ctx.output = [{ fileName: 'photo.png', buffer: Buffer.from('replacement'), galleryPath: oldGalleryPath }]
+    vi.mocked(fsPromises.rename).mockRejectedValueOnce(new Error('gallery rename failed'))
+
+    await expect(uploader.upload()).resolves.toBe(uploader.ctx)
+
+    expect(readFileSync(galleryFilePath(baseDir, oldGalleryPath), 'utf8')).toBe('original')
+    expect(uploader.ctx.output[0].galleryPath).toBeUndefined()
+    expect(uploader.ctx.output[0].imgUrl).toBe(`${config.host}/images/photo.png`)
+    expect(uploader.ctx.emit).not.toHaveBeenCalled()
+    expect(uploader.ctx.log.warn).toHaveBeenCalledTimes(1)
+    expect(readdirSync(path.join(baseDir, 'uploadTemp'))).toEqual([])
+  })
+
+  it('keeps a successful upload when connection disposal fails', async () => {
+    ssh.dispose.mockImplementationOnce(() => {
+      throw new Error('dispose failed')
+    })
+    const uploader = createUploader(baseDir, config, [{ fileName: 'photo.png', buffer: Buffer.from('contents') }])
+
+    await expect(uploader.upload()).resolves.toBe(uploader.ctx)
+
+    expect(uploader.ctx.log.warn).toHaveBeenCalledWith('Failed to close the SFTP connection.')
+    expect(uploader.ctx.emit).not.toHaveBeenCalled()
+    expect(readdirSync(path.join(baseDir, 'uploadTemp'))).toEqual([])
+  })
+
+  it.each([{ host: 'other.example.invalid' }, { port: 2222 }, { username: 'another-user' }, { uploadPath: '/other' }])(
+    'keeps previews separate for destination change %j',
+    async change => {
+      const first = createUploader(baseDir, config, [{ fileName: 'photo.png', buffer: Buffer.from('first') }])
+      const second = createUploader(baseDir, { ...config, ...change }, [
+        { fileName: 'photo.png', buffer: Buffer.from('second') },
+      ])
+      await first.upload()
+      await second.upload()
+
+      expect(first.ctx.output[0].galleryPath).not.toBe(second.ctx.output[0].galleryPath)
+      expect(readFileSync(galleryFilePath(baseDir, first.ctx.output[0].galleryPath!), 'utf8')).toBe('first')
+      expect(readFileSync(galleryFilePath(baseDir, second.ctx.output[0].galleryPath!), 'utf8')).toBe('second')
+    },
+  )
+
+  it('reuses the preview for the same destination without depending on credentials', async () => {
+    const first = createUploader(baseDir, config, [{ fileName: 'photo.png', buffer: Buffer.from('first') }])
+    const second = createUploader(baseDir, { ...config, uploadPath: '/images/./', password: 'fixture-password' }, [
+      { fileName: 'photo.png', buffer: Buffer.from('second') },
+    ])
+    await first.upload()
+    await second.upload()
+
+    expect(first.ctx.output[0].galleryPath).toBe(second.ctx.output[0].galleryPath)
+    expect(readFileSync(galleryFilePath(baseDir, first.ctx.output[0].galleryPath!), 'utf8')).toBe('second')
   })
 
   it('cleans temporary files even if disposing the connection fails', async () => {
@@ -265,8 +356,8 @@ describe('SFTP upload isolation and cleanup', () => {
       { remote: '/images/first.png', contents: 'first image' },
       { remote: '/images/second.png', contents: 'second image' },
     ])
-    expect(readFileSync(path.join(baseDir, 'imgTemp', 'sftpplist', 'first.png'), 'utf8')).toBe('first image')
-    expect(readFileSync(path.join(baseDir, 'imgTemp', 'sftpplist', 'second.png'), 'utf8')).toBe('second image')
+    expect(readFileSync(galleryFilePath(baseDir, uploader.ctx.output[0].galleryPath!), 'utf8')).toBe('first image')
+    expect(readFileSync(galleryFilePath(baseDir, uploader.ctx.output[2].galleryPath!), 'utf8')).toBe('second image')
     expect(uploader.ctx.output[0].buffer).toBeUndefined()
     expect(uploader.ctx.output[2].base64Image).toBeUndefined()
     expect(readdirSync(path.join(baseDir, 'uploadTemp'))).toEqual([])
@@ -287,8 +378,8 @@ describe('SFTP upload isolation and cleanup', () => {
     await uploader.upload()
 
     expect(contents).toEqual(['first image', 'second image'])
-    expect(readFileSync(path.join(baseDir, 'imgTemp', 'sftpplist', 'first', 'photo.png'), 'utf8')).toBe('first image')
-    expect(readFileSync(path.join(baseDir, 'imgTemp', 'sftpplist', 'second', 'photo.png'), 'utf8')).toBe('second image')
+    expect(readFileSync(galleryFilePath(baseDir, uploader.ctx.output[0].galleryPath!), 'utf8')).toBe('first image')
+    expect(readFileSync(galleryFilePath(baseDir, uploader.ctx.output[1].galleryPath!), 'utf8')).toBe('second image')
     expect(ssh.connect).toHaveBeenCalledTimes(1)
     expect(ssh.dispose).toHaveBeenCalledTimes(1)
   })
@@ -340,7 +431,9 @@ describe('SFTP upload isolation and cleanup', () => {
 
     expect(ssh.rename.mock.calls[0][2]).toBe(remote)
     expect(uploader.ctx.output[0].imgUrl).toBe(`${customUrl || config.host}${url}`)
-    expect(uploader.ctx.output[0].galleryPath).toBe('http://localhost:36699/sftpplist/photo%20one.png')
+    expect(uploader.ctx.output[0].galleryPath).toMatch(
+      /^http:\/\/localhost:36699\/sftpplist\/[a-f\d]{64}\/photo%20one.png$/,
+    )
   })
 
   it('normalizes Windows separators in remote paths', async () => {
