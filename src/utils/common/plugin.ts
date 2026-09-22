@@ -121,15 +121,12 @@ export const removePluginVersion = (nameOrPath: string, scope: boolean = false):
   if (!nameOrPath.includes('@')) {
     return nameOrPath
   }
-  let reg = /(.+\/)?(picgo-plugin-[\w-]+)(@.+)*/
-  if (scope) {
-    reg = /(.+\/)?(^@[^/]+\/picgo-plugin-\w+)(@.+)*/
-  }
+  const reg = scope ? /^(@[^/@]+\/picgo-plugin-[\w.-]+)(?:@.+)?$/ : /(?:.+\/)?(picgo-plugin-[\w-]+)(@.+)*/
   const matchArr = nameOrPath.match(reg)
   if (!matchArr) {
     console.warn('can not remove plugin version')
     return nameOrPath
   } else {
-    return matchArr[2]
+    return matchArr[1]
   }
 }

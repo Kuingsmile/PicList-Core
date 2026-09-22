@@ -31,6 +31,9 @@ describe('plugin installation', () => {
     ['picgo-plugin-example@1.0.0', 'picgo-plugin-example'],
     ['example@1.0.0', 'picgo-plugin-example'],
     ['@example/picgo-plugin-example@1.0.0', '@example/picgo-plugin-example'],
+    ['@example/picgo-plugin-multi-word', '@example/picgo-plugin-multi-word'],
+    ['@example/picgo-plugin-multi-word@1.2.3', '@example/picgo-plugin-multi-word'],
+    ['@example/picgo-plugin-multi-word@next', '@example/picgo-plugin-multi-word'],
     ['picgo-plugin-example@latest', 'picgo-plugin-example'],
     ['picgo-plugin-example', 'picgo-plugin-example'],
     ['local', 'picgo-plugin-example'],
@@ -90,6 +93,25 @@ describe('plugin operations embedded in the TUI', () => {
     }) as unknown as IPicGo
     return { ctx, child, handler: new PluginHandler(ctx) }
   }
+
+  it.each([
+    ['update', '@example/picgo-plugin-multi-word'],
+    ['update', '@example/picgo-plugin-multi-word@1.2.3'],
+    ['uninstall', '@example/picgo-plugin-multi-word'],
+    ['uninstall', '@example/picgo-plugin-multi-word@next'],
+  ] as const)('uses the full scoped package name to %s %s', async (operation, specifier) => {
+    const { handler, child, ctx } = setup()
+    const pkgName = '@example/picgo-plugin-multi-word'
+    const result = handler[operation]([specifier], { silent: true })
+
+    expect(spawn).toHaveBeenLastCalledWith('npm', [operation, pkgName, '--color=always', '--save'], expect.any(Object))
+    child.emit('close', 0)
+
+    await expect(result).resolves.toEqual({ success: true, body: [pkgName] })
+    if (operation === 'uninstall') {
+      expect(ctx.pluginLoader.unregisterPlugin).toHaveBeenCalledWith(pkgName)
+    }
+  })
 
   it('suppresses npm stream forwarding in silent mode', async () => {
     const { handler, child, ctx } = setup()

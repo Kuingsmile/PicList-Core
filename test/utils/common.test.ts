@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import sharp from 'sharp'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   forceNumber,
@@ -690,6 +690,34 @@ describe('removePluginVersion', () => {
   it('should strip version from normal plugin', () => {
     expect(removePluginVersion('picgo-plugin-test@1.0.0')).toBe('picgo-plugin-test')
   })
+
+  it.each([
+    ['@example/picgo-plugin-multi-word', '@example/picgo-plugin-multi-word'],
+    ['@example/picgo-plugin-multi-word@1.2.3', '@example/picgo-plugin-multi-word'],
+    ['@example/picgo-plugin-multi-word@latest', '@example/picgo-plugin-multi-word'],
+    ['@example/picgo-plugin-multi-word@next', '@example/picgo-plugin-multi-word'],
+    ['@example/picgo-plugin-multi-word@^1.2.3', '@example/picgo-plugin-multi-word'],
+    ['@example/picgo-plugin-multi-word@1.2.3-beta.1', '@example/picgo-plugin-multi-word'],
+    ['@example-org/picgo-plugin-multi-word-extra@~1.2.3', '@example-org/picgo-plugin-multi-word-extra'],
+    ['@example.org/picgo-plugin-multi_word.v2', '@example.org/picgo-plugin-multi_word.v2'],
+    ['@example.org/picgo-plugin-multi_word.v2@1.2.3', '@example.org/picgo-plugin-multi_word.v2'],
+    ['@example/picgo-plugin-test@1.2.3', '@example/picgo-plugin-test'],
+  ])('should preserve the full scoped package name in %s', (specifier, expected) => {
+    expect(removePluginVersion(specifier, true)).toBe(expected)
+  })
+
+  it.each(['prefix/@example/picgo-plugin-multi-word@1.2.3', '@example/picgo-plugin-multi-word/extra@1.2.3'])(
+    'should leave %s unchanged when it is not a scoped package specifier',
+    specifier => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        expect(removePluginVersion(specifier, true)).toBe(specifier)
+        expect(warn).toHaveBeenCalledWith('can not remove plugin version')
+      } finally {
+        warn.mockRestore()
+      }
+    },
+  )
 })
 
 describe('handleUnixStylePath', () => {
