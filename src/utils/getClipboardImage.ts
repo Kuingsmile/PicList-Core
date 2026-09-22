@@ -1,4 +1,4 @@
-import { execFile, spawn } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -18,6 +18,74 @@ import { IBuildInEvent } from './enum'
 import { CLIPBOARD_IMAGE_FOLDER } from './static'
 
 export type Platform = 'darwin' | 'win32' | 'win10' | 'linux' | 'wsl'
+
+const CLIPBOARD_HELPER_TIMEOUT_MS = 30_000 // 30 seconds
+const CLIPBOARD_HELPER_MAX_OUTPUT_BYTES = 1024 * 1024 * 200 // 200 MB
+
+interface ClipboardHelperResult {
+  stdout: string
+  exitCode: number | null
+}
+
+/** Buffers complete helper output and bounds its lifetime without exposing stderr or spawn arguments. */
+const runClipboardHelper = async (command: string, args: string[]): Promise<ClipboardHelperResult> => {
+  let execution
+  try {
+    execution = spawn(command, args, { stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true })
+  } catch {
+    throw new Error('Unable to start clipboard helper')
+  }
+
+  return await new Promise<ClipboardHelperResult>((resolve, reject) => {
+    const chunks: Buffer[] = []
+    let outputBytes = 0
+    let settled = false
+
+    const onData = (chunk: Buffer): void => {
+      outputBytes += chunk.length
+      if (outputBytes > CLIPBOARD_HELPER_MAX_OUTPUT_BYTES) {
+        if (settle(new Error('Clipboard helper output exceeded the limit'))) stop()
+        return
+      }
+      chunks.push(chunk)
+    }
+    const settle = (result: ClipboardHelperResult | Error): boolean => {
+      if (settled) return false
+      settled = true
+      clearTimeout(timer)
+      execution.stdout.off('data', onData)
+      chunks.length = 0
+      if (result instanceof Error) reject(result)
+      else resolve(result)
+      return true
+    }
+    const stop = (): void => {
+      try {
+        execution.kill('SIGKILL')
+      } catch {
+        // Settlement must not depend on whether the operating system can terminate the helper.
+      }
+      execution.stdout.destroy()
+      execution.unref()
+    }
+    const onError = (): void => {
+      if (settle(new Error('Clipboard helper failed'))) stop()
+    }
+    const timer = setTimeout(() => {
+      if (settle(new Error('Clipboard helper timed out'))) stop()
+    }, CLIPBOARD_HELPER_TIMEOUT_MS)
+
+    execution.on('error', onError)
+    execution.stdout.on('error', onError)
+    execution.stdout.on('data', onData)
+    execution.once('close', (exitCode: number | null) => {
+      if (!settled) settle({ stdout: Buffer.concat(chunks).toString('utf8'), exitCode })
+      // Keep error listeners until close so errors from termination cannot escape after settlement.
+      execution.off('error', onError)
+      execution.stdout.off('error', onError)
+    })
+  })
+}
 
 /** Selects the clipboard backend, distinguishing WSL and Windows 10 from their host platform names. */
 const getCurrentPlatform = (): Platform => {
@@ -155,14 +223,13 @@ const fileUrlToLocalPath = (value: string, platform: Platform): string | undefin
 }
 
 /** Runs a clipboard helper without a shell and returns UTF-8 stdout, or an empty string on failure. */
-const execFileText = async (command: string, args: string[]): Promise<string> => {
-  return await new Promise<string>(resolve => {
-    execFile(command, args, { encoding: 'utf8', windowsHide: true }, (error, stdout) => {
-      if (error) return resolve('')
-
-      resolve(stdout.toString())
-    })
-  })
+const runClipboardTextHelper = async (command: string, args: string[]): Promise<string> => {
+  try {
+    const { stdout, exitCode } = await runClipboardHelper(command, args)
+    return exitCode === 0 ? stdout : ''
+  } catch {
+    return ''
+  }
 }
 
 /** Reads raw clipboard text through PowerShell with UTF-8 output. */
@@ -172,7 +239,7 @@ const getWindowsClipboardText = async (command = 'powershell'): Promise<string> 
     "try { Get-Clipboard -Raw -Format Text } catch { '' }",
   ].join('; ')
 
-  return await execFileText(command, [
+  return await runClipboardTextHelper(command, [
     '-noprofile',
     '-noninteractive',
     '-nologo',
@@ -188,7 +255,7 @@ const getWindowsClipboardText = async (command = 'powershell'): Promise<string> 
 const getClipboardText = async (platform: Platform): Promise<string> => {
   switch (platform) {
     case 'darwin':
-      return await execFileText('osascript', [
+      return await runClipboardTextHelper('osascript', [
         '-e',
         'try',
         '-e',
@@ -207,10 +274,10 @@ const getClipboardText = async (platform: Platform): Promise<string> => {
       return await getWindowsClipboardText('powershell.exe')
     case 'linux':
       if (process.env.XDG_SESSION_TYPE === 'wayland') {
-        return await execFileText('wl-paste', ['--no-newline'])
+        return await runClipboardTextHelper('wl-paste', ['--no-newline'])
       }
 
-      return await execFileText('xclip', ['-selection', 'clipboard', '-o'])
+      return await runClipboardTextHelper('xclip', ['-selection', 'clipboard', '-o'])
   }
 }
 
@@ -218,7 +285,7 @@ const getClipboardText = async (platform: Platform): Promise<string> => {
 const convertWindowsPathToWsl = async (filePath: string): Promise<string> => {
   if (!isWindowsAbsolutePath(filePath)) return filePath
 
-  return (await execFileText('wslpath', ['-u', '-a', filePath])).trim() || filePath
+  return (await runClipboardTextHelper('wslpath', ['-u', '-a', filePath])).trim() || filePath
 }
 
 /** Resolves clipboard file URLs and converts Windows paths when running under WSL. */
@@ -259,87 +326,69 @@ const isLinuxClipboardToolMissing = (platform: Platform, imgPath: string): boole
  *
  * @returns The selected path and whether it belongs to the user and must be retained; imgPath may be
  * `no image`.
- * @throws If required Linux clipboard tools are missing or the returned image path does not exist.
+ * @throws If a helper fails, times out, returns no result, or returns an image path that does not exist.
  */
 const getClipboardImage = async (ctx: IPicGo): Promise<IClipboardImage> => {
   createImageFolder(ctx)
   // add an clipboard image folder to control the image cache file
   const imagePath = path.join(ctx.baseDir, CLIPBOARD_IMAGE_FOLDER, `${dayjs().format('YYYYMMDDHHmmssSSS')}.png`)
-  return await new Promise<IClipboardImage>((resolve: any, reject: any): void => {
-    const platform = getCurrentPlatform()
-    const scriptPath = path.join(ctx.baseDir, platform2ScriptFilename[platform])
-    // If the script does not exist yet, we need to write the content to the script file
-    if (!fs.existsSync(scriptPath)) {
-      fs.writeFileSync(scriptPath, platform2ScriptContent[platform], 'utf8')
-    }
-    let execution
-    if (platform === 'darwin') {
-      execution = spawn('osascript', [scriptPath, imagePath])
-    } else if (platform === 'win32' || platform === 'win10') {
-      execution = spawn('powershell', [
-        '-noprofile',
-        '-noninteractive',
-        '-nologo',
-        '-sta',
-        '-executionpolicy',
-        'unrestricted',
-        // fix windows 10 native cmd crash bug when "picgo upload"
-        // https://github.com/PicGo/PicGo-Core/issues/32
-        // '-windowstyle','hidden',
-        // '-noexit',
-        '-file',
-        scriptPath,
-        imagePath,
-      ])
-    } else {
-      execution = spawn('sh', [scriptPath, imagePath])
-    }
+  const platform = getCurrentPlatform()
+  const scriptPath = path.join(ctx.baseDir, platform2ScriptFilename[platform])
+  // If the script does not exist yet, we need to write the content to the script file
+  if (!fs.existsSync(scriptPath)) {
+    fs.writeFileSync(scriptPath, platform2ScriptContent[platform], 'utf8')
+  }
+  let result: ClipboardHelperResult
+  if (platform === 'darwin') {
+    result = await runClipboardHelper('osascript', [scriptPath, imagePath])
+  } else if (platform === 'win32' || platform === 'win10') {
+    result = await runClipboardHelper('powershell', [
+      '-noprofile',
+      '-noninteractive',
+      '-nologo',
+      '-sta',
+      '-executionpolicy',
+      'unrestricted',
+      '-file',
+      scriptPath,
+      imagePath,
+    ])
+  } else {
+    result = await runClipboardHelper('sh', [scriptPath, imagePath])
+  }
 
-    execution.stdout.on('data', (data: Buffer) => {
-      void (async (): Promise<void> => {
-        let imgPath = data.toString().trim()
-
-        if (isLinuxClipboardToolMissing(platform, imgPath)) {
-          ctx.emit(IBuildInEvent.NOTIFICATION, {
-            title: 'xclip or wl-clipboard not found',
-            body: 'Please install xclip(for x11) or wl-clipboard(for wayland) before run picgo',
-          })
-          return reject(new Error('Please install xclip(for x11) or wl-clipboard(for wayland) before run picgo'))
-        }
-
-        if (imgPath !== 'no image') {
-          imgPath = await normalizeClipboardFilePath(imgPath, platform)
-          imgPath = getExistingClipboardFilePath(imgPath) || imgPath
-        }
-
-        if (imgPath === 'no image') {
-          imgPath = (await getClipboardTextFilePath(platform)) || imgPath
-        }
-
-        // if the filePath is the real file in system
-        // we should keep it instead of removing
-        let shouldKeepAfterUploading = false
-
-        // in macOS if your copy the file in system, it's basename will not equal to our default basename
-        if (path.basename(imgPath) !== path.basename(imagePath)) {
-          // if the path is not generate by picgo
-          // but the path exists, we should keep it
-          if (fs.existsSync(imgPath)) {
-            shouldKeepAfterUploading = true
-          }
-        }
-        // if the imgPath is invalid
-        if (imgPath !== 'no image' && !fs.existsSync(imgPath)) {
-          return reject(new Error(`Can't find ${imgPath}`))
-        }
-
-        resolve({
-          imgPath,
-          shouldKeepAfterUploading,
-        })
-      })().catch(reject)
+  let imgPath = result.stdout.trim()
+  if (isLinuxClipboardToolMissing(platform, imgPath)) {
+    ctx.emit(IBuildInEvent.NOTIFICATION, {
+      title: 'xclip or wl-clipboard not found',
+      body: 'Please install xclip(for x11) or wl-clipboard(for wayland) before run picgo',
     })
-  })
+    throw new Error('Please install xclip(for x11) or wl-clipboard(for wayland) before run picgo')
+  }
+
+  // Windows 10 exits with 1 even on success; Windows and Wayland also use 1 for "no image".
+  const legacySuccess =
+    result.exitCode === 1 &&
+    (platform === 'win10' || (imgPath === 'no image' && (platform === 'win32' || platform === 'linux')))
+  if (result.exitCode !== 0 && !legacySuccess) throw new Error('Clipboard helper failed')
+  if (!imgPath) throw new Error('Clipboard helper returned no result')
+
+  if (imgPath !== 'no image') {
+    imgPath = await normalizeClipboardFilePath(imgPath, platform)
+    imgPath = getExistingClipboardFilePath(imgPath) || imgPath
+  }
+
+  if (imgPath === 'no image') {
+    imgPath = (await getClipboardTextFilePath(platform)) || imgPath
+  }
+
+  // Keep existing user files instead of removing them after uploading.
+  const shouldKeepAfterUploading = path.basename(imgPath) !== path.basename(imagePath) && fs.existsSync(imgPath)
+  if (imgPath !== 'no image' && !fs.existsSync(imgPath)) {
+    throw new Error('Clipboard image file does not exist')
+  }
+
+  return { imgPath, shouldKeepAfterUploading }
 }
 
 export default getClipboardImage
