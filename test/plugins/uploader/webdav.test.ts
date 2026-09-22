@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -23,6 +23,10 @@ const config = {
   password: 'synthetic-password',
   path: '/uploads//',
 }
+
+/** Resolves the cache location exposed by a gallery URL. */
+const galleryFilePath = (baseDir: string, galleryPath: string): string =>
+  path.join(baseDir, 'imgTemp', decodeURIComponent(new URL(galleryPath).pathname).slice(1))
 
 describe('WebDAV uploader', () => {
   let baseDir: string
@@ -62,10 +66,12 @@ describe('WebDAV uploader', () => {
       {
         fileName,
         imgUrl: 'https://dav.example.invalid/uploads/nested/photo%20%231.png',
-        galleryPath: 'http://localhost:36699/webdavplist/nested%2Fphoto%20%231.png',
+        galleryPath: expect.stringMatching(
+          /^http:\/\/localhost:36699\/webdavplist\/[a-f\d]{64}\/nested\/photo%20%231.png$/,
+        ),
       },
     ])
-    expect(readFileSync(path.join(baseDir, 'imgTemp', 'webdavplist', fileName))).toEqual(buffer)
+    expect(readFileSync(galleryFilePath(baseDir, ctx.output[0].galleryPath!))).toEqual(buffer)
     expect(ctx.emit).not.toHaveBeenCalled()
   })
 
@@ -96,7 +102,88 @@ describe('WebDAV uploader', () => {
     })
     expect(ctx.output[0].imgUrl).toBe('http://dav.example.invalid/photo.png')
     expect(ctx.output[0]).not.toHaveProperty('base64Image')
-    expect(readFileSync(path.join(baseDir, 'imgTemp', 'webdavplist', 'photo.png'), 'utf8')).toBe('base64-content')
+    expect(readFileSync(galleryFilePath(baseDir, ctx.output[0].galleryPath!), 'utf8')).toBe('base64-content')
+  })
+
+  it.each([
+    { host: 'https://other.example.invalid' },
+    { host: 'https://dav.example.invalid:8443' },
+    { host: 'https://dav.example.invalid/dav' },
+    { sslEnabled: false },
+    { username: 'another-user' },
+    { path: '/second' },
+  ])('isolates previews when the destination changes by %j, including deletion and reupload', async change => {
+    const firstConfig = { ...config, path: '/first' }
+    const first = createUploader(registerWebdavUploader, 'picBed.webdavplist', firstConfig, [
+      { fileName: 'same.png', buffer: Buffer.from('first-image') },
+    ])
+    const second = createUploader(registerWebdavUploader, 'picBed.webdavplist', { ...firstConfig, ...change }, [
+      { fileName: 'same.png', buffer: Buffer.from('second-image') },
+    ])
+    first.ctx.baseDir = baseDir
+    second.ctx.baseDir = baseDir
+
+    await first.upload()
+    await second.upload()
+
+    const firstGallery = first.ctx.output[0].galleryPath!
+    const secondGallery = second.ctx.output[0].galleryPath!
+    expect(firstGallery).not.toBe(secondGallery)
+    expect(readFileSync(galleryFilePath(baseDir, firstGallery), 'utf8')).toBe('first-image')
+    expect(readFileSync(galleryFilePath(baseDir, secondGallery), 'utf8')).toBe('second-image')
+
+    rmSync(galleryFilePath(baseDir, firstGallery))
+    expect(readFileSync(galleryFilePath(baseDir, secondGallery), 'utf8')).toBe('second-image')
+
+    first.ctx.output = [{ fileName: 'same.png', buffer: Buffer.from('replacement-image') }]
+    await first.upload()
+
+    expect(first.ctx.output[0].galleryPath).toBe(firstGallery)
+    expect(readFileSync(galleryFilePath(baseDir, firstGallery), 'utf8')).toBe('replacement-image')
+    expect(readFileSync(galleryFilePath(baseDir, secondGallery), 'utf8')).toBe('second-image')
+  })
+
+  it('reuses the cache for the same normalized destination after password and public URL changes', async () => {
+    const first = createUploader(registerWebdavUploader, 'picBed.webdavplist', config)
+    const second = createUploader(
+      registerWebdavUploader,
+      'picBed.webdavplist',
+      {
+        ...config,
+        host: 'dav.example.invalid',
+        path: 'uploads',
+        password: 'replacement-synthetic-password',
+        authType: 'digest',
+        customUrl: 'https://cdn.example.invalid',
+        webpath: '/public',
+        options: '?download=1',
+      },
+      [{ fileName: 'photo.png', buffer: Buffer.from('replacement-image') }],
+    )
+    first.ctx.baseDir = baseDir
+    second.ctx.baseDir = baseDir
+
+    await first.upload()
+    await second.upload()
+
+    expect(first.ctx.output[0].galleryPath).toBe(second.ctx.output[0].galleryPath)
+    expect(readFileSync(galleryFilePath(baseDir, first.ctx.output[0].galleryPath!), 'utf8')).toBe('replacement-image')
+    expect(second.ctx.output[0].imgUrl).toBe('https://cdn.example.invalid/public/photo.png?download=1')
+  })
+
+  it('preserves existing gallery files at legacy URLs', async () => {
+    const legacyGallery = 'http://localhost:36699/webdavplist/photo.png'
+    const legacyFile = galleryFilePath(baseDir, legacyGallery)
+    mkdirSync(path.dirname(legacyFile), { recursive: true })
+    writeFileSync(legacyFile, 'legacy-image')
+    const { ctx, upload } = createUploader(registerWebdavUploader, 'picBed.webdavplist', config)
+    ctx.baseDir = baseDir
+
+    await upload()
+
+    expect(ctx.output[0].galleryPath).not.toBe(legacyGallery)
+    expect(readFileSync(legacyFile, 'utf8')).toBe('legacy-image')
+    expect(readFileSync(galleryFilePath(baseDir, ctx.output[0].galleryPath!), 'utf8')).toBe('synthetic-image')
   })
 
   it.each([
@@ -150,7 +237,7 @@ describe('WebDAV uploader', () => {
         body: 'CHECK_SETTINGS',
       })
       expect(ctx.output).toEqual([image])
-      expect(existsSync(path.join(baseDir, 'imgTemp', 'webdavplist', 'photo.png'))).toBe(false)
+      expect(existsSync(path.join(baseDir, 'imgTemp', 'webdavplist'))).toBe(false)
       if (stage === 'client' || stage === 'directory') expect(client.putFileContents).not.toHaveBeenCalled()
     },
   )

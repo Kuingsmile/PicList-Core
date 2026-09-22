@@ -5,6 +5,7 @@ import { ensureDirSync } from 'fs-extra/esm'
 import { AuthType, createClient, WebDAVClient, WebDAVClientOptions } from 'webdav'
 
 import { IPicGo, IPluginConfig, IWebdavPlistConfig } from '../../types'
+import { getSha256 } from '../../utils/common/hash'
 import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
@@ -52,9 +53,9 @@ const buildImageUrl = (
   return `${baseUrl}/${encodedPath}${suffix}`
 }
 
-/** Writes a gallery-cache copy while creating any nested filename directories. */
-const saveImageToTemp = (ctx: IPicGo, fileName: string, imageBuffer: Buffer): void => {
-  const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'webdavplist')
+/** Writes a destination-specific gallery copy while creating any nested filename directories. */
+const saveImageToTemp = (ctx: IPicGo, destinationKey: string, fileName: string, imageBuffer: Buffer): void => {
+  const imgTempPath = path.join(ctx.baseDir, 'imgTemp', 'webdavplist', destinationKey)
   const imgTempFilePath = path.join(imgTempPath, fileName)
   ensureDirSync(path.dirname(imgTempFilePath))
   fs.writeFileSync(imgTempFilePath, imageBuffer)
@@ -87,6 +88,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
 
   const webpath = formatPathHelper({ path: webdavOptions.webpath, rootToEmpty: false })
   const suffix = webdavOptions.options || ''
+  // Share previews only within a destination, independently of passwords and public URL settings.
+  const destinationKey = getSha256(JSON.stringify([webdavOptions.host, webdavOptions.username, webdavOptions.path]))
 
   try {
     const client = createWebDAVClient(webdavOptions)
@@ -99,11 +102,11 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
 
       const uploadResult = await uploadImage(client, webdavOptions.path, img.fileName, imageBuffer)
       if (!uploadResult) throw new Error('Upload failed')
-      saveImageToTemp(ctx, img.fileName, imageBuffer)
+      saveImageToTemp(ctx, destinationKey, img.fileName, imageBuffer)
       delete img.base64Image
       delete img.buffer
       img.imgUrl = buildImageUrl(baseUrl, webdavOptions.path, webpath, img.fileName, suffix, !!webdavOptions.webpath)
-      img.galleryPath = `http://localhost:${GALLERY_PORT}/webdavplist/${encodeURIComponent(img.fileName)}`
+      img.galleryPath = `http://localhost:${GALLERY_PORT}/webdavplist/${destinationKey}/${encodePath(img.fileName)}`
     }
     return ctx
   } catch (err: any) {
