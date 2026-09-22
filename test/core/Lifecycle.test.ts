@@ -64,11 +64,12 @@ describe('Lifecycle', () => {
       { isConvert: true, convertFormat: 'heif', quality: 80 },
       ctx,
     )
-    const metadata = await sharp(output).metadata()
+    const metadata = await sharp(output.buffer).metadata()
 
     expect(errors).toHaveLength(0)
+    expect(output.extension).toBe('heif')
     expect(metadata.format).toBe('heif')
-    expect(output.subarray(4, 12).toString('ascii')).toBe('ftypavif')
+    expect(output.buffer.subarray(4, 12).toString('ascii')).toBe('ftypavif')
   })
 
   it('should detect image type from magic number for local files without extension', async () => {
@@ -424,6 +425,115 @@ describe('Lifecycle preprocessing isolation', () => {
     await expectDistinctImages(uploaded)
     expect(uploaded.map(item => item.fileName)).toEqual(['photo.png', 'photo.png'])
     expect(ctx?.rawInputPath).toEqual([inputPaths[0], inputPaths[0]])
+  })
+
+  describe.each(['.heic', '.heif', '.HEIC', '.HEIF'])('local %s processing', extension => {
+    it.each([
+      {
+        processing: 'compression only',
+        options: { isConvert: false },
+        outputExtension: extension,
+        outputFormat: 'heif',
+        mimeType: `image/${extension.slice(1).toLowerCase()}`,
+      },
+      {
+        processing: 'resizing without conversion',
+        options: { isConvert: false, isReSizeByPercent: true, reSizePercent: 50 },
+        outputExtension: extension,
+        outputFormat: 'heif',
+        mimeType: `image/${extension.slice(1).toLowerCase()}`,
+      },
+      {
+        processing: 'explicit JPEG conversion',
+        options: { isConvert: true, convertFormat: 'jpg' },
+        outputExtension: '.jpg',
+        outputFormat: 'jpeg',
+        mimeType: 'image/jpeg',
+      },
+      {
+        processing: 'explicit PNG conversion',
+        options: { isConvert: true, convertFormat: 'png' },
+        outputExtension: '.png',
+        outputFormat: 'png',
+        mimeType: 'image/png',
+      },
+      {
+        processing: 'source-specific conversion',
+        options: {
+          isConvert: true,
+          convertFormat: 'jpg',
+          formatConvertObj: { heic: 'png', heif: 'png', jpg: 'webp' },
+        },
+        outputExtension: '.png',
+        outputFormat: 'png',
+        mimeType: 'image/png',
+      },
+      {
+        processing: 'explicit HEIF conversion',
+        options: { isConvert: true, convertFormat: 'heif' },
+        outputExtension: '.heif',
+        outputFormat: 'heif',
+        mimeType: 'image/heif',
+      },
+    ])(
+      'keeps uploaded bytes and metadata consistent after $processing',
+      async ({ options, outputExtension, outputFormat, mimeType }) => {
+        const inputPath = path.join(baseDir, 'source', `photo${extension}`)
+        // AV1 in a HEIF container exercises both suffixes without requiring an HEVC encoder.
+        const input = await sharp(inputBuffers[0]).heif({ compression: 'av1' }).toBuffer()
+        await fs.outputFile(inputPath, input)
+        const destination = path.join(baseDir, 'destination')
+        picgo.setConfig({
+          'picBed.uploader': 'local',
+          'picBed.local': { path: destination },
+          'buildIn.compress': { quality: 75, ...options },
+        })
+
+        const { ctx } = await picgo.uploadReturnCtx([inputPath])
+
+        const fileName = `photo${outputExtension}`
+        expect(ctx?.output).toHaveLength(1)
+        expect(ctx?.output[0]).toMatchObject({ fileName, extname: outputExtension, mimeType })
+        expect(await fs.readdir(destination)).toEqual([fileName])
+        const uploadedBuffer = await fs.readFile(path.join(destination, fileName))
+        const metadata = await sharp(uploadedBuffer).metadata()
+        expect(metadata.format).toBe(outputFormat)
+        expect(metadata).toMatchObject({
+          width: options.isReSizeByPercent ? 4 : 8,
+          height: options.isReSizeByPercent ? 3 : 6,
+        })
+        if (!options.isConvert) expect(metadata.compression).toBe('av1')
+        expect(ctx?.rawInputPath).toEqual([path.join(path.dirname(inputPath), fileName)])
+        expect(ctx?.processedInput[0]).toMatchObject({ fileName, extname: outputExtension, mimeType })
+        expect(await fs.readFile(inputPath)).toEqual(input)
+      },
+    )
+
+    it('keeps the original file when its HEIF codec cannot be encoded', async () => {
+      const inputPath = path.join(baseDir, 'source', `photo${extension}`)
+      const input = await sharp(inputBuffers[0]).heif({ compression: 'av1' }).toBuffer()
+      await fs.outputFile(inputPath, input)
+      // Simulate an HEVC source on a build without HEVC output support.
+      const metadata = await sharp(input).metadata()
+      vi.spyOn(sharp.prototype, 'metadata').mockResolvedValueOnce({ ...metadata, compression: 'hevc' })
+      const encode = vi.spyOn(sharp.prototype, 'heif').mockImplementation(() => {
+        throw new Error('Synthetic unsupported HEVC encoder')
+      })
+      picgo.setConfig({ 'buildIn.compress': { quality: 75, isConvert: false } })
+
+      const { ctx } = await picgo.uploadReturnCtx([inputPath])
+
+      expect(encode).toHaveBeenCalledWith({ quality: 75, compression: 'hevc' })
+      expect(uploaded).toHaveLength(1)
+      expect(uploaded[0]).toMatchObject({
+        fileName: `photo${extension}`,
+        extname: extension,
+        mimeType: `image/${extension.slice(1).toLowerCase()}`,
+        buffer: input,
+      })
+      expect(ctx?.rawInputPath).toEqual([inputPath])
+      expect(await fs.readFile(inputPath)).toEqual(input)
+    })
   })
 
   it.each(['local', 'url'])(

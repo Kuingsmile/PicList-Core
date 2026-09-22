@@ -66,6 +66,12 @@ const DEFAULT_SKIP_EXTENSIONS = ['zip', 'rar', '7z', 'tar', 'gz', 'tar.gz', 'tar
 const TTF_FILE_URL = 'https://release.piclist.cn/simhei.ttf'
 const DEFAULT_UPLOADER = 'smms'
 
+/** Processed bytes paired with the extension selected by the encoding step. */
+interface ProcessedImage {
+  buffer: Buffer
+  extension: string
+}
+
 const getBuildInListItem = (buildInList: IBuildInListItem[], id: string): IBuildInListItem | undefined =>
   buildInList.find(item => item.id === id)
 
@@ -396,7 +402,7 @@ export class Lifecycle extends EventEmitter {
     const shouldSkipExtension = skipExtensions.has(extension.toLowerCase())
 
     const fileBuffer: Buffer = itemIsUrl ? info.buffer! : localFileBuffer!
-    const transformedBuffer = await this.applyProcessing(
+    const processedImage = await this.applyProcessing(
       fileBuffer,
       extension,
       compressOptions,
@@ -407,25 +413,15 @@ export class Lifecycle extends EventEmitter {
       ctx,
     )
 
-    if (transformedBuffer) {
-      await this.saveProcessedImage(
-        item,
-        index,
-        ctx,
-        tempFilePath,
-        transformedBuffer,
-        extension,
-        compressOptions,
-        itemIsUrl,
-        info,
-      )
+    if (processedImage) {
+      await this.saveProcessedImage(item, index, ctx, tempFilePath, processedImage, extension, itemIsUrl, info)
     }
   }
 
   /**
    * Applies compression before watermarking, or strips EXIF when no prior step produced output.
    *
-   * @returns Processed bytes, or undefined when processing produced no replacement.
+   * @returns Processed bytes and their output extension, or undefined when no replacement was produced.
    */
   private async applyProcessing(
     fileBuffer: Buffer,
@@ -436,20 +432,15 @@ export class Lifecycle extends EventEmitter {
     item: string,
     tempFilePath: string,
     ctx: IPicGo,
-  ): Promise<Buffer | undefined> {
+  ): Promise<ProcessedImage | undefined> {
     let transformedBuffer: Buffer | undefined
+    let outputExtension = extension
 
     // Apply compression
     if (isNeedCompress(compressOptions, extension) && !shouldSkipExtension) {
-      transformedBuffer = await this.compressImage(
-        fileBuffer,
-        transformedBuffer,
-        extension,
-        compressOptions!,
-        item,
-        tempFilePath,
-        ctx,
-      )
+      const compressedImage = await this.compressImage(fileBuffer, extension, compressOptions!, item, tempFilePath, ctx)
+      transformedBuffer = compressedImage.buffer
+      outputExtension = compressedImage.extension
     }
 
     // Apply watermark
@@ -461,9 +452,10 @@ export class Lifecycle extends EventEmitter {
     if (!transformedBuffer && compressOptions?.isRemoveExif && !shouldSkipExtension) {
       ctx.log.info(MESSAGES.REMOVE_EXIF)
       transformedBuffer = await removeExif(fileBuffer, extension)
+      outputExtension = extension
     }
 
-    return transformedBuffer
+    return transformedBuffer ? { buffer: transformedBuffer, extension: outputExtension } : undefined
   }
 
   /** Ensures a font is available for text watermarks and returns undefined if font setup fails. */
@@ -484,24 +476,30 @@ export class Lifecycle extends EventEmitter {
     return await imageAddWaterMark(fileBuffer, watermarkOptions, this.ttfPath, ctx.log)
   }
 
-  /** Compresses or converts an image, routing local HEIC and HEIF files through JPEG conversion. */
+  /** Uses JPEG intermediates only for explicitly requested local HEIC and HEIF conversions. */
   private async compressImage(
     fileBuffer: Buffer,
-    transformedBuffer: Buffer | undefined,
     extension: string,
     compressOptions: IBuildInCompressOptions,
     item: string,
     tempFilePath: string,
     ctx: IPicGo,
-  ): Promise<Buffer> {
+  ): Promise<ProcessedImage> {
     ctx.log.info(MESSAGES.COMPRESS)
     const normalizedExtension = extension.toLowerCase()
 
-    if (!isUrl(item) && (normalizedExtension === '.heic' || normalizedExtension === '.heif')) {
+    if (
+      compressOptions.isConvert &&
+      !isUrl(item) &&
+      (normalizedExtension === '.heic' || normalizedExtension === '.heif')
+    ) {
       return await this.convertHeicAndCompress(fileBuffer, item, extension, tempFilePath, compressOptions, ctx)
     }
 
-    return await imageCompress(transformedBuffer ?? fileBuffer, compressOptions, extension, ctx.log)
+    return {
+      buffer: await imageCompress(fileBuffer, compressOptions, extension, ctx.log),
+      extension: compressOptions.isConvert ? getConvertedFormat(compressOptions, extension) : extension,
+    }
   }
 
   /** Converts HEIC bytes to JPEG, stages the intermediate file, and applies compression settings. */
@@ -512,11 +510,17 @@ export class Lifecycle extends EventEmitter {
     tempFilePath: string,
     compressOptions: IBuildInCompressOptions,
     ctx: IPicGo,
-  ): Promise<Buffer> {
+  ): Promise<ProcessedImage> {
     const convertedBuffer = await this.convertHeicToJpegBuffer(fileBuffer)
     const tempHeicConvertFile = path.join(tempFilePath, `${path.basename(item, extension)}.jpg`)
     fs.writeFileSync(tempHeicConvertFile, convertedBuffer)
-    return await imageCompress(convertedBuffer, compressOptions, '.jpg', ctx.log)
+    const outputFormat = getConvertedFormat(compressOptions, extension)
+    // Resolve source-specific rules before the JPEG intermediate can select a different conversion.
+    const outputOptions = { ...compressOptions, formatConvertObj: { jpg: outputFormat } }
+    return {
+      buffer: await imageCompress(convertedBuffer, outputOptions, '.jpg', ctx.log),
+      extension: outputFormat,
+    }
   }
 
   /** Converts HEIC to JPEG with Sharp, falling back to heic-convert if Sharp fails. */
@@ -543,13 +547,12 @@ export class Lifecycle extends EventEmitter {
     index: number,
     ctx: IPicGo,
     tempFilePath: string,
-    transformedBuffer: Buffer,
+    processedImage: ProcessedImage,
     extension: string,
-    compressOptions: Undefinable<IBuildInCompressOptions>,
     itemIsUrl: boolean,
     info: IPathTransformedImgInfo,
   ): Promise<void> {
-    let newExt = compressOptions?.isConvert ? getConvertedFormat(compressOptions, extension) : extension
+    let newExt = processedImage.extension
     newExt = newExt.startsWith('.') ? newExt : `.${newExt}`
 
     const fileName = itemIsUrl ? `${this.getFileBaseName(info)}${newExt}` : `${path.basename(item, extension)}${newExt}`
@@ -557,7 +560,7 @@ export class Lifecycle extends EventEmitter {
 
     ctx.rawInputPath[index] = path.join(path.dirname(item), fileName)
 
-    fs.writeFileSync(tempFile, transformedBuffer)
+    fs.writeFileSync(tempFile, processedImage.buffer)
     ctx.input[index] = tempFile
   }
 

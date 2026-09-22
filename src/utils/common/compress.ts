@@ -255,15 +255,22 @@ function applyTransformOptions(image: sharp.Sharp, options: IBuildInCompressOpti
 }
 
 /** Selects conversion output or re-encodes the original supported format, falling back to JPEG. */
-function applyOutputFormat(
+async function applyOutputFormat(
   image: sharp.Sharp,
   options: IBuildInCompressOptions,
   rawFormat: string,
   quality: number,
-): sharp.Sharp {
+): Promise<sharp.Sharp> {
   if (options.isConvert) {
     const newFormat = getConvertedFormat(options, rawFormat) as any
     return newFormat !== rawFormat ? image.toFormat(newFormat, getSharpFormatOptions(newFormat, quality)) : image
+  }
+
+  if (rawFormat === 'heic' || rawFormat === 'heif') {
+    const { compression } = await image.metadata()
+    if (!compression) throw new Error('Cannot preserve HEIF format: unknown source codec')
+    // Preserve the source codec; encoding failures leave the original input intact in the lifecycle.
+    return image.heif({ quality, compression })
   }
 
   if (rawFormat && validOutputFormat(rawFormat)) {
@@ -299,7 +306,7 @@ export async function imageCompress(
     const quality = getOutputQuality(options.quality)
     image = await applyResizeOptions(image, options)
     image = applyTransformOptions(image, options)
-    image = applyOutputFormat(image, options, rawFormat, quality)
+    image = await applyOutputFormat(image, options, rawFormat, quality)
     return await image.toBuffer()
   } catch (error: any) {
     logger.error(`Image process error: ${error}`)
