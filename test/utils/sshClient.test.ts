@@ -41,14 +41,19 @@ describe('SSHClient shell arguments', () => {
   })
 
   it.each([
+    ['0644', '0755'],
     ['0600', '0700'],
     ['u=rw,go=r', 'u=rwx,go=rx'],
   ])('preserves file mode %s and directory mode %s', async (fileMode, dirMode) => {
     await client.upload('local.png', '/images/nested/photo.png', { ...config, fileMode, dirMode })
 
     expect(ssh.execCommand.mock.calls).toEqual([
-      [`test -d '/images' || (mkdir -- '/images' && chmod -- '${dirMode}' '/images')`],
-      [`test -d '/images/nested' || (mkdir -- '/images/nested' && chmod -- '${dirMode}' '/images/nested')`],
+      ...(dirMode === '0755'
+        ? [["cd / && mkdir -p -- 'images/nested'"]]
+        : [
+            [`test -d '/images' || (mkdir -- '/images' && chmod -- '${dirMode}' '/images')`],
+            [`test -d '/images/nested' || (mkdir -- '/images/nested' && chmod -- '${dirMode}' '/images/nested')`],
+          ]),
       [`chmod -- '${fileMode}' '/images/nested/photo.png'`],
     ])
     expect(ssh.putFile).toHaveBeenCalledWith('local.png', '/images/nested/photo.png')
@@ -158,23 +163,43 @@ describe('SSHClient shell arguments', () => {
 
   it.each(['0755', '0700'])('does not cache unsuccessful directory setup with mode %s', async dirMode => {
     ssh.execCommand.mockResolvedValueOnce({ code: 1 })
-    await client.upload('first.png', '/images/first.png', { ...config, dirMode })
+    await expect(client.upload('first.png', '/images/first.png', { ...config, dirMode })).rejects.toThrow(
+      'Preparing upload directory failed (exit code: 1)',
+    )
+    expect(ssh.putFile).not.toHaveBeenCalled()
     await client.upload('second.png', '/images/second.png', { ...config, dirMode })
     await client.upload('third.png', '/images/third.png', { ...config, dirMode })
 
     expect(ssh.execCommand).toHaveBeenCalledTimes(2)
     expect(ssh.execCommand.mock.calls[0]).toEqual(ssh.execCommand.mock.calls[1])
-    expect(ssh.putFile).toHaveBeenCalledTimes(3)
+    expect(ssh.putFile).toHaveBeenCalledTimes(2)
   })
 
-  it('retries a failed parent setup even if preparing its child succeeded', async () => {
+  it('stops at a failed parent setup and retries it on the next upload', async () => {
     ssh.execCommand.mockResolvedValueOnce({ code: 1 })
     const options = { ...config, dirMode: '0700' }
-    await client.upload('first.png', '/images/nested/first.png', options)
+    await expect(client.upload('first.png', '/images/nested/first.png', options)).rejects.toThrow(
+      'Preparing upload directory failed',
+    )
+    expect(ssh.execCommand).toHaveBeenCalledTimes(1)
     await client.upload('second.png', '/images/nested/second.png', options)
 
     expect(ssh.execCommand).toHaveBeenCalledTimes(3)
-    expect(ssh.execCommand.mock.calls[2]).toEqual(ssh.execCommand.mock.calls[0])
+    expect(ssh.execCommand.mock.calls[1]).toEqual(ssh.execCommand.mock.calls[0])
+  })
+
+  it.each([1, null])('rejects file permission failures with exit code %j', async code => {
+    ssh.execCommand.mockResolvedValueOnce({ code: 0 }).mockResolvedValueOnce({ code })
+
+    await expect(client.upload('local.png', '/images/photo.png', { ...config, fileMode: '0644' })).rejects.toThrow(
+      'Setting file permissions failed',
+    )
+  })
+
+  it.each([1, null])('rejects ownership failures with exit code %j', async code => {
+    ssh.execCommand.mockResolvedValueOnce({ code })
+
+    await expect(client.chown('/images/photo.png', 'uploads')).rejects.toThrow('Setting file ownership failed')
   })
 
   it.each(['0755', '0700'])('does not try to create the remote root with mode %s', async dirMode => {

@@ -348,24 +348,22 @@ describe('SFTP upload isolation and cleanup', () => {
     expect(ssh.connect.mock.calls[0][1].port).toBe(expectedPort)
   })
 
-  it('preserves best-effort permissions and ownership handling for nonzero shell exit codes', async () => {
-    ssh.execCommand.mockResolvedValue({ code: 1 })
+  it.each(['test -d', 'chmod', 'chown'])('reports a nonzero exit code from %s as an upload failure', async command => {
+    ssh.execCommand.mockImplementation(async (_client, script: string) => ({
+      code: script.startsWith(command) ? 1 : 0,
+    }))
     const uploader = createUploader(baseDir, { ...config, fileMode: '0600', dirMode: '0700', fileUser: 'uploads' }, [
       { fileName: 'first.png', buffer: Buffer.from('first image') },
       { fileName: 'second.png', buffer: Buffer.from('second image') },
     ])
 
-    await expect(uploader.upload()).resolves.toBe(uploader.ctx)
+    await expect(uploader.upload()).rejects.toThrow('failed (exit code: 1)')
 
-    expect(ssh.execCommand.mock.calls.map(([_client, script]) => script)).toEqual([
-      "test -d '/images' || (mkdir -- '/images' && chmod -- '0700' '/images')",
-      "chmod -- '0600' '/images/first.png'",
-      "chown -- 'uploads:uploads' '/images/first.png'",
-      "test -d '/images' || (mkdir -- '/images' && chmod -- '0700' '/images')",
-      "chmod -- '0600' '/images/second.png'",
-      "chown -- 'uploads:uploads' '/images/second.png'",
-    ])
-    expect(ssh.putFile).toHaveBeenCalledTimes(2)
-    expect(uploader.ctx.emit).not.toHaveBeenCalled()
+    expect(ssh.putFile).toHaveBeenCalledTimes(command === 'test -d' ? 0 : 1)
+    expect(uploader.ctx.output[0].imgUrl).toBeUndefined()
+    expect(uploader.ctx.output[0].buffer?.toString()).toBe('first image')
+    expect(uploader.ctx.output[1].buffer?.toString()).toBe('second image')
+    expect(uploader.ctx.emit).toHaveBeenCalledTimes(1)
+    expect(readdirSync(path.join(baseDir, 'uploadTemp'))).toEqual([])
   })
 })

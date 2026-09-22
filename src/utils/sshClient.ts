@@ -62,9 +62,11 @@ class SSHClient {
       remote = SSHClient.changeWinStylePathToUnix(remote)
       await this.mkdir(path.posix.dirname(remote).replace(/^\/+|\/+$/g, ''), config)
       await this.client.putFile(local, remote)
-      const fileMode = config.fileMode || '0644'
-      if (fileMode !== '0644') {
-        await this.exec(`chmod -- ${quoteShellArgument(String(fileMode))} ${quoteShellArgument(remote)}`)
+      if (config.fileMode) {
+        await this.exec(
+          `chmod -- ${quoteShellArgument(String(config.fileMode))} ${quoteShellArgument(remote)}`,
+          'Setting file permissions',
+        )
       }
     } catch (err: any) {
       throw new Error(err, { cause: err })
@@ -89,13 +91,15 @@ class SSHClient {
           if (this.preparedDirectories.has(directoryKey)) continue
           const quotedPath = quoteShellArgument(currentPath)
           const script = `test -d ${quotedPath} || (mkdir -- ${quotedPath} && chmod -- ${quoteShellArgument(String(directoryMode))} ${quotedPath})`
-          if (await this.exec(script)) this.preparedDirectories.add(directoryKey)
+          await this.exec(script, 'Preparing upload directory')
+          this.preparedDirectories.add(directoryKey)
         }
       }
     } else {
       if (this.preparedDirectories.has(cacheKey)) return
       const script = `cd / && mkdir -p -- ${quoteShellArgument(dirPath)}`
-      if (await this.exec(script)) this.preparedDirectories.add(cacheKey)
+      await this.exec(script, 'Preparing upload directory')
+      this.preparedDirectories.add(cacheKey)
     }
   }
 
@@ -104,13 +108,18 @@ class SSHClient {
     remote = SSHClient.changeWinStylePathToUnix(remote)
     const [_user, _group] = group ? [user, group] : user.includes(':') ? user.split(':') : [user, user]
 
-    await this.exec(`chown -- ${quoteShellArgument(`${_user}:${_group}`)} ${quoteShellArgument(remote)}`)
+    await this.exec(
+      `chown -- ${quoteShellArgument(`${_user}:${_group}`)} ${quoteShellArgument(remote)}`,
+      'Setting file ownership',
+    )
   }
 
-  /** Runs a remote shell command and reports whether its exit code is zero. */
-  private async exec(script: string): Promise<boolean> {
+  /** Requires confirmed command success without exposing remote output or command arguments. */
+  private async exec(script: string, operation: string): Promise<void> {
     const execResult = await this.client.execCommand(script)
-    return execResult.code === 0
+    if (execResult.code !== 0) {
+      throw new Error(`${operation} failed (exit code: ${execResult.code ?? 'unavailable'})`)
+    }
   }
 
   /** Disposes the SSH connection and resets the wrapper's connection state. */
