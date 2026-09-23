@@ -391,7 +391,7 @@ export class PicGo extends EventEmitter implements IPicGo {
     let clipboardPath: string | undefined
     try {
       const { imgPath, shouldKeepAfterUploading } = await getClipboardImage(this)
-      console.log('Clipboard image path:', imgPath)
+      this.log.info(`Clipboard image path: ${imgPath}`)
       if (imgPath === 'no image') throw new Error('image not found in clipboard')
       if (!shouldKeepAfterUploading) clipboardPath = imgPath
       return await action([imgPath])
