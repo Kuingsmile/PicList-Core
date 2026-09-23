@@ -1,3 +1,51 @@
+# :tada: 3.0.0-alpha.1 (2026-09-23)
+
+### :sparkles: Features
+
+* change default config file name to data.json ([226407f](https://github.com/Kuingsmile/PicList-Core/commit/226407f))
+* improve Logger class structure and logging functionality ([a642b67](https://github.com/Kuingsmile/PicList-Core/commit/a642b67))
+* optimize sshclient and sftp uploader ([578b5a8](https://github.com/Kuingsmile/PicList-Core/commit/578b5a8))
+* **cli:** support set picbed and configName for upload command ([bce9d96](https://github.com/Kuingsmile/PicList-Core/commit/bce9d96))
+* **uploader:** local:add uploadpath validation ([bd4edcf](https://github.com/Kuingsmile/PicList-Core/commit/bd4edcf))
+* **uploader:** local:Destination writes now use staging and atomic replacement ([bbb3696](https://github.com/Kuingsmile/PicList-Core/commit/bbb3696))
+
+### :bug: Bug Fixes
+
+* explicit profile selection can be silently ignored ([c9d10a3](https://github.com/Kuingsmile/PicList-Core/commit/c9d10a3))
+* fix secondPicBedMode, local uploader and concurrent upload issue ([e67e31d](https://github.com/Kuingsmile/PicList-Core/commit/e67e31d))
+* per-upload proxy changes escape configuration isolation ([c10ecd5](https://github.com/Kuingsmile/PicList-Core/commit/c10ecd5))
+* request proxy conversion breaks standard Axios proxy objects and authenticated proxies ([4580fa2](https://github.com/Kuingsmile/PicList-Core/commit/4580fa2))
+* secondary profile selection is inconsistent across APIs ([7430f88](https://github.com/Kuingsmile/PicList-Core/commit/7430f88))
+* **clipboard:** clipboard helper errors can hang uploads or crash the process ([dcb9aed](https://github.com/Kuingsmile/PicList-Core/commit/dcb9aed))
+* **compress:** heic/HEIF compression saves JPEG bytes under HEIC/HEIF names ([4c5d67a](https://github.com/Kuingsmile/PicList-Core/commit/4c5d67a))
+* **compress:** same-format conversion ignores JPEG quality settings ([1c582f2](https://github.com/Kuingsmile/PicList-Core/commit/1c582f2))
+* **config:** editing a non-default CLI profile overwrites it with the active defaults ([67abbb8](https://github.com/Kuingsmile/PicList-Core/commit/67abbb8))
+* **log:** change image path console.log to this.log ([af5415a](https://github.com/Kuingsmile/PicList-Core/commit/af5415a))
+* **plugin:** preserve full scoped plugin names when removing versions ([8059fca](https://github.com/Kuingsmile/PicList-Core/commit/8059fca))
+* **request:** legacy requests with `json: false` resolve to `undefined` ([3045f54](https://github.com/Kuingsmile/PicList-Core/commit/3045f54))
+* **s3:** encode object keys in custom-domain URLs ([a749593](https://github.com/Kuingsmile/PicList-Core/commit/a749593))
+* **sftp:** confine upload and gallery filenames to their roots ([8eae379](https://github.com/Kuingsmile/PicList-Core/commit/8eae379))
+* **sftp:** isolate gallery previews and keep cache failures nonfatal ([427e3dc](https://github.com/Kuingsmile/PicList-Core/commit/427e3dc))
+* **sftp:** normalize public paths and validate URL configuration ([ad1b695](https://github.com/Kuingsmile/PicList-Core/commit/ad1b695))
+* **sftp:** prepare directories and numeric metadata through SFTP ([cdaf0a9](https://github.com/Kuingsmile/PicList-Core/commit/cdaf0a9))
+* **sftp:** publish complete uploads with atomic remote replacement ([f42ac15](https://github.com/Kuingsmile/PicList-Core/commit/f42ac15))
+* **sftp:** report permission and ownership failures ([a58a53e](https://github.com/Kuingsmile/PicList-Core/commit/a58a53e))
+* **tcyun:** read V4 upload fields from the full response body ([8d87091](https://github.com/Kuingsmile/PicList-Core/commit/8d87091))
+* **uploader:** local:different profiles overwrite each other’s gallery images ([c575096](https://github.com/Kuingsmile/PicList-Core/commit/c575096))
+* **uploader:** local:filenames can escape the configured directories ([cccc050](https://github.com/Kuingsmile/PicList-Core/commit/cccc050))
+* **uploader:** windows directory separators produce inconsistent public URLs(local uploader) ([76e41ac](https://github.com/Kuingsmile/PicList-Core/commit/76e41ac))
+* **webdav:** webDAV cache errors turn committed remote uploads into reported failures ([301ed9c](https://github.com/Kuingsmile/PicList-Core/commit/301ed9c))
+* **webdav:** webDAV profiles overwrite one another's gallery previews ([62d6da3](https://github.com/Kuingsmile/PicList-Core/commit/62d6da3))
+* **wsl:** wsl clipboard uploads lack their Windows helper and compute the wrong path ([c70ffc3](https://github.com/Kuingsmile/PicList-Core/commit/c70ffc3))
+
+### :pencil: Documentation
+
+* add tsdoc for func ([f3b8075](https://github.com/Kuingsmile/PicList-Core/commit/f3b8075))
+* fix docs error ([2c4a6f9](https://github.com/Kuingsmile/PicList-Core/commit/2c4a6f9))
+
+### :package: Chore
+
+* migrate to rolldown ([a3f82cf](https://github.com/Kuingsmile/PicList-Core/commit/a3f82cf))
 # :tada: 3.0.0-alpha.0 (2026-09-19)
 
 ### :sparkles: Features
