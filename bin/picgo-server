@@ -385,6 +385,8 @@ async function responseForGet({ response }) {
 class Server {
   /** Creates the HTTP server and binds request dispatch without starting a listener. */
   constructor() {
+    this.generation = 0
+    this.operation = Promise.resolve()
     this.httpServer = http.createServer(this.handleRequest)
   }
 
@@ -494,52 +496,111 @@ class Server {
   }
 
   /** Listens on the configured host, probing heartbeat on port conflicts before trying the next port. */
-  listen(port) {
-    console.log(`[PicList Server] is listening at ${port}`)
-    if (typeof port === 'string') {
-      port = parseInt(port, 10)
+  listen = async generation => {
+    const firstPort = Number(defaultPort)
+    if (!Number.isInteger(firstPort) || firstPort < 1 || firstPort > 65535) {
+      console.error('[PicList Server] invalid port; expected an integer from 1 to 65535')
+      return
     }
 
-    this.httpServer.listen(port, defaultHost).on('error', async err => {
-      if (err.code === 'EADDRINUSE') {
-        try {
-          const probeHost = defaultHost === '0.0.0.0' || defaultHost === '::' ? '127.0.0.1' : defaultHost
-          await axios.post(ensureHTTPLink(`${probeHost}:${port}/heartbeat`))
-          console.log(`[PicList Server] server is already running at ${port}, no need to start again`)
-          this.shutdown(true)
-        } catch (_e) {
-          console.log(`[PicList Server] ${port} is busy, trying with port ${port + 1}`)
-          this.listen(port + 1)
+    const host = defaultHost
+    for (let attempt = 0; attempt < 10 && firstPort + attempt <= 65535; attempt++) {
+      if (generation !== this.generation) return
+      const port = firstPort + attempt
+      try {
+        await listenOnce(this.httpServer, port, host)
+        console.log(`[PicList Server] is listening at ${port} of ${host}`)
+        return
+      } catch (error) {
+        await closeServer(this.httpServer)
+        if (generation !== this.generation) return
+        if (error.code !== 'EADDRINUSE') {
+          console.error('[PicList Server]', error)
+          return
         }
-      } else {
-        console.log(`[PicList Server] failed to start server at ${port}`)
-        console.log(`[PicList Server] ${err}`)
+        const probeHost = host === '0.0.0.0' ? '127.0.0.1' : host === '::' ? '::1' : host
+        try {
+          const response = await axios.post(
+            ensureHTTPLink(`${probeHost.includes(':') ? `[${probeHost}]` : probeHost}:${port}/heartbeat`),
+            undefined,
+            { timeout: 1000, proxy: false },
+          )
+          if (response.data?.success === true && response.data?.result === 'alive') {
+            console.log(`[PicList Server] server is already running at ${port}`)
+            return
+          }
+        } catch (_error) {
+          // The occupied port belongs to another service or does not answer in time.
+        }
+        console.warn(`[PicList Server] ${port} is busy`)
       }
+    }
+    console.error(`[PicList Server] unable to start after bounded port retries from ${firstPort}`)
+  }
+
+  enqueue(operation) {
+    this.operation = this.operation.then(operation).catch(error => {
+      console.error('[PicList Server]', error)
     })
+    return this.operation
   }
 
   startup() {
+    const generation = this.generation
     console.log('startup')
-    this.listen(defaultPort)
+    return this.enqueue(() => this.listen(generation))
   }
 
   /** Closes the HTTP listener and optionally suppresses the ordinary shutdown message. */
   shutdown(hasStarted) {
-    try {
-      this.httpServer.close()
+    this.generation++
+    return this.enqueue(async () => {
+      await closeServer(this.httpServer)
       if (!hasStarted) {
         console.log('[PicList Server] shutdown')
       }
-    } catch (error) {
-      console.error('[PicList Server] error shutting down', error)
-    }
+    })
   }
 
-  /** Closes the current listener and starts again using the configured default port. */
   restart() {
-    this.shutdown()
-    this.startup()
+    const generation = ++this.generation
+    return this.enqueue(async () => {
+      await closeServer(this.httpServer)
+      this.httpServer = http.createServer(this.handleRequest)
+      this.config = this.getConfigWithDefaults()
+      await this.listen(generation)
+    })
   }
+}
+
+function listenOnce(server, port, host) {
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      server.off('error', onError)
+      server.off('listening', onListening)
+    }
+    const onError = error => {
+      cleanup()
+      reject(error)
+    }
+    const onListening = () => {
+      cleanup()
+      resolve()
+    }
+    server.once('error', onError)
+    server.once('listening', onListening)
+    try {
+      server.listen(port, host)
+    } catch (error) {
+      onError(error)
+    }
+  })
+}
+
+function closeServer(server) {
+  return new Promise(resolve => {
+    server.close(() => resolve())
+  })
 }
 
 /** Default server instance started when this executable module is imported or run. */
