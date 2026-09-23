@@ -137,8 +137,8 @@ repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_ACCESS_TOKEN`.
 
 #### docker run
 
-Change the `./piclist` to your own path, this path is where you put your `data.json` file (or legacy `config.json`), and change the
-`piclist123456` to your own secret key.
+Change the `./piclist` to your own path, this path is where you put your `data.json` file (or legacy `config.json`), and
+change the `piclist123456` to your own secret key.
 
 ```bash
 docker run -d \
@@ -169,8 +169,8 @@ services:
     command: node /usr/local/bin/picgo-server -k piclist123456
 ```
 
-You can change the `./piclist` to your own path, this path is where you put your `data.json` file (or legacy `config.json`), and change the
-`command` to your own secret key.
+You can change the `./piclist` to your own path, this path is where you put your `data.json` file (or legacy
+`config.json`), and change the `command` to your own secret key.
 
 Then run:
 
@@ -328,10 +328,10 @@ picgo upload
 
 #### Upload to a specific uploader or named configuration
 
-Use `--picbed <uploader>` to select an uploader, or `--configName <name>` to select a saved configuration.
-When `--picbed` is omitted, the configuration is selected from the current uploader. When `--configName` is
-omitted, the selected uploader uses its current configuration. These options apply only to this upload and do
-not change saved defaults. They also work with the `u` alias, URLs, multiple files and clipboard uploads.
+Use `--picbed <uploader>` to select an uploader, or `--configName <name>` to select a saved configuration. When
+`--picbed` is omitted, the configuration is selected from the current uploader. When `--configName` is omitted, the
+selected uploader uses its current configuration. These options apply only to this upload and do not change saved
+defaults. They also work with the `u` alias, URLs, multiple files and clipboard uploads.
 
 ```bash
 picgo upload /xxx/xx/xx.jpg --picbed github
@@ -357,7 +357,7 @@ import { PicGo } from 'piclist'
 #### API usage example
 
 ```js
-const picgo = new PicGo()
+const picgo = await PicGo.create()
 
 // upload a picture from path
 picgo.upload(['/xxx/xxx.jpg'])
