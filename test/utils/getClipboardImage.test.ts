@@ -7,8 +7,11 @@ import { pathToFileURL } from 'node:url'
 import fs from 'fs-extra'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import windows10ClipboardScript from '../../src/utils/clipboard/windows10.ps1'
+import wslClipboardScript from '../../src/utils/clipboard/wsl.sh'
 import { IBuildInEvent } from '../../src/utils/enum'
 import getClipboardImage from '../../src/utils/getClipboardImage'
+import { CLIPBOARD_IMAGE_FOLDER } from '../../src/utils/static'
 
 const childProcessMock = vi.hoisted(() => ({
   spawn: vi.fn(),
@@ -24,8 +27,6 @@ vi.mock('is-wsl', () => ({
 vi.mock('../../src/utils/clipboard/linux.sh', () => ({ default: 'linux clipboard script' }))
 vi.mock('../../src/utils/clipboard/mac.applescript', () => ({ default: 'mac clipboard script' }))
 vi.mock('../../src/utils/clipboard/windows.ps1', () => ({ default: 'windows clipboard script' }))
-vi.mock('../../src/utils/clipboard/windows10.ps1', () => ({ default: 'windows10 clipboard script' }))
-vi.mock('../../src/utils/clipboard/wsl.sh', () => ({ default: 'wsl clipboard script' }))
 
 const baseDirs: string[] = []
 const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform')!
@@ -258,7 +259,9 @@ describe('getClipboardImage', () => {
     const child = mockClipboardHelper()
     const task = getClipboardImage({ baseDir: createBaseDir(), emit: vi.fn() } as any)
     const rejection = expect(task).rejects.toThrow(/^Clipboard helper output exceeded the limit$/)
-    child.stdout.emit('data', Buffer.alloc(1024 * 1024))
+    // Reuse a 1 MiB chunk to reach the 200 MiB limit without allocating 200 MiB in the test.
+    const chunk = Buffer.alloc(1024 * 1024)
+    for (let index = 0; index < 200; index++) child.stdout.emit('data', chunk)
     expect(child.kill).not.toHaveBeenCalled()
     child.stdout.emit('data', Buffer.from('x'))
 
@@ -341,6 +344,39 @@ describe('getClipboardImage', () => {
     expect(childProcessMock.spawn).toHaveBeenCalledTimes(1)
   })
 
+  it.each([undefined, 'wsl.sh', 'windows10.ps1'])(
+    'installs both WSL helpers with %s already present and passes the complete image path',
+    async existingHelper => {
+      platformMock.isWsl = true
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(2026, 8, 22, 12, 34, 56, 789))
+      const baseDir = path.join(createBaseDir(), 'WSL clipboard with spaces')
+      const existingContent = '# existing helper\n'
+      if (existingHelper) await fs.outputFile(path.join(baseDir, existingHelper), existingContent)
+      mockClipboardHelper('no image')
+      mockClipboardHelper('')
+
+      const result = getClipboardImage({ baseDir, emit: vi.fn() } as any)
+
+      // Both helpers must be installed before the launcher starts, including on partial installations.
+      for (const [filename, content] of [
+        ['wsl.sh', wslClipboardScript],
+        ['windows10.ps1', windows10ClipboardScript],
+      ]) {
+        expect(fs.readFileSync(path.join(baseDir, filename), 'utf8')).toBe(
+          filename === existingHelper ? existingContent : content,
+        )
+      }
+      expect(childProcessMock.spawn).toHaveBeenNthCalledWith(
+        1,
+        'sh',
+        [path.join(baseDir, 'wsl.sh'), path.join(baseDir, CLIPBOARD_IMAGE_FOLDER, '20260922123456789.png')],
+        expect.objectContaining({ windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] }),
+      )
+      await expect(result).resolves.toEqual({ imgPath: 'no image', shouldKeepAfterUploading: false })
+    },
+  )
+
   it('bounds WSL path conversion after a successful image helper exits', async () => {
     platformMock.isWsl = true
     vi.useFakeTimers()
@@ -373,7 +409,7 @@ describe('getClipboardImage', () => {
     const task = getClipboardImage({ baseDir, emit: vi.fn() } as any)
     const rejection = expect(task).rejects.toThrow(/^Clipboard image file does not exist$/)
 
-    await vi.advanceTimersByTimeAsync(10_000)
+    await vi.advanceTimersByTimeAsync(30_000)
 
     await rejection
     expect(conversionChild.kill).toHaveBeenCalledWith('SIGKILL')
@@ -433,7 +469,9 @@ describe('getClipboardImage', () => {
         })
       }
 
-      await vi.advanceTimersByTimeAsync(10_000)
+      await vi.advanceTimersByTimeAsync(29_999)
+      expect(child.kill).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
 
       await rejection
       expect(child.kill).toHaveBeenCalledExactlyOnceWith('SIGKILL')
@@ -460,7 +498,7 @@ describe('getClipboardImage', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(childProcessMock.spawn).toHaveBeenCalledTimes(2)
 
-    if (failure === 'timeout') await vi.advanceTimersByTimeAsync(10_000)
+    if (failure === 'timeout') await vi.advanceTimersByTimeAsync(30_000)
     else if (failure === 'error') textChild.emit('error', new Error('ENOENT'))
     else textChild.emit('close', 1, null)
 

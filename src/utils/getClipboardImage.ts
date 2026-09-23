@@ -334,9 +334,13 @@ const getClipboardImage = async (ctx: IPicGo): Promise<IClipboardImage> => {
   const imagePath = path.join(ctx.baseDir, CLIPBOARD_IMAGE_FOLDER, `${dayjs().format('YYYYMMDDHHmmssSSS')}.png`)
   const platform = getCurrentPlatform()
   const scriptPath = path.join(ctx.baseDir, platform2ScriptFilename[platform])
-  // If the script does not exist yet, we need to write the content to the script file
-  if (!fs.existsSync(scriptPath)) {
-    fs.writeFileSync(scriptPath, platform2ScriptContent[platform], 'utf8')
+  // The WSL launcher also needs the Windows extraction helper beside it.
+  const helperPlatforms: Platform[] = platform === 'wsl' ? ['wsl', 'win10'] : [platform]
+  for (const helperPlatform of helperPlatforms) {
+    const helperPath = path.join(ctx.baseDir, platform2ScriptFilename[helperPlatform])
+    if (!fs.existsSync(helperPath)) {
+      fs.writeFileSync(helperPath, platform2ScriptContent[helperPlatform], 'utf8')
+    }
   }
   let result: ClipboardHelperResult
   if (platform === 'darwin') {
