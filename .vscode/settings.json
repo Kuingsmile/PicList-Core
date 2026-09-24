@@ -1,58 +1,12 @@
 {
-  "[javascript]": {
+  "[javascript][javascriptreact][typescript][typescriptreact][json][json5][jsonc]": {
     "editor.codeActionsOnSave": {
       "source.fixAll.eslint": "always"
     },
     "editor.defaultFormatter": "dbaeumer.vscode-eslint",
     "editor.formatOnSave": false
   },
-  "[javascriptreact]": {
-    "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": "always"
-    },
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
-    "editor.formatOnSave": false
-  },
-  "[json]": {
-    "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": "always"
-    },
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
-    "editor.formatOnSave": false
-  },
-  "[json5]": {
-    "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": "always"
-    },
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
-    "editor.formatOnSave": false
-  },
-  "[jsonc]": {
-    "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": "always"
-    },
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
-    "editor.formatOnSave": false
-  },
-  "[markdown]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true
-  },
-  "[typescript]": {
-    "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": "always"
-    },
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
-    "editor.formatOnSave": false
-  },
-  "[typescriptreact]": {
-    "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": "always"
-    },
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
-    "editor.formatOnSave": false
-  },
-  "[yaml]": {
+  "[markdown][yaml]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },
