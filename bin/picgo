@@ -6,37 +6,51 @@ import minimist from 'minimist'
 
 import { PicGo } from '../dist/index.js'
 
-const argv = minimist(process.argv.slice(2))
-let configPath = argv.c || argv.config || ''
-if (configPath !== true && configPath !== '') {
-  configPath = configPath.replace(/^~/, homedir())
-  configPath = resolve(configPath)
-} else {
-  configPath = ''
+const argv = minimist(process.argv.slice(2), {
+  alias: {
+    c: 'config',
+  },
+  string: ['c', 'config'],
+})
+
+function resolveConfigPath(value) {
+  if (typeof value !== 'string' || value.length === 0) {
+    return ''
+  }
+
+  // Expand "~" only when it represents the home directory.
+  return resolve(value.replace(/^~(?=$|[\\/])/, homedir()))
 }
+
+const configPath = resolveConfigPath(argv.config)
 const picgo = await PicGo.create(configPath)
+
 picgo.registerCommands()
 
-/** Loads and runs the terminal UI only when both standard input and output are interactive. */
-const openTui = async () => {
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+const isInteractiveTerminal = () => Boolean(process.stdin.isTTY && process.stdout.isTTY)
+
+async function openTui() {
+  if (!isInteractiveTerminal()) {
     throw new Error('The TUI requires an interactive terminal. Use picgo --help for command-line usage.')
   }
   const { startTui } = await import('../dist/tui.js')
   await startTui(picgo)
 }
 
-picgo.cmd.program.command('tui').description(picgo.i18n.t('CLI_TUI')).action(openTui)
-picgo.cmd.program.action(async () => {
-  if (process.stdin.isTTY && process.stdout.isTTY && !picgo.getConfig('silent')) {
+const { program } = picgo.cmd
+
+program.command('tui').description(picgo.i18n.t('CLI_TUI')).action(openTui)
+program.action(async () => {
+  if (isInteractiveTerminal() && !picgo.getConfig('silent')) {
     await openTui()
-  } else {
-    picgo.cmd.program.outputHelp()
+    return
   }
+
+  program.outputHelp()
 })
 
 try {
-  await picgo.cmd.program.parseAsync(process.argv)
+  await program.parseAsync(process.argv)
 } catch (e) {
   console.error(e instanceof Error ? e.message : 'Unable to start PicList.')
   process.exitCode = 1
