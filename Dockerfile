@@ -1,4 +1,4 @@
-ARG NODE_IMAGE=node:22.21.1-alpine3.22@sha256:b2358485e3e33bc3a33114d2b1bdb18cdbe4df01bd2b257198eb51beb1f026c5
+ARG NODE_IMAGE=node:24.16.0-alpine3.22@sha256:191c9f0080fcbbc6547a85dc0ff7988072214a355aabdc1d2ec55a7dae5eea8a
 
 # Test and compile once natively; the packed JavaScript is platform independent.
 FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS build
