@@ -26,7 +26,7 @@ export const ZH_TW: ILocales = {
   CLI_SET:
     '設定 PicGo 模組：uploader|secondUploader|transformer|plugin|buildin。uploader 和 buildin 的 configName 可省略（預設為 "Default"）。secondUploader 的 name 和 configName 用於選擇已有圖床設定，省略時將互動式詢問。buildin 的 uploaderName 指定要關聯內建模組設定的圖床名稱。',
   CLI_UPLOAD: '上傳圖片',
-  CLI_USE: '選擇使用的 PicGo 模組',
+  CLI_USE: '選擇使用的 PicGo 模組。uploader 的 name 和 configName 用於選擇圖床及其預設設定，省略時將互動式詢問。',
   CLI_I18N: '切換語言，zh-CN、zh-TW、en',
   CLI_TUI: '開啟互動式終端介面',
   CLI_HELP: '顯示命令說明',

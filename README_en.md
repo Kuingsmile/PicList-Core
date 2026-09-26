@@ -307,7 +307,7 @@ Commands:
   config-show <uploader> [configName]           show details of a config
   set|config <module> [name] [configName]       configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").
   upload|u [options] [input...]                 upload, go go go
-  use [module]                                  use modules of picgo
+  use [module] [name] [configName]               use modules of picgo; select an uploader and its default saved config
   i18n [lang]                                   change language, zh-CN, zh-TW, en
   help [command]                                display help for command
 ```

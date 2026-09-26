@@ -24,7 +24,7 @@ export const ZH_CN = {
   CLI_SET:
     '配置 PicGo 模块：uploader|secondUploader|transformer|plugin|buildin。uploader 和 buildin 的 configName 可选（默认为 "Default"）。secondUploader 的 name 和 configName 用于选择已有图床配置，省略时将交互式询问。buildin 的 uploaderName 指定要关联内置模块配置的图床名称。',
   CLI_UPLOAD: '上传图片',
-  CLI_USE: '选择使用的 PicGo 模块',
+  CLI_USE: '选择使用的 PicGo 模块。uploader 的 name 和 configName 用于选择图床及其默认配置，省略时将交互式询问。',
   CLI_I18N: '切换语言，zh-CN、zh-TW、en',
   CLI_TUI: '打开交互式终端界面',
   CLI_HELP: '显示命令帮助',

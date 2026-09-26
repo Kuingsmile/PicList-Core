@@ -26,7 +26,8 @@ export const EN: ILocales = {
   CLI_SET:
     'configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader and buildin, configName is optional (defaults to "Default"). For secondUploader, name and configName select an existing uploader config; omitted values are prompted. For buildin module, uploaderName is the uploader name to which the buildin module config will be linked.',
   CLI_UPLOAD: 'upload, go go go',
-  CLI_USE: 'use modules of picgo',
+  CLI_USE:
+    'use modules of picgo. For uploader, name and configName select an uploader and its default saved config; omitted values are prompted.',
   CLI_I18N: 'change language, zh-CN, zh-TW, en',
   CLI_TUI: 'open the interactive terminal interface',
   CLI_HELP: 'display help for command',
