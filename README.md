@@ -1,375 +1,296 @@
+<div align="center">
+
+<img src="./logo.png" alt="PicList" width="96" />
+
 # PicList-Core
 
-[English](./README_en.md) | [简体中文](./README.md)
+**在终端、应用和服务中上传与处理图片。**
 
-![standard](https://img.shields.io/badge/code%20style-standard-green.svg?style=flat-square)
-![GitHub](https://img.shields.io/github/license/mashape/apistatus.svg?style=flat-square)
+[![npm version](https://img.shields.io/npm/v/piclist?style=flat-square)](https://www.npmjs.com/package/piclist)
+[![Node.js](https://img.shields.io/badge/Node.js-22.13%2B%20%2822.x%29-5FA04E?style=flat-square)](./package.json)
+[![MIT License](https://img.shields.io/github/license/Kuingsmile/PicList-Core?style=flat-square)](./License)
 
-![picgo-core](https://cdn.jsdelivr.net/gh/Molunerfinn/test/picgo/picgo-core-fix.jpg)
+[English](./README_en.md) | **简体中文**
 
-PicList-Core 是一个功能强大的图片上传工具，提供 CLI 和 API 两种调用方式。它在 PicGo-Core 的基础上增强了功能，同时保持插件兼容性。查看
-[Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) 获取丰富的插件资源。
+[快速开始](#快速开始) · [命令行与终端界面](#命令行与终端界面) · [配置](#配置) · [HTTP 服务](#http-服务) ·
+[Docker](#docker) · [Node.js API](#nodejs-api)
 
-你可以查看 [PiclList-Core 的 DeepWiki](https://deepwiki.com/Kuingsmile/PicList-Core/) 获取更多信息。
+</div>
 
-**原生支持 Typora 集成**。
+PicList-Core 是基于 PicGo-Core 的图片上传工具，提供交互式终端界面、命令行、Node.js
+API 和 HTTP 服务。它扩展了图片处理、图床多配置和第二图床上传功能，支持 PicGo 插件生态，并兼容 PicList 桌面版配置文件。
 
-## 增强功能
+## 功能亮点
 
-- **多配置支持**：
-  - 每个图床支持多个配置，兼容桌面版PicList配置文件
-  - 通过 `picgo config list <uploader>` 列出所有配置
-  - 通过 `picgo config use <uploader> <configName>` 切换默认配置
-  - 通过 `picgo config remove <uploader> <configName>` 删除配置
-  - 通过 `picgo config rename <uploader> <oldName> <newName>` 重命名配置
-  - 通过 `picgo config show <uploader> [configName]` 查看配置详情
-  - 通过 `picgo config edit <uploader> [configName]` 编辑已有配置（省略配置名称时编辑当前默认配置）
+- **灵活上传** — 支持本地文件、图片 URL 和剪贴板图片，可集成 Typora 等工具。
+- **内置多种图床** — 支持 GitHub、SM.MS、Imgur、阿里云 OSS、腾讯云 COS、七牛云、又拍云、Amazon
+  S3、WebDAV、SFTP、本地目录、AList、兰空图床和 PicList 服务。
+- **多账号管理** — 为每个图床保存多套命名配置，切换上传目标时无需重新输入凭据。
+- **图片处理** — 上传前压缩图片、转换格式、添加水印，并按自定义规则重命名。
+- **第二图床上传** — 将图片同时保存到另一上传目标，可共享或独立处理图片。
+- **插件与多语言** — 支持 PicGo 插件，以及英文、简体中文和繁体中文界面。
 
-- **第二图床上传**：
-  - 通过 `picgo set secondUploader [uploader] [configName]` 启用或禁用第二图床上传，并选择已有图床配置
-  - 示例：`picgo set secondUploader github "Backup account"`；省略图床或配置名称时会显示选择提示
-  - 支持共享主图床处理后的文件（`shared`）或独立处理原始文件（`separate`，旧配置中的 `seperate` 会自动迁移）
-  - 修改或重命名所选原始配置时会同步更新
-    `picBed.secondUploaderConfig`；删除原始配置时会清空第二图床选择并禁用第二图床上传
+## 快速开始
 
-- **图像处理能力**：
-  - 添加水印、压缩图片和转换格式
-  - 通过 `picgo set buildin watermark` 和 `picgo set buildin compress` CLI 命令进行配置
-  - 处理过程发生在 beforeTransform 阶段，确保与所有插件兼容
-
-- **高级重命名**：
-  - 通过 `picgo set buildin rename` 设置自定义重命名规则
-
-- **额外内置图床**：
-  - WebDAV、SFTP、本地路径、AWS S3
-  - 改进的 Imgur 支持，支持账户上传
-
-- **内置服务器**：
-  - 类似于 PicList-Desktop 服务器
-  - 使用 `picgo-server` 命令启动
-
-- **错误修复**：
-  - 解决了原始 PicGo-Core 的多个问题
-
-## 安装
-
-PicList 需要 Node.js >= 22
-
-### 前置条件
-
-PicList 依赖 [sharp](https://sharp.pixelplumbing.com/)，请先安装它：
+需要 **Node.js 22.13.0 或更高的 22.x 版本**。
 
 ```bash
-npm config set sharp_binary_host "https://npmmirror.com/mirrors/sharp"
-npm config set sharp_libvips_binary_host "https://npmmirror.com/mirrors/sharp-libvips"
-npm install sharp
+npm install -g piclist
+picgo init
+picgo upload ./image.png
 ```
 
-### 全局安装
+`picgo init` 会引导你选择图床、命名配置并填写连接信息。保存后，该配置将成为默认上传目标。请在交互式终端中运行此命令。
+
+也可以通过 `yarn global add piclist` 安装。`sharp` 等图片处理依赖会随安装包一起安装。
+
+npm 包名为 `piclist`，安装后使用的命令为 **`picgo`** 和 **`picgo-server`**。
+
+## 命令行与终端界面
+
+### 上传图片
 
 ```bash
-npm install piclist -g
+# 上传一个或多个文件
+picgo upload ./image.png "./My Pictures/photo.jpg"
 
-# 或者
+# 上传网络图片
+picgo upload https://example.com/image.png
 
-yarn global add piclist
+# 上传剪贴板图片
+picgo upload
+
+# 为本次上传指定图床和已保存的配置
+picgo upload ./image.png --picbed github --configName "Work"
 ```
 
-### 本地安装
+`picgo u` 是 `picgo upload` 的简写。包含空格的路径需要加引号，剪贴板图片会以 PNG 格式上传。
+
+`--picbed` 和 `--configName` 仅对本次上传生效。省略 `--picbed` 时使用当前图床，省略 `--configName`
+时使用该图床的默认配置。这些选项也适用于 URL、多个文件和剪贴板上传。
+
+在 Typora 中，将自定义上传命令设置为 `picgo upload`，并提前配置好上传目标。如果 Typora 找不到
+`picgo`，请使用可执行文件的完整路径。
+
+### 交互式终端
+
+在交互式终端中运行 `picgo` 或 `picgo tui`，即可管理上传、上传目标、图片处理和设置。首次使用请选择 **设置上传目标（Set up
+a destination）**，随后即可上传图片并复制 URL 或 Markdown 图片链接。
+
+| 快捷键                    | 操作                               |
+| ------------------------- | ---------------------------------- |
+| `Tab` 或 `←` / `→`        | 切换分组                           |
+| `↑` / `↓`，然后按 `Enter` | 选择并打开操作                     |
+| `/`                       | 搜索操作                           |
+| `r`                       | 查看最近的上传结果                 |
+| `c` / `m`                 | 复制所选结果的 URL / Markdown 链接 |
+| `Esc`                     | 取消当前表单                       |
+| `q`                       | 从菜单退出                         |
+
+使用 `picgo --help` 或 `picgo <command> --help` 查看完整命令说明。在非交互式终端中，直接运行 `picgo`
+会显示帮助；指定子命令的调用仍可用于脚本。
+
+## 配置
+
+### 配置文件
+
+CLI 和服务端默认使用 `~/.piclist/data.json`。如果该文件不存在，则使用已有的
+`~/.piclist/config.json`。两个文件同时存在时，优先使用 `data.json`。
+
+通过 `-c` 指定其他 JSON 配置文件：
 
 ```bash
-npm install piclist -D
-
-# 或者
-
-yarn add piclist -D
+picgo -c /path/to/data.json init
+picgo -c /path/to/data.json upload ./image.png
+picgo-server -c /path/to/data.json --host 127.0.0.1
 ```
 
-## 使用方法
+### 多配置管理
 
-### Docker
-
-你可以使用Docker运行PicList-Core。
-
-#### 从源码构建
+每个图床可以保存多套配置，例如个人账号和工作账号。以下命令创建一套 GitHub 配置，并将其设为当前上传目标：
 
 ```bash
-docker build -t piclist:local .
-docker run --rm piclist:local node -p "require('/usr/local/lib/node_modules/piclist/package.json').version"
+picgo set uploader github "Work"
+picgo use uploader github "Work"
 ```
 
-构建使用固定版本的 Node 22 镜像，按照 `yarn.lock`
-安装依赖，运行类型检查和测试后打包当前源码。运行镜像安装该压缩包及锁定版本的生产依赖。构建和发布流程都会在发布前检查镜像中安装的包版本是否与当前源码的
-`package.json` 一致。
+| 命令                                       | 用途                     |
+| ------------------------------------------ | ------------------------ |
+| `picgo config list github`                 | 列出 GitHub 的已保存配置 |
+| `picgo config use github "Work"`           | 设置 GitHub 的默认配置   |
+| `picgo config edit github "Work"`          | 编辑已有配置             |
+| `picgo config show github "Work"`          | 查看配置详情             |
+| `picgo config rename github "Work" "Team"` | 重命名配置               |
+| `picgo config remove github "Team"`        | 删除配置                 |
 
-#### 使用 GitHub Actions 构建和下载镜像
+将 `github` 替换为所需图床的 ID。`picgo use uploader` 用于切换当前图床，`picgo config use`
+用于选择某个图床的默认配置。更多选项请运行 `picgo config --help` 查看。
 
-打开 **Actions → Build Docker Image → Run workflow**，选择要测试的分支（通常为 `dev`）。将 `tag`
-留空，即可构建该分支在触发时的最新提交；也可以输入已有的 Git 标签（例如 `v2.4.2`）来构建发布版本。分支构建使用
-`sha-<12 位提交哈希>`
-作为镜像标签和构建产物文件名的一部分。推送标签不会自动触发此工作流。GitHub 的自定义下拉选项是静态的，因此这里使用可选的文本输入指定标签，再显式检出对应源码；两个架构使用同一个解析后的源码提交。Dockerfile 和
-`.dockerignore`
-使用工作流所在提交的版本，避免历史 Dockerfile 安装最新 npm 包而不是构建指定标签的源码。大小报告会同时记录源码提交和构建配置提交。
+### 图片处理与第二图床
 
-保持 `enable_push` 未勾选，即可在不配置 Docker Hub 凭据、不发布镜像的情况下构建。AMD64 在 `ubuntu-24.04`
-上构建和测试，ARM64 在 `ubuntu-24.04-arm` 上原生构建和测试，无需 QEMU；两个架构使用独立的构建缓存。运行摘要会显示各
-`.tar.gz` 镜像压缩包的大小和下载链接。构建产物保留 14 天，包含镜像压缩包、`SHA256SUMS`
-和大小报告。此处统计的是下载文件的压缩大小，可能与 Docker Hub 显示的压缩层大小不同。
-
-下载并解压对应架构的构建产物后，即可导入本地 Docker（将示例标签替换为 Git 标签或生成的 `sha-…` 镜像标签）：
+通过交互式提示配置图片处理：
 
 ```bash
-sha256sum -c SHA256SUMS
-docker load --input piclist-v2.4.2-linux-amd64.tar.gz
-docker run --rm kuingsmile/piclist:v2.4.2-amd64 picgo --version
+picgo set buildin compress
+picgo set buildin watermark
+picgo set buildin rename
 ```
 
-需要发布时勾选 `enable_push`。两个架构均通过验证后，工作流直接发布已验证的镜像为 `<image-tag>-amd64` 和
-`<image-tag>-arm64`，并合并为多架构 `<image-tag>`，不会重新构建。仅在需要将 `latest` 更新到该版本时勾选
-`update_latest`。发布使用仓库密钥 `DOCKERHUB_USERNAME` 和 `DOCKERHUB_ACCESS_TOKEN`。
+若要将图片再上传一份到另一图床，请选择已保存的上传目标配置：
 
-#### docker run
+```bash
+picgo set secondUploader github "Backup"
+```
 
-将`./piclist`更改为你自己的路径，该路径是放置`data.json`（或旧版`config.json`）文件的位置，并将`piclist123456`更改为你自己的密钥。
+设置过程中可以启用或禁用第二图床，并选择 **共享处理（shared）**（复用主图床处理后的图片）或
+**独立处理（separate）**（从原图单独处理）。不带参数运行 `picgo set secondUploader`，即可交互式选择上传目标。
+
+### 插件与语言
+
+在 [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) 中查找插件，并将 `picgo-plugin-<name>`
+替换为要使用的插件包名：
+
+```bash
+picgo install picgo-plugin-<name>
+picgo list
+picgo update picgo-plugin-<name>
+picgo uninstall picgo-plugin-<name>
+```
+
+使用 `picgo set plugin` 配置插件，使用 `picgo use plugins` 启用插件。修改插件后，请重启已打开的终端界面或服务。
+
+通过 `picgo i18n en`、`picgo i18n zh-CN` 或 `picgo i18n zh-TW` 切换界面和命令帮助的语言。
+
+## HTTP 服务
+
+先配置上传目标，再启动服务：
+
+```bash
+picgo-server --host 127.0.0.1 --key "your-secret-key"
+```
+
+默认端口为 `36677`。省略 `--host` 时，服务监听 `0.0.0.0`。接受远程上传时请使用 `--key`，并将 `your-secret-key`
+替换为自己的密钥；本机回环请求不校验密钥。
+
+| 参数                  | 用途                   |
+| --------------------- | ---------------------- |
+| `-c, --config <path>` | 指定 JSON 配置文件     |
+| `-p, --port <port>`   | 设置监听端口           |
+| `--host <host>`       | 设置监听地址           |
+| `-k, --key <key>`     | 设置远程上传请求的密钥 |
+| `-h, --help`          | 显示服务帮助           |
+
+通过 `POST /upload`，以 `multipart/form-data` 格式发送文件：
+
+```bash
+curl -X POST "http://127.0.0.1:36677/upload?key=your-secret-key" \
+  -F "file=@./image.png"
+```
+
+也可以设置 `Content-Type: application/json` 并发送 JSON，例如
+`{"list":["/absolute/path/image.png"]}`。文件路径必须能被服务端访问，也支持图片 URL。可选查询参数 `picbed` 和
+`configName` 用于为本次请求指定图床和配置。上传成功时返回 `{"success":true,"result":["..."]}`。
+
+通过 `GET /heartbeat` 检查服务是否可用，或在浏览器中打开 `http://127.0.0.1:36677/` 查看接口使用示例。
+
+## Docker
+
+使用 `kuingsmile/piclist` 镜像启动服务，并挂载配置目录以保留数据：
 
 ```bash
 docker run -d \
   --name piclist \
-  --restart always \
+  --restart unless-stopped \
   -p 36677:36677 \
   -v "./piclist:/root/.piclist" \
   kuingsmile/piclist:latest \
-  node /usr/local/bin/picgo-server -k piclist123456
+  node /usr/local/bin/picgo-server --key "your-secret-key"
 ```
 
-#### docker-compose
+将 `your-secret-key` 替换为自己的密钥。`./piclist` 目录用于保存配置和已安装的插件。启动前可将已有的 `data.json`（或旧版
+`config.json`）复制到该目录，也可以在运行中的容器内配置图床：
 
-从本仓库下载`docker-compose.yml`，或将以下内容复制到`docker-compose.yml`:
+```bash
+docker exec -it piclist picgo set uploader
+docker exec -it piclist picgo use uploader
+docker restart piclist
+```
+
+使用 `docker exec -it piclist picgo install picgo-plugin-<name>` 安装插件后，请重启容器以加载插件。
+
+<details>
+<summary>Docker Compose</summary>
+
+将以下内容保存为 `compose.yaml`，替换密钥，并按需调整挂载目录：
 
 ```yaml
-version: '3.3'
-
 services:
-  node:
-    image: 'kuingsmile/piclist:latest'
+  piclist:
+    image: kuingsmile/piclist:latest
     container_name: piclist
-    restart: always
+    restart: unless-stopped
     ports:
-      - 36677:36677
+      - '36677:36677'
     volumes:
       - './piclist:/root/.piclist'
-    command: node /usr/local/bin/picgo-server -k piclist123456
+    command: ['node', '/usr/local/bin/picgo-server', '--key', 'your-secret-key']
 ```
-
-你可以将`./piclist`更改为你自己的路径，该路径是放置`data.json`（或旧版`config.json`）文件的位置，并在`command`中更改密钥。
-
-然后运行:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
-#### 在Docker中安装插件
+启动后，可使用上面的 `docker exec` 命令配置上传目标。
 
-你可以使用`docker exec`在Docker中安装插件。
+</details>
+
+## Node.js API
+
+在应用中安装 PicList 依赖：
 
 ```bash
-docker exec -it piclist sh
-picgo install picgo-plugin-xxx
+npm install piclist
 ```
 
-#### 在Docker中更新配置
-
-你可以使用`docker exec`在Docker中更新配置。
-
-```bash
-docker exec -it piclist sh
-picgo set xxx
-```
-
-### 服务器
-
-你可以使用`picgo-server`启动服务器，默认端口为`36677`。
-
-启动服务器:
-
-```bash
-picgo-server
-node ./bin/picgo-server
-```
-
-> 强烈建议添加`--key`参数以避免未经授权的访问。例如：`picgo-server --key 123456`
-
-显示帮助:
-
-```bash
-$ picgo-server -h
-
-  Usage: picgo-server [options]
-
-  Options:
-
-    -h, --help          显示帮助信息
-    -c, --config        设置配置路径
-    -p, --port          设置端口，默认端口为36677
-    --host              设置主机，默认主机为0.0.0.0
-    -k, --key           设置密钥以避免未经授权的访问
-    -v, --version       显示版本号
-
-  Examples:
-    picgo-server -c /path/to/data.json
-    picgo-server -k 123456
-    picgo-server -c /path/to/data.json -k 123456
-```
-
-#### 接口
-
-- `/upload?picbed=xxx&key=xxx` 上传图片，`picbed`用于设置图床，`key`用于设置密钥
-- `/heartbeat` 心跳检测
-
-### CLI使用
-
-> PicList-Core使用`SM.MS`作为默认上传图床。
-
-在交互式终端中运行 `picgo` 即可打开基于 Ink 的终端界面，也可以使用 `picgo tui` 显式启动。使用
-`picgo -c /path/to/data.json` 指定配置文件。本地开发时先运行 `yarn build`，再运行 `yarn start`。
-
-CLI 和服务端默认使用 `~/.piclist/data.json`。如果该文件不存在，则继续读取和更新已有的 `~/.piclist/config.json`。
-两个文件同时存在时，优先使用 `data.json`。显式指定的配置路径（包括 `-c /path/to/config.json`）仍然有效。
-
-首次使用也可以运行 `picgo init`，按提示选择图床、输入配置名称和图床参数。完成后，该配置会成为当前默认上传目标。运行
-`picgo -c /path/to/data.json init` 可将设置保存到指定配置文件；默认按上述规则选择配置文件。
-同名配置会在确认后更新，其他配置和设置会保留。凭据输入会隐藏，更新已有配置时需要重新输入凭据。按
-**Ctrl+C** 可取消设置；此命令需要交互式终端。
-
-界面支持文件/URL 和剪贴板上传、图床切换、多配置管理、第二图床、图片处理、转换器、插件、上传代理和语言设置。首次使用请选择
-**设置上传目标（Set up a destination）** 添加图床配置。粘贴包含空格的路径时请加引号，例如 `"C:\My Pictures\photo.png"`
-或 `"/home/me/My Pictures/photo.png"`。上传进度和结果链接会显示在界面中。
-
-工作区按 **Upload**、**Destinations**、**Processing**、**Settings** 分组。用 **Tab**、**←/→** 或 **1–4**
-切换分组，**↑/↓** 移动，**Enter** 打开操作，**/** 搜索所有操作。首次使用可选择 **Set up a destination** 完成引导设置。
-
-就绪状态会检查上传器的必填字段及已有验证规则，已保存的空令牌仍会提示需要设置。在 **上传目标 → 检查连接**
-中可确认上传小型测试图片，使用当前图片处理和备份设置。测试图片会保留在各上传目标中，本地临时输入文件会自动清理。
-
-表单提供字段进度、即时校验和选项搜索（**/**）。用 **Space** 切换多选项、**Ctrl+U** 清空输入、**Esc** 取消表单。按 **r**
-查看最近的结果，修改设置后结果仍保留；用 **↑/↓** 选择结果，**c** 复制链接，**m** 复制 Markdown 图片链接，**PgUp/PgDn**
-滚动查看长链接。复制功能在 Windows/WSL 使用 PowerShell，在 macOS 使用 `pbcopy`，在 Linux 使用 `wl-copy`、`xclip` 或
-`xsel`。剪贴板不可用时仍可手动复制显示的链接。在菜单中按 **q** 退出。**Ctrl+C**
-会取消表单并退出；如果上传或 npm 操作已经开始，则等待操作完成后退出。凭据字段会隐藏输入内容，TUI 操作不会将服务商响应或表单值写入 PicList 日志。修改插件后请重启 PicList 以重新加载插件代码。**设置 → 语言**
-会立即更新导航、搜索、快捷键说明和表单，使用已有的英文、简体中文和繁体中文语言系统。
-
-参见 [UI 设计说明](docs/tui-design.md) 和 [交互设计预览](docs/tui-design.html)。
-
-`picgo upload ...`、`picgo set ...` 以及插件提供的命令仍可使用。在非交互环境（如输出被重定向）中，直接运行 `picgo`
-将显示帮助，`picgo tui` 将提示需要交互式终端。`picgo-server` 和 Node API 的使用方式保持不变。
-
-显示帮助:
-
-```bash
-$ picgo -h
-
-Usage: picgo [options] [command]
-
-Options:
-  -v, --version                                 output the version number
-  -d, --debug                                   debug mode
-  -s, --silent                                  silent mode
-  -c, --config <path>                           set config path
-  -p, --proxy <url>                             set proxy for uploading
-  -h, --help                                    display help for command
-
-Commands:
-  init                                          set up an uploader interactively
-  tui                                           open the interactive terminal interface
-  list|ls                                       list installed plugins
-  install|add [options] <plugins...>            install picgo plugin
-  uninstall|rm <plugins...>                     uninstall picgo plugin
-  update|up [options] <plugins...>              update picgo plugin
-  config                                       manage saved uploader configurations
-  set <module> [name] [configName]              configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").
-  upload|u [options] [input...]                 upload, go go go
-  use [module] [name] [configName]               use modules of picgo; select an uploader and its default saved config
-  i18n [lang]                                   change language, zh-CN, zh-TW, en
-  help [command]                                display help for command
-```
-
-运行 `picgo config --help` 可查看 `list`、`use`、`remove`、`rename`、`show` 和 `edit` 子命令。
-
-#### 从路径上传图片
-
-```bash
-picgo upload /xxx/xx/xx.jpg
-```
-
-#### 从剪贴板上传图片
-
-> 从剪贴板获取的图片将被转换为`png`格式
-
-```bash
-picgo upload
-```
-
-#### 上传到指定图床或命名配置
-
-使用 `--picbed <uploader>` 指定图床，使用 `--configName <name>` 指定已保存的配置。
-省略 `--picbed` 时，从当前图床中选择配置；省略 `--configName` 时，使用指定图床的当前配置。
-这些选项仅对本次上传生效，不会更改已保存的默认设置，也支持 `u` 别名、URL、多个文件及剪贴板上传。
-
-```bash
-picgo upload /xxx/xx/xx.jpg --picbed github
-picgo upload /xxx/xx/xx.jpg --picbed aws-s3 --configName "Work account"
-picgo upload /xxx/xx/xx.jpg --configName "Work account"
-picgo upload --picbed aws-s3 --configName "Work account"
-```
-
-### 在Node项目中使用
-
-#### CommonJS
-
-```js
-const { PicGo } = require('piclist')
-```
-
-#### ES模块
+先通过 CLI 配置上传目标，再在应用中使用同一份配置。将以下示例保存为 ES 模块（`.mjs` 文件，或在声明了 `"type": "module"`
+的项目中使用 `.js` 文件）：
 
 ```js
 import { PicGo } from 'piclist'
+
+const picgo = await PicGo.create()
+const images = await picgo.upload(['/absolute/path/image.png'])
 ```
 
-#### API使用示例
+`PicGo.create()` 会在使用前完成客户端初始化。如需加载其他配置，可传入 JSON 文件路径：
+`await PicGo.create('/path/to/data.json')`。不带参数调用 `await picgo.upload()`，即可上传剪贴板图片。
+
+<details>
+<summary>CommonJS</summary>
+
+在异步函数中使用动态 `import()`：
 
 ```js
-const picgo = new PicGo()
+async function uploadImage() {
+  const { PicGo } = await import('piclist')
+  const picgo = await PicGo.create()
+  return picgo.upload(['/absolute/path/image.png'])
+}
 
-// 从路径上传图片
-picgo.upload(['/xxx/xxx.jpg'])
-
-// 从剪贴板上传图片
-picgo.upload()
+uploadImage().catch(console.error)
 ```
 
-#### 插件中的国际化
+</details>
 
-`ctx.i18n.t()` 在 TypeScript 中检查内置翻译键和 `${placeholder}` 参数，解构后也会使用当前语言：
+## 相关资源
 
-```ts
-const { t } = ctx.i18n
-t('UPLOAD_FAILED')
-t('UPLOAD_FAILED_REASON', { code: 403 })
-```
+- [PicList 官网](https://piclist.cn) — 使用文档与桌面应用。
+- [DeepWiki](https://deepwiki.com/Kuingsmile/PicList-Core/) — 更多项目文档。
+- [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) — 社区插件与集成。
+- [版本发布](https://github.com/Kuingsmile/PicList-Core/releases) — 版本历史。
+- [问题反馈](https://github.com/Kuingsmile/PicList-Core/issues) — 报告问题或提出功能建议。
 
-插件可以继续使用 `addLocale()` 和 `translate()` 处理自定义或动态生成的翻译键，无需修改现有调用：
+## 许可证
 
-```js
-ctx.i18n.addLocale('zh-CN', { PIC_MIGRATER_CHOOSE_FILE: '[ZH] Choose File' })
-ctx.i18n.addLocale('en', { PIC_MIGRATER_CHOOSE_FILE: 'Choose File' })
-ctx.i18n.translate('PIC_MIGRATER_CHOOSE_FILE')
-```
-
-`addLocale()` 合并已有语言的翻译，新增语言请使用
-`addLanguage()`。两种翻译方法都会读取更新后的翻译，并在消息缺失或为空时返回翻译键。仍然支持 `i18n-cli/*.yml`
-自定义语言文件，注册的翻译仅作用于当前 PicGo 实例。
-
-CLI 命令和选项的说明也会使用配置的语言。运行 `picgo i18n zh-CN`（或 `zh-TW` / `en`），然后查看 `picgo --help` 或
-`picgo install --help`。自定义语言可以覆盖 `CLI_*` 翻译键。
+本项目采用 [MIT 许可证](./License)，基于 [PicGo-Core](https://github.com/PicGo/PicGo-Core)
+开发，感谢原作者及 PicGo 社区的贡献。

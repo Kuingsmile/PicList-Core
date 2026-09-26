@@ -1,393 +1,307 @@
+<div align="center">
+
+<img src="./logo.png" alt="PicList" width="96" />
+
 # PicList-Core
 
-[English](./README_en.md) | [简体中文](./README.md)
+**Upload and process images from your terminal, apps, and server.**
 
-![standard](https://img.shields.io/badge/code%20style-standard-green.svg?style=flat-square)
-![GitHub](https://img.shields.io/github/license/mashape/apistatus.svg?style=flat-square)
-![node](https://img.shields.io/badge/node-%3E%3D16.0.0-blue?style=flat-square)
+[![npm version](https://img.shields.io/npm/v/piclist?style=flat-square)](https://www.npmjs.com/package/piclist)
+[![Node.js](https://img.shields.io/badge/Node.js-22.13%2B%20%2822.x%29-5FA04E?style=flat-square)](./package.json)
+[![MIT License](https://img.shields.io/github/license/Kuingsmile/PicList-Core?style=flat-square)](./License)
 
-![picgo-core](https://cdn.jsdelivr.net/gh/Molunerfinn/test/picgo/picgo-core-fix.jpg)
+**English** | [简体中文](./README.md)
 
-A powerful tool for image uploading with both CLI & API support. PicList-Core extends PicGo-Core with additional
-features while maintaining plugin compatibility. Check out [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) for a
-collection of powerful plugins.
+[Quick start](#quick-start) · [CLI](#cli) · [Configuration](#configuration) · [HTTP server](#http-server) ·
+[Docker](#docker) · [Node.js API](#nodejs-api)
 
-You can refer to the [DeepWiki of PiclList-Core](https://deepwiki.com/Kuingsmile/PicList-Core/) for more information.
+</div>
 
-**Natively supports Typora integration**.
+PicList-Core is an image upload toolkit built on PicGo-Core, with an interactive terminal interface, scriptable
+commands, a Node.js API, and an HTTP server. It adds image processing, multiple configurations per uploader, and
+secondary uploads, while supporting the PicGo plugin ecosystem and configuration files from PicList Desktop.
 
-## Enhanced Features
+## Features
 
-- **Multi-configuration support**:
-  - Each uploader supports multiple configurations, compatible with PicList-Desktop config files
-  - List all configurations via `picgo config list <uploader>`
-  - Switch default configuration via `picgo config use <uploader> <configName>`
-  - Remove configuration via `picgo config remove <uploader> <configName>`
-  - Rename configuration via `picgo config rename <uploader> <oldName> <newName>`
-  - View configuration details via `picgo config show <uploader> [configName]`
-  - Edit an existing configuration via `picgo config edit <uploader> [configName]` (defaults to the uploader's current
-    default)
+- **Flexible uploads** — upload local files, image URLs, or clipboard images; integrate with Typora and other tools.
+- **Built-in destinations** — use GitHub, SM.MS, Imgur, Alibaba Cloud OSS, Tencent Cloud COS, Qiniu, Upyun, Amazon S3,
+  WebDAV, SFTP, local folders, AList, Lsky Pro, and PicList servers.
+- **Multiple accounts** — save named configurations and switch destinations without re-entering credentials.
+- **Image processing** — compress, convert formats, add watermarks, and apply custom filename rules before uploading.
+- **Secondary uploads** — keep a second copy at another destination, with shared or separate image processing.
+- **Extensible and multilingual** — add PicGo plugins and use English, Simplified Chinese, or Traditional Chinese.
 
-- **Secondary upload**:
-  - Run `picgo set secondUploader [uploader] [configName]` to enable or disable secondary upload and select an existing
-    uploader configuration
-  - Example: `picgo set secondUploader github "Backup account"`; omitted uploader and configuration names are prompted
-  - Choose whether to share the primary uploader's processed files (`shared`) or process the originals separately
-    (`separate`; legacy `seperate` settings are migrated automatically)
-  - Editing or renaming the selected source configuration updates `picBed.secondUploaderConfig`; deleting it clears the
-    secondary selection and disables secondary upload
+## Quick start
 
-- **Image processing capabilities**:
-  - Add watermarks, compress images, and convert formats
-  - Configure via `picgo set buildin watermark` and `picgo set buildin compress` CLI commands
-  - Processing happens during beforeTransform phase, ensuring compatibility with all plugins
-
-- **Advanced renaming**:
-  - Set custom rename rules via `picgo set buildin rename`
-
-- **Additional built-in image hosting services**:
-  - WebDAV, SFTP, Local path, AWS S3
-  - Improved Imgur support with account-based uploads
-
-- **Built-in server**:
-  - Similar to PicList-Desktop server
-  - Launch with `picgo-server` command
-
-- **Bug fixes**:
-  - Addresses several issues from the original PicGo-Core
-
-## Installation
-
-PicList requires Node.js >= 22
-
-### Prerequisites
-
-PicList depends on [sharp](https://sharp.pixelplumbing.com/). Install it first:
+Requires **Node.js 22.13.0 or later in the 22.x release line**.
 
 ```bash
-npm config set sharp_binary_host "https://npmmirror.com/mirrors/sharp"
-npm config set sharp_libvips_binary_host "https://npmmirror.com/mirrors/sharp-libvips"
-npm install sharp
+npm install -g piclist
+picgo init
+picgo upload ./image.png
 ```
 
-### Global install
+`picgo init` guides you through choosing an uploader, naming its configuration, and entering connection details. The
+saved configuration becomes your default upload destination. Run setup in an interactive terminal.
+
+You can also install with `yarn global add piclist`. Image-processing dependencies, including `sharp`, are included in
+the package installation.
+
+The npm package is named `piclist`; its commands are **`picgo`** and **`picgo-server`**.
+
+## CLI
+
+### Upload images
 
 ```bash
-npm install piclist -g
+# Upload one or more files
+picgo upload ./image.png "./My Pictures/photo.jpg"
 
-# or
+# Upload an image from a URL
+picgo upload https://example.com/image.png
 
-yarn global add piclist
+# Upload from the clipboard
+picgo upload
+
+# Choose a destination and saved configuration for this upload
+picgo upload ./image.png --picbed github --configName "Work"
 ```
 
-### Local install
+`picgo u` is an alias for `picgo upload`. Quote paths containing spaces. Clipboard images are uploaded as PNG files.
+
+`--picbed` and `--configName` apply only to the current upload. Omit `--picbed` to use the current uploader; omit
+`--configName` to use that uploader's default configuration. These options also work with URLs, multiple files, and
+clipboard uploads.
+
+For Typora, set the custom upload command to `picgo upload` after configuring your destination. Use the full path to the
+`picgo` executable if Typora cannot find it.
+
+### Interactive terminal
+
+Run `picgo` or `picgo tui` in an interactive terminal to manage uploads, destinations, processing, and settings. Choose
+**Set up a destination** to get started, then upload images and copy their URLs or Markdown links.
+
+| Shortcut                | Action                                         |
+| ----------------------- | ---------------------------------------------- |
+| `Tab` or `←` / `→`      | Switch sections                                |
+| `↑` / `↓`, then `Enter` | Select and open an action                      |
+| `/`                     | Search actions                                 |
+| `r`                     | Reopen recent upload results                   |
+| `c` / `m`               | Copy the selected result's URL / Markdown link |
+| `Esc`                   | Cancel the current form                        |
+| `q`                     | Quit from the menu                             |
+
+Use `picgo --help` or `picgo <command> --help` for the full command reference. Without an interactive terminal, bare
+`picgo` displays help; explicit commands remain available for scripts.
+
+## Configuration
+
+### Configuration file
+
+The CLI and server use `~/.piclist/data.json` by default. If it does not exist, an existing `~/.piclist/config.json` is
+used instead. When both files exist, `data.json` takes precedence.
+
+Use `-c` to select another JSON configuration file:
 
 ```bash
-npm install piclist -D
-
-# or
-
-yarn add piclist -D
+picgo -c /path/to/data.json init
+picgo -c /path/to/data.json upload ./image.png
+picgo-server -c /path/to/data.json --host 127.0.0.1
 ```
 
-## Usage
+### Named configurations
 
-### Docker
-
-You can use docker to run PicList-Core.
-
-#### Build from a checkout
+Each uploader can store multiple configurations, such as personal and work accounts. For example, create a GitHub
+configuration and make it the active upload destination:
 
 ```bash
-docker build -t piclist:local .
-docker run --rm piclist:local node -p "require('/usr/local/lib/node_modules/piclist/package.json').version"
+picgo set uploader github "Work"
+picgo use uploader github "Work"
 ```
 
-The build uses a pinned Node 22 image, installs dependencies from `yarn.lock`, runs the type check and tests, and packs
-the checkout. The runtime installs that tarball with its locked production dependencies. Both the build and release
-workflow check the installed package version against the checkout's `package.json` before publishing.
+| Command                                    | Purpose                            |
+| ------------------------------------------ | ---------------------------------- |
+| `picgo config list github`                 | List saved GitHub configurations   |
+| `picgo config use github "Work"`           | Set GitHub's default configuration |
+| `picgo config edit github "Work"`          | Edit a saved configuration         |
+| `picgo config show github "Work"`          | Show configuration details         |
+| `picgo config rename github "Work" "Team"` | Rename a configuration             |
+| `picgo config remove github "Team"`        | Remove a configuration             |
 
-#### Build and download an image with GitHub Actions
+Replace `github` with your uploader's ID. `picgo use uploader` switches the active uploader; `picgo config use` selects
+the default configuration within an uploader. Run `picgo config --help` for more options.
 
-Open **Actions → Build Docker Image → Run workflow** and select the branch to test (normally `dev`). Leave `tag` blank
-to build that branch's latest commit at dispatch time, or enter an existing Git tag (for example, `v2.4.2`) to build a
-release. Branch builds use `sha-<12-character-commit>` as the image tag and in artifact filenames. Tag pushes do not
-trigger this workflow. GitHub's custom choices are static, so an optional tag is entered as text and checked out
-explicitly; both builds use the same resolved source commit. The Dockerfile and `.dockerignore` come from the workflow
-revision, because historical Dockerfiles installed the latest npm release rather than the tagged source. Both source and
-build recipe commits appear in the size report.
+### Image processing and secondary uploads
 
-Leave `enable_push` unchecked to build without Docker Hub credentials or publishing. AMD64 builds and tests run on
-`ubuntu-24.04`; ARM64 builds and tests run natively on `ubuntu-24.04-arm`, without QEMU. Each platform has its own build
-cache. The run summary shows each `.tar.gz` archive's compressed size and download link. Artifacts are retained for 14
-days and contain the image archive, `SHA256SUMS`, and a size report. This measures the downloadable archive, which can
-differ from Docker Hub's compressed layer size.
-
-Download and extract the artifact for your architecture, then load it locally (replace the example tag with your Git tag
-or generated `sha-…` image tag):
+Configure processing with the interactive prompts:
 
 ```bash
-sha256sum -c SHA256SUMS
-docker load --input piclist-v2.4.2-linux-amd64.tar.gz
-docker run --rm kuingsmile/piclist:v2.4.2-amd64 picgo --version
+picgo set buildin compress
+picgo set buildin watermark
+picgo set buildin rename
 ```
 
-To publish, check `enable_push`. After both platforms pass verification, the workflow publishes those same images as
-`<image-tag>-amd64` and `<image-tag>-arm64` and combines them under the multi-platform `<image-tag>`, without
-rebuilding. Check `update_latest` only when you also want to move `latest` to this release. Publishing uses the
-repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_ACCESS_TOKEN`.
+To upload a second copy, select an existing destination configuration:
 
-#### docker run
+```bash
+picgo set secondUploader github "Backup"
+```
 
-Change the `./piclist` to your own path, this path is where you put your `data.json` file (or legacy `config.json`), and
-change the `piclist123456` to your own secret key.
+The setup prompts let you enable or disable secondary uploads and choose **shared** processing (reuse the primary
+uploader's processed image) or **separate** processing (process the original independently). Run
+`picgo set secondUploader` without arguments to choose a destination interactively.
+
+### Plugins and language
+
+Find plugins in [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo), then replace `picgo-plugin-<name>` with the
+package you want to use:
+
+```bash
+picgo install picgo-plugin-<name>
+picgo list
+picgo update picgo-plugin-<name>
+picgo uninstall picgo-plugin-<name>
+```
+
+Use `picgo set plugin` to configure plugins and `picgo use plugins` to enable them. Restart an open terminal interface
+or server after changing plugins.
+
+Change the interface and CLI help language with `picgo i18n en`, `picgo i18n zh-CN`, or `picgo i18n zh-TW`.
+
+## HTTP server
+
+Configure an upload destination first, then start the server:
+
+```bash
+picgo-server --host 127.0.0.1 --key "your-secret-key"
+```
+
+The default port is `36677`. Without `--host`, the server listens on `0.0.0.0`. Use `--key` for remote uploads and
+replace `your-secret-key` with your own key; local loopback requests bypass key checks.
+
+| Option                | Purpose                                |
+| --------------------- | -------------------------------------- |
+| `-c, --config <path>` | Select a JSON configuration file       |
+| `-p, --port <port>`   | Set the listening port                 |
+| `--host <host>`       | Set the listening address              |
+| `-k, --key <key>`     | Set the key for remote upload requests |
+| `-h, --help`          | Show server help                       |
+
+Send files with `POST /upload` using `multipart/form-data`:
+
+```bash
+curl -X POST "http://127.0.0.1:36677/upload?key=your-secret-key" \
+  -F "file=@./image.png"
+```
+
+You can also send JSON with `Content-Type: application/json`, for example `{"list":["/absolute/path/image.png"]}`. File
+paths must be accessible to the server; image URLs are also accepted. Optional query parameters `picbed` and
+`configName` select an uploader and saved configuration for the request. Successful uploads return
+`{"success":true,"result":["..."]}`.
+
+Use `GET /heartbeat` to check server availability, or open `http://127.0.0.1:36677/` in a browser for API usage
+examples.
+
+## Docker
+
+Run the server with the `kuingsmile/piclist` image and a persistent configuration directory:
 
 ```bash
 docker run -d \
   --name piclist \
-  --restart always \
+  --restart unless-stopped \
   -p 36677:36677 \
   -v "./piclist:/root/.piclist" \
   kuingsmile/piclist:latest \
-  node /usr/local/bin/picgo-server -k piclist123456
+  node /usr/local/bin/picgo-server --key "your-secret-key"
 ```
 
-#### docker-compose
+Replace `your-secret-key` with your own key. The `./piclist` directory stores configuration and installed plugins. Copy
+an existing `data.json` (or legacy `config.json`) into it before starting, or configure an uploader in the running
+container:
 
-download `docker-compose.yml` from this repo, or copy the following content to `docker-compose.yml`:
+```bash
+docker exec -it piclist picgo set uploader
+docker exec -it piclist picgo use uploader
+docker restart piclist
+```
+
+Install plugins with `docker exec -it piclist picgo install picgo-plugin-<name>`, then restart the container to load
+them.
+
+<details>
+<summary>Docker Compose</summary>
+
+Save this as `compose.yaml`, replacing the key and adjusting the volume path as needed:
 
 ```yaml
-version: '3.3'
-
 services:
-  node:
-    image: 'kuingsmile/piclist:latest'
+  piclist:
+    image: kuingsmile/piclist:latest
     container_name: piclist
-    restart: always
+    restart: unless-stopped
     ports:
-      - 36677:36677
+      - '36677:36677'
     volumes:
       - './piclist:/root/.piclist'
-    command: node /usr/local/bin/picgo-server -k piclist123456
+    command: ['node', '/usr/local/bin/picgo-server', '--key', 'your-secret-key']
 ```
-
-You can change the `./piclist` to your own path, this path is where you put your `data.json` file (or legacy
-`config.json`), and change the `command` to your own secret key.
-
-Then run:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
-#### Install plugins in docker
+Configure the destination using the same `docker exec` commands above.
 
-You can use `docker exec` to install plugins in docker.
+</details>
+
+## Node.js API
+
+Install PicList as a dependency of your application:
 
 ```bash
-docker exec -it piclist sh
-picgo install picgo-plugin-xxx
+npm install piclist
 ```
 
-#### Change config in docker
-
-You can use `docker exec` to change config in docker.
-
-```bash
-docker exec -it piclist sh
-picgo set xxx
-```
-
-### Server
-
-You can use `picgo-server` to start a server, default port is `36677`.
-
-Start server:
-
-```bash
-picgo-server
-node ./bin/picgo-server
-```
-
-> It's highly recommended to add `--key` to avoid unauthorized access. Example: `picgo-server --key 123456`，
-
-Show help:
-
-```bash
-$ picgo-server -h
-
-  Usage: picgo-server [options]
-
-  Options:
-
-    -h, --help          Print this help message
-    -c, --config        Set config path
-    -p, --port          Set port, default port is 36677
-    --host              Set host, default host is 0.0.0.0
-    -k, --key           Set secret key to avoid unauthorized access
-    -v, --version       Print version number
-
-  Examples:
-    picgo-server -c /path/to/data.json
-    picgo-server -k 123456
-    picgo-server -c /path/to/data.json -k 123456
-```
-
-#### endpoints
-
-- `/upload?picbed=xxx&key=xxx` upload picture, `picbed` to set pic-bed, `key` to set secret key
-- `/heartbeat` heartbeat
-
-### Use in CLI
-
-> PicList-Core uses `SM.MS` as the default upload pic-bed.
-
-Run `picgo` in an interactive terminal to open the Ink interface, or launch it explicitly with `picgo tui`. Use
-`picgo -c /path/to/data.json` to open a specific configuration. For local development, run `yarn build` and then
-`yarn start`.
-
-The default configuration is `~/.piclist/data.json` for both the CLI and server. If it does not exist, an existing
-`~/.piclist/config.json` is used and updated instead. If both files exist, `data.json` takes precedence. Explicit
-configuration paths, including `-c /path/to/config.json`, continue to work.
-
-The interface supports file/URL and clipboard uploads, uploader switching, named configuration management, secondary
-uploads, image processing, transformers, plugins, upload proxies and language settings. Start with **Set up a
-destination** to add your upload destination. Quote pasted paths containing spaces, for example
-`"C:\My Pictures\photo.png"` or `"/home/me/My Pictures/photo.png"`. Upload progress and resulting URLs appear in the UI.
-
-The workspace groups actions into **Upload**, **Destinations**, **Processing** and **Settings**. Use **Tab**, **←/→** or
-**1–4** to change sections, **↑/↓** to navigate, and **Enter** to open an action. Press **/** to search all actions. New
-users can choose **Set up a destination** for guided setup.
-
-Readiness checks the uploader's required fields and existing validators, so an empty saved token still needs setup.
-Under **Destinations**, **Check connection** offers a small test upload using the current processing and backup
-settings. It asks before uploading and leaves the test image at each destination; local temporary input files are
-removed.
-
-Forms show field progress, inline validation and searchable options (**/**). Use **Space** to toggle checkboxes,
-**Ctrl+U** to clear a text field, and **Esc** to cancel the current form. **r** reopens recent results even after
-changing settings; select a result with **↑/↓**, copy its URL with **c**, copy a Markdown image link with **m**, and
-scroll a long link with **PgUp/PgDn**. Clipboard copying uses PowerShell on Windows/WSL, `pbcopy` on macOS, or
-`wl-copy`, `xclip` or `xsel` on Linux. If unavailable, the link remains visible for manual copying. **q** quits from the
-menu. **Ctrl+C** cancels a form and exits; if an upload or npm operation is already running, PicList waits for it to
-finish before exiting. Credentials are masked in forms, and TUI operations do not write provider payloads or form values
-to PicList logs. Restart PicList after changing plugins to reload their code. **Settings → Language** updates
-navigation, search, shortcuts and forms immediately, using the existing English, Simplified Chinese and Traditional
-Chinese locales.
-
-See the [UI design](docs/tui-design.md) and [interactive design study](docs/tui-design.html).
-
-Explicit commands such as `picgo upload ...`, `picgo set ...`, and plugin-provided commands remain available. Without a
-terminal (for example, piped output), bare `picgo` prints help; `picgo tui` reports that a terminal is required. The
-`picgo-server` command and Node API retain their existing behavior.
-
-Show help:
-
-```bash
-$ picgo -h
-
-Usage: picgo [options] [command]
-
-Options:
-  -v, --version                                 output the version number
-  -d, --debug                                   debug mode
-  -s, --silent                                  silent mode
-  -c, --config <path>                           set config path
-  -p, --proxy <url>                             set proxy for uploading
-  -h, --help                                    display help for command
-
-Commands:
-  tui                                           open the interactive terminal interface
-  list|ls                                       list installed plugins
-  install|add [options] <plugins...>            install picgo plugin
-  uninstall|rm <plugins...>                     uninstall picgo plugin
-  update|up [options] <plugins...>              update picgo plugin
-  config                                       manage saved uploader configurations
-  set <module> [name] [configName]              configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").
-  upload|u [options] [input...]                 upload, go go go
-  use [module] [name] [configName]               use modules of picgo; select an uploader and its default saved config
-  i18n [lang]                                   change language, zh-CN, zh-TW, en
-  help [command]                                display help for command
-```
-
-Run `picgo config --help` to see the `list`, `use`, `remove`, `rename`, `show`, and `edit` subcommands.
-
-#### Upload a picture from path
-
-```bash
-picgo upload /xxx/xx/xx.jpg
-```
-
-#### Upload a picture from clipboard
-
-> picture from clipboard will be converted to `png`
-
-```bash
-picgo upload
-```
-
-#### Upload to a specific uploader or named configuration
-
-Use `--picbed <uploader>` to select an uploader, or `--configName <name>` to select a saved configuration. When
-`--picbed` is omitted, the configuration is selected from the current uploader. When `--configName` is omitted, the
-selected uploader uses its current configuration. These options apply only to this upload and do not change saved
-defaults. They also work with the `u` alias, URLs, multiple files and clipboard uploads.
-
-```bash
-picgo upload /xxx/xx/xx.jpg --picbed github
-picgo upload /xxx/xx/xx.jpg --picbed aws-s3 --configName "Work account"
-picgo upload /xxx/xx/xx.jpg --configName "Work account"
-picgo upload --picbed aws-s3 --configName "Work account"
-```
-
-### Use in node project
-
-#### Common JS
-
-```js
-const { PicGo } = require('piclist')
-```
-
-#### ES Module
+Configure a destination with the CLI first, then use the same configuration from your application. Save the following as
+an ES module (`.mjs`, or `.js` in a project with `"type": "module"`):
 
 ```js
 import { PicGo } from 'piclist'
-```
 
-#### API usage example
-
-```js
 const picgo = await PicGo.create()
-
-// upload a picture from path
-picgo.upload(['/xxx/xxx.jpg'])
-
-// upload a picture from clipboard
-picgo.upload()
+const images = await picgo.upload(['/absolute/path/image.png'])
 ```
 
-#### Translations in plugins
+`PicGo.create()` initializes the client before use. Pass a JSON configuration path to load another configuration:
+`await PicGo.create('/path/to/data.json')`. Call `await picgo.upload()` without arguments to upload a clipboard image.
 
-`ctx.i18n.t()` checks built-in message keys and `${placeholder}` arguments in TypeScript. It can be destructured and
-continues to use the current language:
+<details>
+<summary>CommonJS</summary>
 
-```ts
-const { t } = ctx.i18n
-t('UPLOAD_FAILED')
-t('UPLOAD_FAILED_REASON', { code: 403 })
-```
-
-Plugins can keep using `addLocale()` and `translate()` for custom or dynamically generated keys without changes:
+Use dynamic `import()` inside an async function:
 
 ```js
-ctx.i18n.addLocale('zh-CN', { PIC_MIGRATER_CHOOSE_FILE: '[ZH] Choose File' })
-ctx.i18n.addLocale('en', { PIC_MIGRATER_CHOOSE_FILE: 'Choose File' })
-ctx.i18n.translate('PIC_MIGRATER_CHOOSE_FILE')
+async function uploadImage() {
+  const { PicGo } = await import('piclist')
+  const picgo = await PicGo.create()
+  return picgo.upload(['/absolute/path/image.png'])
+}
+
+uploadImage().catch(console.error)
 ```
 
-`addLocale()` merges into an existing language; use `addLanguage()` to register a new language. Both translation APIs
-observe locale updates and return the key for missing or empty messages. Custom `i18n-cli/*.yml` files remain supported,
-and locale registrations are scoped to each PicGo instance.
+</details>
 
-CLI command and option descriptions use the configured language too. Run `picgo i18n en` (or `zh-CN` / `zh-TW`), then
-`picgo --help` or `picgo install --help`. Custom locales can override the `CLI_*` translation keys.
+## Resources
+
+- [PicList website](https://piclist.cn) — documentation and the desktop app.
+- [DeepWiki](https://deepwiki.com/Kuingsmile/PicList-Core/) — additional project documentation.
+- [Awesome-PicGo](https://github.com/PicGo/Awesome-PicGo) — community plugins and integrations.
+- [Releases](https://github.com/Kuingsmile/PicList-Core/releases) — version history.
+- [Issues](https://github.com/Kuingsmile/PicList-Core/issues) — bug reports and feature requests.
+
+## License
+
+[MIT](./License). Built on [PicGo-Core](https://github.com/PicGo/PicGo-Core), with thanks to its authors and the PicGo
+community.
