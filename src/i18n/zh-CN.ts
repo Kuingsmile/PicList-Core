@@ -16,11 +16,13 @@ export const ZH_CN = {
   CLI_INSTALL: '安装 PicGo 插件',
   CLI_UNINSTALL: '卸载 PicGo 插件',
   CLI_UPDATE: '更新 PicGo 插件',
+  CLI_CONFIG: '管理图床的已保存配置',
   CLI_CONFIG_LIST: '列出图床的所有配置名称',
   CLI_CONFIG_USE: '设置图床的默认配置',
   CLI_CONFIG_REMOVE: '删除图床的配置',
   CLI_CONFIG_RENAME: '重命名图床的配置',
   CLI_CONFIG_SHOW: '显示配置详情',
+  CLI_CONFIG_EDIT: '编辑图床的已有配置',
   CLI_SET:
     '配置 PicGo 模块：uploader|secondUploader|transformer|plugin|buildin。uploader 和 buildin 的 configName 可选（默认为 "Default"）。secondUploader 的 name 和 configName 用于选择已有图床配置，省略时将交互式询问。buildin 的 uploaderName 指定要关联内置模块配置的图床名称。',
   CLI_UPLOAD: '上传图片',

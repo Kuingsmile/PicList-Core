@@ -5,6 +5,7 @@ import fs from 'fs-extra'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PicGo } from '../../../src/core/PicGo'
+import configManager from '../../../src/plugins/commander/configManager'
 import setting from '../../../src/plugins/commander/setting'
 import { IBusEvent } from '../../../src/utils/enum'
 import { eventBus } from '../../../src/utils/eventBus'
@@ -35,6 +36,7 @@ describe('uploader CLI settings', () => {
     vi.spyOn(ctx.log, 'success').mockImplementation(() => {})
     vi.spyOn(ctx.log, 'error').mockImplementation(() => {})
     setting.handle(ctx)
+    configManager.handle(ctx)
   })
 
   afterEach(async () => {

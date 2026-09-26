@@ -230,59 +230,63 @@ export const handlePlugin = async (ctx: IPicGo, name?: string): Promise<void> =>
   }
 }
 
+/** Runs a module configuration form for `set` and legacy `config <module>` invocations. */
+export const handleSetting = (
+  ctx: IPicGo,
+  module: string,
+  name?: string,
+  configName?: string,
+  uploaderName?: string,
+): Promise<void> =>
+  (async () => {
+    try {
+      switch (module) {
+        case 'secondUploader':
+          if (!(await handleSecondUploader(ctx, name, configName))) return
+          break
+        case 'buildin':
+          await handleBuildinModule(ctx, name, configName, uploaderName)
+          break
+        case 'uploader':
+        case 'transformer':
+          await handleUploaderOrTransformer(ctx, module, name, configName)
+          break
+        case 'plugin':
+          await handlePlugin(ctx, name)
+          break
+        default:
+          ctx.log.warn(`No module named ${module}`)
+          ctx.log.warn('Available modules are uploader|secondUploader|transformer|plugin|buildin')
+          return
+      }
+
+      ctx.log.success('Configure config done')
+      if (module === 'plugin') {
+        ctx.log.info("If you want to use this config, please run 'picgo use plugins'")
+      }
+    } catch (e: any) {
+      ctx.log.error(e)
+      if (process.argv.includes('--debug')) {
+        throw e
+      }
+    }
+  })().catch(e => {
+    ctx.log.error(e)
+  })
+
 const setting = {
-  /**
-   * Registers set/config commands and dispatches supported module categories to their configuration
-   * flows.
-   */
+  /** Registers the set command for module configuration forms. */
   handle: (ctx: IPicGo) => {
-    const cmd = ctx.cmd
-    cmd.program
+    ctx.cmd.program
       .command('set')
-      .alias('config')
       .argument('<module>')
       .argument('[name]')
       .argument('[configName]')
       .argument('[uploaderName]')
       .description(ctx.i18n.t('CLI_SET'))
-      .action((module: string, name: string, configName?: string, uploaderName?: string) => {
-        return (async () => {
-          try {
-            // Handle different module types
-            switch (module) {
-              case 'secondUploader':
-                if (!(await handleSecondUploader(ctx, name, configName))) return
-                break
-              case 'buildin':
-                await handleBuildinModule(ctx, name, configName, uploaderName)
-                break
-              case 'uploader':
-              case 'transformer':
-                await handleUploaderOrTransformer(ctx, module, name, configName)
-                break
-              case 'plugin':
-                await handlePlugin(ctx, name)
-                break
-              default:
-                ctx.log.warn(`No module named ${module}`)
-                ctx.log.warn('Available modules are uploader|secondUploader|transformer|plugin|buildin')
-                return
-            }
-
-            ctx.log.success('Configure config done')
-            if (module === 'plugin') {
-              ctx.log.info("If you want to use this config, please run 'picgo use plugins'")
-            }
-          } catch (e: any) {
-            ctx.log.error(e)
-            if (process.argv.includes('--debug')) {
-              throw e
-            }
-          }
-        })().catch(e => {
-          ctx.log.error(e)
-        })
-      })
+      .action((module: string, name?: string, configName?: string, uploaderName?: string) =>
+        handleSetting(ctx, module, name, configName, uploaderName),
+      )
   },
 }
 

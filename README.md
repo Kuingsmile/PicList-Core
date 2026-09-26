@@ -18,15 +18,15 @@ PicList-Core 是一个功能强大的图片上传工具，提供 CLI 和 API 两
 
 - **多配置支持**：
   - 每个图床支持多个配置，兼容桌面版PicList配置文件
-  - 通过 `picgo config-list <uploader>` 列出所有配置
-  - 通过 `picgo config-use <uploader> <configName>` 切换默认配置
-  - 通过 `picgo config-remove <uploader> <configName>` 删除配置
-  - 通过 `picgo config-rename <uploader> <oldName> <newName>` 重命名配置
-  - 通过 `picgo config-show <uploader> [configName]` 查看配置详情
+  - 通过 `picgo config list <uploader>` 列出所有配置
+  - 通过 `picgo config use <uploader> <configName>` 切换默认配置
+  - 通过 `picgo config remove <uploader> <configName>` 删除配置
+  - 通过 `picgo config rename <uploader> <oldName> <newName>` 重命名配置
+  - 通过 `picgo config show <uploader> [configName]` 查看配置详情
+  - 通过 `picgo config edit <uploader> [configName]` 编辑已有配置（省略配置名称时编辑当前默认配置）
 
 - **第二图床上传**：
-  - 通过 `picgo set secondUploader [uploader] [configName]`（或
-    `picgo config secondUploader`）启用或禁用第二图床上传，并选择已有图床配置
+  - 通过 `picgo set secondUploader [uploader] [configName]` 启用或禁用第二图床上传，并选择已有图床配置
   - 示例：`picgo set secondUploader github "Backup account"`；省略图床或配置名称时会显示选择提示
   - 支持共享主图床处理后的文件（`shared`）或独立处理原始文件（`separate`，旧配置中的 `seperate` 会自动迁移）
   - 修改或重命名所选原始配置时会同步更新
@@ -286,17 +286,15 @@ Commands:
   install|add [options] <plugins...>            install picgo plugin
   uninstall|rm <plugins...>                     uninstall picgo plugin
   update|up [options] <plugins...>              update picgo plugin
-  config-list <uploader>                        list all configs names for an uploader
-  config-use <uploader> <configName>            set a config as default for an uploader
-  config-remove <uploader> <configName>         remove a config for an uploader
-  config-rename <uploader> <oldName> <newName>  rename a config for an uploader
-  config-show <uploader> [configName]           show details of a config
-  set|config <module> [name] [configName]       configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").
+  config                                       manage saved uploader configurations
+  set <module> [name] [configName]              configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").
   upload|u [options] [input...]                 upload, go go go
   use [module] [name] [configName]               use modules of picgo; select an uploader and its default saved config
   i18n [lang]                                   change language, zh-CN, zh-TW, en
   help [command]                                display help for command
 ```
+
+运行 `picgo config --help` 可查看 `list`、`use`、`remove`、`rename`、`show` 和 `edit` 子命令。
 
 #### 从路径上传图片
 

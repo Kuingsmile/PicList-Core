@@ -59,15 +59,12 @@ describe('secondary uploader CLI settings', () => {
     await fs.remove(baseDir)
   })
 
-  it.each([
-    ['set', 'shared'],
-    ['config', 'separate'],
-  ])('selects a named source using %s in %s mode without changing defaults', async (command, mode) => {
+  it.each(['shared', 'separate'])('selects a named source in %s mode without changing defaults', async mode => {
     vi.spyOn(picgo.cmd.inquirer, 'prompt')
       .mockResolvedValueOnce({ enableSecondUploader: true })
       .mockResolvedValueOnce({ secondPicBedMode: mode })
 
-    await run(command, 'secondUploader', 'test-b', 'Backup account')
+    await run('set', 'secondUploader', 'test-b', 'Backup account')
 
     const saved = await fs.readJson(picgo.configPath)
     expect(saved.picBed.secondUploader).toBe('test-b')
@@ -174,17 +171,17 @@ describe('secondary uploader CLI settings', () => {
     await run('set', 'secondUploader', 'test-b', 'Backup account')
 
     prompt.mockResolvedValueOnce({ destination: 'updated-backup' })
-    await run('set', 'uploader', 'test-b', 'Backup account')
+    await run('config', 'edit', 'test-b', 'Backup account')
     let saved = await fs.readJson(picgo.configPath)
     expect(saved.picBed.secondUploaderConfig.destination).toBe('updated-backup')
 
-    await run('config-rename', 'test-b', 'Backup account', 'Renamed')
+    await run('config', 'rename', 'test-b', 'Backup account', 'Renamed')
     saved = await fs.readJson(picgo.configPath)
     expect(saved.picBed.secondUploaderConfig._configName).toBe('Renamed')
 
     prompt.mockResolvedValueOnce({ confirm: true })
-    await run('config-remove', 'test-b', 'Renamed')
-    await vi.waitFor(() => expect(picgo.getConfig('settings.enableSecondUploader')).toBe(false))
+    await run('config', 'remove', 'test-b', 'Renamed')
+    expect(picgo.getConfig('settings.enableSecondUploader')).toBe(false)
     saved = await fs.readJson(picgo.configPath)
     expect(saved.picBed.secondUploader).toBe('')
     expect(saved.picBed.secondUploaderConfig).toEqual({})

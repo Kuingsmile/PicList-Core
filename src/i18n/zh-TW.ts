@@ -18,11 +18,13 @@ export const ZH_TW: ILocales = {
   CLI_INSTALL: '安裝 PicGo 外掛',
   CLI_UNINSTALL: '解除安裝 PicGo 外掛',
   CLI_UPDATE: '更新 PicGo 外掛',
+  CLI_CONFIG: '管理圖床的已儲存設定',
   CLI_CONFIG_LIST: '列出圖床的所有設定名稱',
   CLI_CONFIG_USE: '設定圖床的預設設定',
   CLI_CONFIG_REMOVE: '刪除圖床的設定',
   CLI_CONFIG_RENAME: '重新命名圖床的設定',
   CLI_CONFIG_SHOW: '顯示設定詳情',
+  CLI_CONFIG_EDIT: '編輯圖床的現有設定',
   CLI_SET:
     '設定 PicGo 模組：uploader|secondUploader|transformer|plugin|buildin。uploader 和 buildin 的 configName 可省略（預設為 "Default"）。secondUploader 的 name 和 configName 用於選擇已有圖床設定，省略時將互動式詢問。buildin 的 uploaderName 指定要關聯內建模組設定的圖床名稱。',
   CLI_UPLOAD: '上傳圖片',
