@@ -18,11 +18,13 @@ export const EN: ILocales = {
   CLI_INSTALL: 'install picgo plugin',
   CLI_UNINSTALL: 'uninstall picgo plugin',
   CLI_UPDATE: 'update picgo plugin',
+  CLI_CONFIG: 'manage saved uploader configurations',
   CLI_CONFIG_LIST: 'list all configs names for an uploader',
   CLI_CONFIG_USE: 'set a config as default for an uploader',
   CLI_CONFIG_REMOVE: 'remove a config for an uploader',
   CLI_CONFIG_RENAME: 'rename a config for an uploader',
   CLI_CONFIG_SHOW: 'show details of a config',
+  CLI_CONFIG_EDIT: 'edit an existing config for an uploader',
   CLI_SET:
     'configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader and buildin, configName is optional (defaults to "Default"). For secondUploader, name and configName select an existing uploader config; omitted values are prompted. For buildin module, uploaderName is the uploader name to which the buildin module config will be linked.',
   CLI_UPLOAD: 'upload, go go go',

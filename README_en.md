@@ -20,15 +20,17 @@ You can refer to the [DeepWiki of PiclList-Core](https://deepwiki.com/Kuingsmile
 
 - **Multi-configuration support**:
   - Each uploader supports multiple configurations, compatible with PicList-Desktop config files
-  - List all configurations via `picgo config-list <uploader>`
-  - Switch default configuration via `picgo config-use <uploader> <configName>`
-  - Remove configuration via `picgo config-remove <uploader> <configName>`
-  - Rename configuration via `picgo config-rename <uploader> <oldName> <newName>`
-  - View configuration details via `picgo config-show <uploader> [configName]`
+  - List all configurations via `picgo config list <uploader>`
+  - Switch default configuration via `picgo config use <uploader> <configName>`
+  - Remove configuration via `picgo config remove <uploader> <configName>`
+  - Rename configuration via `picgo config rename <uploader> <oldName> <newName>`
+  - View configuration details via `picgo config show <uploader> [configName]`
+  - Edit an existing configuration via `picgo config edit <uploader> [configName]` (defaults to the uploader's current
+    default)
 
 - **Secondary upload**:
-  - Run `picgo set secondUploader [uploader] [configName]` (or `picgo config secondUploader`) to enable or disable
-    secondary upload and select an existing uploader configuration
+  - Run `picgo set secondUploader [uploader] [configName]` to enable or disable secondary upload and select an existing
+    uploader configuration
   - Example: `picgo set secondUploader github "Backup account"`; omitted uploader and configuration names are prompted
   - Choose whether to share the primary uploader's processed files (`shared`) or process the originals separately
     (`separate`; legacy `seperate` settings are migrated automatically)
@@ -300,17 +302,15 @@ Commands:
   install|add [options] <plugins...>            install picgo plugin
   uninstall|rm <plugins...>                     uninstall picgo plugin
   update|up [options] <plugins...>              update picgo plugin
-  config-list <uploader>                        list all configs names for an uploader
-  config-use <uploader> <configName>            set a config as default for an uploader
-  config-remove <uploader> <configName>         remove a config for an uploader
-  config-rename <uploader> <oldName> <newName>  rename a config for an uploader
-  config-show <uploader> [configName]           show details of a config
-  set|config <module> [name] [configName]       configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").
+  config                                       manage saved uploader configurations
+  set <module> [name] [configName]              configure config of picgo modules, uploader|secondUploader|transformer|plugin|buildin. For uploader, configName is optional (defaults to "Default").
   upload|u [options] [input...]                 upload, go go go
   use [module] [name] [configName]               use modules of picgo; select an uploader and its default saved config
   i18n [lang]                                   change language, zh-CN, zh-TW, en
   help [command]                                display help for command
 ```
+
+Run `picgo config --help` to see the `list`, `use`, `remove`, `rename`, `show`, and `edit` subcommands.
 
 #### Upload a picture from path
 

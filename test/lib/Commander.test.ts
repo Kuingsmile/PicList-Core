@@ -46,11 +46,7 @@ describe('CLI help translations', () => {
       locale.CLI_INSTALL,
       locale.CLI_UNINSTALL,
       locale.CLI_UPDATE,
-      locale.CLI_CONFIG_LIST,
-      locale.CLI_CONFIG_USE,
-      locale.CLI_CONFIG_REMOVE,
-      locale.CLI_CONFIG_RENAME,
-      locale.CLI_CONFIG_SHOW,
+      locale.CLI_CONFIG,
       locale.CLI_UPLOAD,
       locale.CLI_USE,
       locale.CLI_I18N,
@@ -69,7 +65,23 @@ describe('CLI help translations', () => {
     expect(help).toContain('-p, --proxy <url>')
     expect(help).toContain('install|add')
     expect(help).toContain('upload|u')
+    expect(help).toContain('config')
+    expect(help).not.toContain('config-list')
+    expect(help).not.toContain('set|config')
     expect(program.commands.find(command => command.name() === 'set')!.description()).toBe(locale.CLI_SET)
+
+    const configHelp = program.commands.find(command => command.name() === 'config')!.helpInformation()
+    for (const description of [
+      locale.CLI_CONFIG_LIST,
+      locale.CLI_CONFIG_USE,
+      locale.CLI_CONFIG_REMOVE,
+      locale.CLI_CONFIG_RENAME,
+      locale.CLI_CONFIG_SHOW,
+      locale.CLI_CONFIG_EDIT,
+    ]) {
+      expect(configHelp).toContain(description)
+    }
+    expect(configHelp).toContain('edit <uploader> [configName]')
 
     for (const name of ['install', 'update']) {
       const commandHelp = program.commands.find(command => command.name() === name)!.helpInformation()
