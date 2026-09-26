@@ -1,11 +1,12 @@
 import type { TypedTranslate } from '@piclist/i18n'
-import { Command } from 'commander'
-import { FormatEnum, GravityEnum } from 'sharp'
+import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import type { Command } from 'commander'
+import type { FormatEnum, GravityEnum } from 'sharp'
 
 import type { ILocalesKey, ZH_CN } from '../i18n/zh-CN'
 import type { ConfigManager } from '../utils/configManager'
 import type { IInquirerAdapter } from '../utils/inquirerShim'
-import { IRequestPromiseOptions } from './oldRequest'
+import type { IRequestPromiseOptions } from './oldRequest'
 
 /**
  * Client and per-upload context exposed to plugins, including configuration, lifecycle data, and
@@ -132,55 +133,8 @@ export interface IPluginLoader {
 }
 
 export interface IRequestOld {
-  request: import('axios').AxiosInstance
+  request: AxiosInstance
 }
-
-/** Legacy request-style options accepted by the Axios compatibility adapter. */
-export type IOldReqOptions = Omit<
-  IRequestPromiseOptions & {
-    url: string
-  },
-  'auth'
->
-
-/** Legacy options selecting response metadata together with body and statusCode aliases. */
-export type IOldReqOptionsWithFullResponse = IOldReqOptions & {
-  resolveWithFullResponse: true
-}
-
-/** Legacy options selecting the decoded response body. */
-export type IOldReqOptionsWithJSON = IOldReqOptions & {
-  json: true
-}
-
-/**
- * Axios options selecting the full response, including data, headers, and compatibility aliases.
- */
-export type IReqOptions<T = any> = AxiosRequestConfig<T> & {
-  resolveWithFullResponse: true
-}
-
-/**
- * Full-response options requesting binary data in the response body.
- */
-export type IReqOptionsWithArrayBufferRes<T = any> = IReqOptions<T> & {
-  responseType: 'arraybuffer'
-}
-
-/**
- * Axios options returning only response data without status or header metadata.
- */
-export type IReqOptionsWithBodyResOnly<T = any> = AxiosRequestConfig<T>
-
-/** Axios response extended with the legacy body and statusCode aliases. */
-export type IFullResponse<T = any, U = any> = AxiosResponse<T, U> & {
-  statusCode: number
-  body: T
-}
-
-type AxiosResponse<T = any, U = any> = import('axios').AxiosResponse<T, U>
-
-type AxiosRequestConfig<T = any> = import('axios').AxiosRequestConfig<T>
 
 interface IRequestOptionsWithFullResponse {
   resolveWithFullResponse: true
@@ -194,8 +148,44 @@ interface IRequestOptionsWithResponseTypeArrayBuffer {
   responseType: 'arraybuffer'
 }
 
+/** Legacy request-style options accepted by the Axios compatibility adapter. */
+export type IOldReqOptions = Omit<
+  IRequestPromiseOptions & {
+    url: string
+  },
+  'auth'
+>
+
+/** Legacy options selecting response metadata together with body and statusCode aliases. */
+export type IOldReqOptionsWithFullResponse = IOldReqOptions & IRequestOptionsWithFullResponse
+
+/** Legacy options selecting the decoded response body. */
+export type IOldReqOptionsWithJSON = IOldReqOptions & IRequestOptionsWithJSON
+
+/**
+ * Axios options selecting the full response, including data, headers, and compatibility aliases.
+ */
+export type IReqOptions<T = any> = AxiosRequestConfig<T> & IRequestOptionsWithFullResponse
+
+/**
+ * Full-response options requesting binary data in the response body.
+ */
+export type IReqOptionsWithArrayBufferRes<T = any> = IReqOptions<T> & IRequestOptionsWithResponseTypeArrayBuffer
+
+/**
+ * Axios options returning only response data without status or header metadata.
+ */
+export type IReqOptionsWithBodyResOnly<T = any> = AxiosRequestConfig<T>
+
+/** Axios response extended with the legacy body and statusCode aliases. */
+export type IFullResponse<T = any, U = any> = AxiosResponse<T, U> & {
+  statusCode: number
+  body: T
+}
+
 /**
  * Selects the response shape from full-response, JSON, binary, and legacy request options.
+ * Keep the explicit legacy branches to preserve assignability of existing generic request signatures.
  *
  * @typeParam T - Expected decoded response data.
  * @typeParam U - Request options used to choose the returned shape.
@@ -270,6 +260,7 @@ export interface IPathTransformedImgInfo extends IImgInfo {
   success: boolean
 }
 
+/** Retains the legacy conditional so dictionaries remain assignable for unresolved generic values. */
 export type IStringKeyMap<T> = Record<string, T extends T ? T : any>
 
 export type ICLIConfigs = Record<string, IStringKeyMap<any>>
@@ -765,114 +756,79 @@ export type availableConvertFormat = keyof FormatEnum
 
 export type availableWatermarkPosition = keyof GravityEnum
 
+/** Adds uploader maps without allowing undefined entries for optional scalar settings. */
+type IUploaderOptionMaps<T> = {
+  [Key in keyof T as `${Key & string}Map`]?: Record<string, Required<T>[Key]>
+}
+
+// Keep these shared shapes private and free of index signatures so public interfaces can be
+// augmented independently and uploader maps retain their specific value types.
+interface IBuildInWaterMarkOptionValues {
+  isAddWatermark?: boolean
+  watermarkType?: 'text' | 'image'
+  isFullScreenWatermark?: boolean
+  /** Watermark rotation in degrees. */
+  watermarkDegree?: number
+  watermarkText?: string
+  watermarkFontPath?: string
+  /** Watermark width as a fraction of source image width. */
+  watermarkScaleRatio?: number
+  watermarkColor?: string
+  watermarkImagePath?: string
+  watermarkPosition?: availableWatermarkPosition
+  /** Image-watermark alpha on a 0–255 scale. */
+  watermarkImageOpacity?: number
+}
+
 /**
  * Global watermark settings with optional maps keyed by uploader type. Profile overrides take
  * precedence.
  */
-export interface IBuildInWaterMarkOptions {
-  isAddWatermark?: boolean
-  isAddWatermarkMap?: Record<string, boolean>
-  watermarkType?: 'text' | 'image'
-  watermarkTypeMap?: Record<string, 'text' | 'image'>
-  isFullScreenWatermark?: boolean
-  isFullScreenWatermarkMap?: Record<string, boolean>
-  /** Watermark rotation in degrees. */
-  watermarkDegree?: number
-  watermarkDegreeMap?: Record<string, number>
-  watermarkText?: string
-  watermarkTextMap?: Record<string, string>
-  watermarkFontPath?: string
-  watermarkFontPathMap?: Record<string, string>
-  /** Watermark width as a fraction of source image width. */
-  watermarkScaleRatio?: number
-  watermarkScaleRatioMap?: Record<string, number>
-  watermarkColor?: string
-  watermarkColorMap?: Record<string, string>
-  watermarkImagePath?: string
-  watermarkImagePathMap?: Record<string, string>
-  watermarkPosition?: availableWatermarkPosition
-  watermarkPositionMap?: Record<string, availableWatermarkPosition>
-  /** Image-watermark alpha on a 0–255 scale. */
-  watermarkImageOpacity?: number
-  watermarkImageOpacityMap?: Record<string, number>
+// eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- Preserve string | number keys and interface augmentation.
+export interface IBuildInWaterMarkOptions
+  extends IBuildInWaterMarkOptionValues, IUploaderOptionMaps<IBuildInWaterMarkOptionValues> {
   [propName: string]: any
 }
 
 /** Resolved watermark settings after profile, uploader-map, and global precedence is applied. */
-export interface IBuildInWaterMarkOptionsTreated {
-  isAddWatermark?: boolean
-  watermarkType?: 'text' | 'image'
-  isFullScreenWatermark?: boolean
-  watermarkDegree?: number
-  watermarkText?: string
-  watermarkFontPath?: string
-  watermarkScaleRatio?: number
-  watermarkColor?: string
-  watermarkImagePath?: string
-  watermarkPosition?: availableWatermarkPosition
-  watermarkImageOpacity?: number
+// eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- Preserve string | number keys and interface augmentation.
+export interface IBuildInWaterMarkOptionsTreated extends IBuildInWaterMarkOptionValues {
   [propName: string]: any
 }
 
-/** Global image-processing settings and optional uploader-keyed maps, overridden by profile settings. */
-export interface IBuildInCompressOptions {
+interface IBuildInCompressOptionValues {
   /** Encoder quality; values below 100 request quality reduction. */
   quality?: number
-  qualityMap?: Record<string, number>
   isConvert?: boolean
-  isConvertMap?: Record<string, boolean>
   convertFormat?: availableConvertFormat
-  convertFormatMap?: Record<string, availableConvertFormat>
   isReSize?: boolean
-  isReSizeMap?: Record<string, boolean>
   reSizeWidth?: number
-  reSizeWidthMap?: Record<string, number>
   reSizeHeight?: number
-  reSizeHeightMap?: Record<string, number>
   /** Uses the longer source edge for height-only proportional resizing. */
   longEdgeAsHeight?: boolean
-  longEdgeAsHeightMap?: Record<string, boolean>
   skipReSizeOfSmallImg?: boolean
-  skipReSizeOfSmallImgMap?: Record<string, boolean>
   isReSizeByPercent?: boolean
-  isReSizeByPercentMap?: Record<string, boolean>
   /** Percentage of original image dimensions used for proportional resizing. */
   reSizePercent?: number
-  reSizePercentMap?: Record<string, number>
   isRotate?: boolean
-  isRotateMap?: Record<string, boolean>
   rotateDegree?: number
-  rotateDegreeMap?: Record<string, number>
   isRemoveExif?: boolean
-  isRemoveExifMap?: Record<string, boolean>
   isFlip?: boolean
-  isFlipMap?: Record<string, boolean>
   isFlop?: boolean
-  isFlopMap?: Record<string, boolean>
   /** Source-extension to output-format mapping, supplied as an object or JSON string. */
   formatConvertObj?: any
-  formatConvertObjMap?: Record<string, any>
+}
+
+/** Global image-processing settings and optional uploader-keyed maps, overridden by profile settings. */
+// eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- Preserve string | number keys and interface augmentation.
+export interface IBuildInCompressOptions
+  extends IBuildInCompressOptionValues, IUploaderOptionMaps<IBuildInCompressOptionValues> {
   [propName: string]: any
 }
 
 /** Resolved compression settings after profile, uploader-map, and global precedence is applied. */
-export interface IBuildInCompressOptionsTreated {
-  quality?: number
-  isConvert?: boolean
-  convertFormat?: availableConvertFormat
-  isReSize?: boolean
-  reSizeWidth?: number
-  reSizeHeight?: number
-  skipReSizeOfSmallImg?: boolean
-  isReSizeByPercent?: boolean
-  reSizePercent?: number
-  longEdgeAsHeight?: boolean
-  isRotate?: boolean
-  rotateDegree?: number
-  isRemoveExif?: boolean
-  isFlip?: boolean
-  isFlop?: boolean
-  formatConvertObj?: any
+// eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- Preserve string | number keys and interface augmentation.
+export interface IBuildInCompressOptionsTreated extends IBuildInCompressOptionValues {
   [propName: string]: any
 }
 

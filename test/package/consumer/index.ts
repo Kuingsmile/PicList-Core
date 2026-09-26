@@ -1,5 +1,7 @@
 import {
   Commander,
+  type IBuildInCompressOptions,
+  type IBuildInWaterMarkOptions,
   type IImgInfo,
   type IPicGo,
   type IUploadOptions,
@@ -13,7 +15,11 @@ import {
   Request,
 } from 'piclist'
 import { PicGo as DeepPicGo } from 'piclist/dist/index.js'
-import type { IPicGo as DeepIPicGo } from 'piclist/dist/types/index.js'
+import type {
+  IBuildInCompressOptions as DeepCompressOptions,
+  IBuildInWaterMarkOptions as DeepWatermarkOptions,
+  IPicGo as DeepIPicGo,
+} from 'piclist/dist/types/index.js'
 import type { IRequestPromiseOptions } from 'piclist/dist/types/oldRequest.js'
 
 // Check that the root exports retain useful types, including the full declaration graph.
@@ -31,6 +37,28 @@ export async function upload(picgo: PicGo, options: IUploadOptions): Promise<IIm
 }
 
 export const requestOptions: IRequestPromiseOptions = { method: 'GET' }
+
+/** Checks inherited processing fields and generated uploader maps through root and deep imports. */
+export function processingOptions(compress: DeepCompressOptions, watermark: DeepWatermarkOptions) {
+  const compression: IBuildInCompressOptions = compress
+  const watermarking: IBuildInWaterMarkOptions = watermark
+  compression.quality = 80
+  compression.qualityMap = { local: 90 }
+  compression.convertFormatMap = { local: 'webp' }
+  watermarking.watermarkTypeMap = { local: 'image' }
+  watermarking.watermarkPositionMap = { local: 'southeast' }
+  compression.pluginOptions = { custom: true }
+
+  // @ts-expect-error Published scalar fields must retain their types.
+  compression.quality = '80'
+  // @ts-expect-error Published maps must not become any through the index signature.
+  compression.qualityMap = { local: '90' }
+  // @ts-expect-error Optional settings must not make map entries optional.
+  watermarking.watermarkTypeMap = { local: undefined }
+  // @ts-expect-error Published maps must retain their literal unions.
+  watermarking.watermarkTypeMap = { local: 'video' }
+  return { compression, watermarking }
+}
 
 /** Checks packaged translation declarations retain key validation and dynamic plugin-key support. */
 export function translations(ctx: IPicGo, pluginKey: string): string {
