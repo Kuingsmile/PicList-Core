@@ -1,5 +1,5 @@
 import { cloneDeep } from 'lodash-es'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IConfigItem, IPicGo, IUploaderConfigList } from '../../src/types'
 import { ConfigManager } from '../../src/utils/configManager'
@@ -73,6 +73,10 @@ describe('ConfigManager', () => {
     cm = new ConfigManager(ctx)
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   // --- migrateToMultiConfig ---
 
   describe('migrateToMultiConfig', () => {
@@ -106,6 +110,60 @@ describe('ConfigManager', () => {
       expect(uploaderData).toBeDefined()
       expect(uploaderData.configList).toEqual([])
       expect(uploaderData.defaultId).toBe('')
+    })
+
+    it('preserves existing identity, names, and zero timestamps during migration', () => {
+      ctx.saveConfig({
+        'picBed.github': { _id: 'legacy', _configName: 'Legacy', _createdAt: 0, _updatedAt: 0, repo: 'user/repo' },
+      })
+
+      const config = cm.getCurrentUploaderConfig('github')!
+
+      expect(config).toEqual({
+        _id: 'legacy',
+        _configName: 'Legacy',
+        _createdAt: 0,
+        _updatedAt: 0,
+        repo: 'user/repo',
+      })
+      expect(ctx.getConfig('picBed.github')).toEqual(config)
+    })
+
+    it('gives a newly migrated profile matching creation and modification times', () => {
+      vi.spyOn(Date, 'now').mockReturnValueOnce(100).mockReturnValue(101)
+
+      const config = cm.getCurrentUploaderConfig('github')!
+
+      expect(config._createdAt).toBe(100)
+      expect(config._updatedAt).toBe(100)
+    })
+
+    it.each([
+      {},
+      { defaultId: '' },
+      { configList: [] },
+      { configList: {}, defaultId: '' },
+      { configList: [null], defaultId: '' },
+    ])('rejects malformed profile data without overwriting it (%j)', uploaderData => {
+      ctx.saveConfig({ 'uploader.github': uploaderData })
+      vi.mocked(ctx.saveConfig).mockClear()
+
+      expect(() => cm.addUploaderConfig('github', 'New', {})).toThrow('Invalid uploader profile configuration')
+
+      expect(ctx.saveConfig).not.toHaveBeenCalled()
+      expect(ctx.getConfig('uploader.github')).toEqual(uploaderData)
+      expect(ctx.getConfig('picBed.github')).toEqual({ repo: 'user/repo', token: 'tok_xxx' })
+    })
+
+    it.each(['invalid', []])('rejects malformed legacy data without overwriting it (%j)', legacy => {
+      ctx.saveConfig({ 'picBed.github': legacy })
+      vi.mocked(ctx.saveConfig).mockClear()
+
+      expect(() => cm.migrateToMultiConfig('github')).toThrow('Invalid legacy uploader configuration')
+
+      expect(ctx.saveConfig).not.toHaveBeenCalled()
+      expect(ctx.getConfig('uploader.github')).toBeUndefined()
+      expect(ctx.getConfig('picBed.github')).toEqual(legacy)
     })
   })
 
@@ -167,6 +225,23 @@ describe('ConfigManager', () => {
 
       const all = cm.getAllUploaderConfigs('github')
       expect(all).toHaveLength(2)
+    })
+
+    it('assigns fresh metadata and matching timestamps instead of trusting supplied metadata', () => {
+      cm.migrateToMultiConfig('imgur')
+      vi.spyOn(Date, 'now').mockReturnValueOnce(100).mockReturnValue(101)
+
+      const config = cm.addUploaderConfig('imgur', 'New', {
+        _id: 'supplied',
+        _configName: 'Supplied',
+        _createdAt: 1,
+        _updatedAt: 2,
+      })
+
+      expect(config._id).not.toBe('supplied')
+      expect(config._configName).toBe('New')
+      expect(config._createdAt).toBe(100)
+      expect(config._updatedAt).toBe(100)
     })
   })
 
@@ -232,6 +307,7 @@ describe('ConfigManager', () => {
       cm.migrateToMultiConfig('github')
       const result = cm.deleteUploaderConfig('github', 'does-not-exist')
       expect(result).toBe(false)
+      expect(ctx.log.warn).not.toHaveBeenCalled()
     })
   })
 
@@ -420,5 +496,47 @@ describe('ConfigManager', () => {
       const config = cm.getConfigByName('github', 'Does Not Exist')
       expect(config).toBeNull()
     })
+  })
+
+  describe('configuration snapshots', () => {
+    it.each(['list', 'current', 'lookup', 'migrate'] as const)('loads one fresh snapshot for %s', action => {
+      cm.migrateToMultiConfig('github')
+      vi.mocked(ctx.getConfig).mockClear()
+      vi.mocked(ctx.saveConfig).mockClear()
+
+      if (action === 'list') cm.getAllUploaderConfigs('github')
+      if (action === 'current') cm.getCurrentUploaderConfig('github')
+      if (action === 'lookup') cm.getConfigByName('github', 'Default')
+      if (action === 'migrate') cm.migrateToMultiConfig('github')
+
+      expect(ctx.getConfig).toHaveBeenCalledOnce()
+      expect(ctx.saveConfig).not.toHaveBeenCalled()
+    })
+
+    it.each(['add', 'update', 'rename', 'select', 'delete'] as const)(
+      'does not mutate loaded profiles during %s',
+      action => {
+        cm.migrateToMultiConfig('github')
+        const secondary = cm.addUploaderConfig('github', 'Backup', { repo: 'backup/repo' })
+        const original = ctx.getConfig<IUploaderConfigList>('uploader.github')
+        const snapshot = cloneDeep(original)
+        original.configList.forEach(Object.freeze)
+        Object.freeze(original.configList)
+        Object.freeze(original)
+        vi.mocked(ctx.getConfig).mockClear()
+        vi.mocked(ctx.saveConfig).mockClear()
+
+        if (action === 'add') cm.addUploaderConfig('github', 'New', { repo: 'new/repo' })
+        if (action === 'update')
+          expect(cm.updateUploaderConfig('github', secondary._id, { repo: 'new/repo' })).toBe(true)
+        if (action === 'rename') expect(cm.renameConfig('github', secondary._id, 'Renamed')).toBe(true)
+        if (action === 'select') expect(cm.setDefaultConfig('github', secondary._id)).toBe(true)
+        if (action === 'delete') expect(cm.deleteUploaderConfig('github', secondary._id)).toBe(true)
+
+        expect(original).toEqual(snapshot)
+        expect(ctx.getConfig).toHaveBeenCalledOnce()
+        expect(ctx.saveConfig).toHaveBeenCalledOnce()
+      },
+    )
   })
 })
