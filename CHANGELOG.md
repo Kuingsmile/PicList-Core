@@ -1,3 +1,18 @@
+# :tada: 3.0.0-alpha.2 (2026-09-26)
+
+### :sparkles: Features
+
+* **cli:** enhance uploader configuration commands and add edit functionality ([#90](https://github.com/Kuingsmile/PicList-Core/issues/90)) ([2144d5a](https://github.com/Kuingsmile/PicList-Core/commit/2144d5a)), closes [#89](https://github.com/Kuingsmile/PicList-Core/issues/89)
+* **cli:** expand use command ([8eba9be](https://github.com/Kuingsmile/PicList-Core/commit/8eba9be))
+* **server:** optimize picgo-server when port is used ([5076673](https://github.com/Kuingsmile/PicList-Core/commit/5076673))
+
+### :pencil: Documentation
+
+* update readme ([023845e](https://github.com/Kuingsmile/PicList-Core/commit/023845e))
+
+### :package: Chore
+
+* update vscode setting ([f07b335](https://github.com/Kuingsmile/PicList-Core/commit/f07b335))
 # :tada: 3.0.0-alpha.1 (2026-09-23)
 
 ### :sparkles: Features
