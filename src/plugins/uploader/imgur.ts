@@ -7,15 +7,9 @@ const formatAccessToken = (accessToken: string): string =>
   accessToken ? (accessToken.startsWith('Bearer') ? accessToken : `Bearer ${accessToken}`) : ''
 
 /**
- * Selects account or client authorization and optionally searches account albums before building an
- * upload request.
+ * Selects account or client authorization and resolves an optional album for the upload batch.
  */
-const postOptions = async (
-  ctx: IPicGo,
-  options: IImgurConfig,
-  fileName: string,
-  imgBase64: string,
-): Promise<IOldReqOptions> => {
+const postOptions = async (ctx: IPicGo, options: IImgurConfig): Promise<IOldReqOptions> => {
   const clientId = options.clientId || ''
   const username = options.username || ''
   const accessToken = formatAccessToken(options.accessToken || '')
@@ -38,9 +32,7 @@ const postOptions = async (
       'User-Agent': 'PicList',
     },
     formData: {
-      image: imgBase64,
       type: 'base64',
-      name: fileName,
       description: 'Uploaded with PicList',
     },
   }
@@ -74,7 +66,7 @@ const postOptions = async (
         }
       }
       initPages++
-    } while (res.body.data.length > 0)
+    } while (!albumHash && res.body.data.length > 0)
     if (albumHash && requestOptions.formData) {
       requestOptions.formData.album = albumHash
     }
@@ -90,11 +82,23 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const imgurOptions = ctx.getConfig<IImgurConfig>('picBed.imgur')
   if (!imgurOptions) throw new Error("Can't find imgur config")
   try {
+    let uploadOptions: IOldReqOptions | undefined
     for (const img of ctx.output) {
       if (!img.fileName) continue
       const base64Image = img.base64Image || (img.buffer ? Buffer.from(img.buffer).toString('base64') : null)
       if (!base64Image) continue
-      const options = await postOptions(ctx, imgurOptions, img.fileName, base64Image)
+      if (!uploadOptions) {
+        uploadOptions = await postOptions(ctx, imgurOptions)
+      }
+      const options: IOldReqOptions = {
+        ...uploadOptions,
+        headers: { ...uploadOptions.headers },
+        formData: {
+          ...uploadOptions.formData,
+          image: base64Image,
+          name: img.fileName,
+        },
+      }
       const res: string = await ctx.request(options)
       const body = typeof res === 'string' ? JSON.parse(res) : res
       if (body.success) {
