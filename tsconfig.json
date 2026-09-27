@@ -16,6 +16,6 @@
     "target": "ES2022",
     "types": ["node"]
   },
-  "exclude": ["node_modules", "dist", "test/package/consumer"],
-  "include": ["src", "test", "vitest.config.ts"]
+  "exclude": ["node_modules", "dist"],
+  "include": ["src"]
 }

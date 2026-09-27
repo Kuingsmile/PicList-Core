@@ -5,7 +5,7 @@ renovate.json
 
 node_modules/
 src/
-test/
+coverage/
 docs/
 
 rolldown.config.js
@@ -23,6 +23,5 @@ tsconfig.json
 logo.png
 
 CHANGELOG.md
-vitest.config.ts
 
 yarn.lock

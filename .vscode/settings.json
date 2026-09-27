@@ -31,7 +31,6 @@
   "files.watcherExclude": {
     "**/.git/objects/**": true,
     "**/.git/subtree-cache/**": true,
-    "**/coverage/**": true,
     "**/dist/**": true,
     "**/node_modules/**": true
   },
@@ -42,7 +41,6 @@
   "npm.packageManager": "yarn",
   "prettier.requireConfig": true,
   "search.exclude": {
-    "**/coverage": true,
     "**/dist": true,
     "**/node_modules": true
   }

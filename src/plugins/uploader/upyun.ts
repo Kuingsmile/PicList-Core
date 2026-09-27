@@ -13,10 +13,9 @@ const DEFAULT_EXPIRE_TIME = 1800 // 30 minutes
 const SUCCESS_STATUS_CODE = 200
 
 /** Signs a PUT resource and UTC date using the MD5-derived operator password key. */
-const generateSignature = (options: IUpyunConfig, fileName: string): string => {
+const generateSignature = (options: IUpyunConfig, fileName: string, date: string): string => {
   const { path = '', operator, password, bucket } = options
   const md5Password = getMd5(password)
-  const date = new Date().toUTCString()
   const uri = `/${bucket}/${encodePath(`${path}${fileName}`)}`
   const value = `PUT&${uri}&${date}`
   const sign = crypto.createHmac('sha1', md5Password).update(value).digest('base64')
@@ -24,24 +23,20 @@ const generateSignature = (options: IUpyunConfig, fileName: string): string => {
 }
 
 /** Builds a signed Upyun PUT request against the configured or default API endpoint. */
-const postOptions = (
-  options: IUpyunConfig,
-  fileName: string,
-  signature: string,
-  image: Buffer,
-): IOldReqOptionsWithFullResponse => {
+const postOptions = (options: IUpyunConfig, fileName: string, image: Buffer): IOldReqOptionsWithFullResponse => {
   const { bucket, path } = options
   let endpoint = (options.endpoint || DEFAULT_ENDPOINT).replace(/\/+$/g, '')
   if (!endpoint.startsWith('http')) {
     endpoint = `https://${endpoint}`
   }
 
+  const date = new Date().toUTCString()
   return {
     method: 'PUT',
     url: `${endpoint}/${bucket}/${encodePath(`${path}${fileName}`)}`,
     headers: {
-      Authorization: signature,
-      Date: new Date().toUTCString(),
+      Authorization: generateSignature(options, fileName, date),
+      Date: date,
       'Content-Type': mime.getType(fileName) || 'application/octet-stream',
     },
     body: image,
@@ -78,8 +73,7 @@ const processImage = async (ctx: IPicGo, img: any, upyunOptions: IUpyunConfig, p
   const image = getImageBuffer(img)
   if (!image) return
 
-  const signature = generateSignature(upyunOptions, img.fileName)
-  const options = postOptions(upyunOptions, img.fileName, signature, image)
+  const options = postOptions(upyunOptions, img.fileName, image)
   const body = await ctx.request(options)
 
   if (body.statusCode !== SUCCESS_STATUS_CODE) {

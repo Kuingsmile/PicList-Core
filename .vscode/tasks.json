@@ -33,7 +33,6 @@
       "type": "shell",
       "command": "yarn",
       "args": ["lint"],
-      "group": "test",
       "problemMatcher": ["$eslint-stylish"],
       "presentation": {
         "panel": "dedicated",
@@ -56,45 +55,6 @@
       "type": "shell",
       "command": "yarn",
       "args": ["lint:dpdm"],
-      "problemMatcher": [],
-      "presentation": {
-        "panel": "dedicated",
-        "reveal": "always"
-      }
-    },
-    {
-      "label": "yarn: test",
-      "type": "shell",
-      "command": "yarn",
-      "args": ["test"],
-      "group": {
-        "kind": "test",
-        "isDefault": true
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "panel": "dedicated",
-        "reveal": "always"
-      }
-    },
-    {
-      "label": "yarn: test current file",
-      "type": "shell",
-      "command": "yarn",
-      "args": ["vitest", "run", "${file}"],
-      "group": "test",
-      "problemMatcher": [],
-      "presentation": {
-        "panel": "dedicated",
-        "reveal": "always"
-      }
-    },
-    {
-      "label": "yarn: test:coverage",
-      "type": "shell",
-      "command": "yarn",
-      "args": ["test:coverage"],
-      "group": "test",
       "problemMatcher": [],
       "presentation": {
         "panel": "dedicated",

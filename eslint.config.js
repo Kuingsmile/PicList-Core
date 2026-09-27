@@ -11,7 +11,7 @@ const jsoncFiles = ['**/*.jsonc', '**/tsconfig.json', '**/tsconfig.*.json', '**/
 
 export default defineConfig(
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
+    ignores: ['**/node_modules/**', '**/dist/**'],
   },
   {
     files: ['**/*.{js,jsx,cjs,mjs,ts,tsx,cts,mts}', 'bin/picgo', 'bin/picgo-server'],

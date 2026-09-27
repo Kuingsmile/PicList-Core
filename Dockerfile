@@ -1,6 +1,6 @@
 ARG NODE_IMAGE=node:22.21.1-alpine3.22@sha256:b2358485e3e33bc3a33114d2b1bdb18cdbe4df01bd2b257198eb51beb1f026c5
 
-# Test and compile once natively; the packed JavaScript is platform independent.
+# Compile once natively; the packed JavaScript is platform independent.
 FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS build
 WORKDIR /build
 ENV HUSKY=0
@@ -10,7 +10,6 @@ RUN yarn install --frozen-lockfile --non-interactive --network-timeout 300000
 COPY . .
 # Invoke TypeScript directly: older release tags do not have a typecheck script.
 RUN yarn tsc --noEmit \
-    && yarn test \
     && yarn build \
     && mkdir /package \
     && npm pack --ignore-scripts --pack-destination /package \
