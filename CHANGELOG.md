@@ -1,3 +1,19 @@
+# :tada: 3.0.0-alpha.3 (2026-09-27)
+
+### :sparkles: Features
+
+* build PicList destination URLs with URL/URLSearchParams ([d995a55](https://github.com/Kuingsmile/PicList-Core/commit/d995a55))
+* **github:** report GitHub same-name conflicts honestly ([58b86ed](https://github.com/Kuingsmile/PicList-Core/commit/58b86ed))
+* **upyun:** use one timestamp for each Upyun signature/request ([ee6aef4](https://github.com/Kuingsmile/PicList-Core/commit/ee6aef4))
+
+### :bug: Bug Fixes
+
+* avoid reading/downloading every input twice ([6cf3146](https://github.com/Kuingsmile/PicList-Core/commit/6cf3146))
+* preserve authenticated S3 proxy URLs ([443dae9](https://github.com/Kuingsmile/PicList-Core/commit/443dae9))
+* server restart and await shutdown ([d5261db](https://github.com/Kuingsmile/PicList-Core/commit/d5261db))
+* stop double-encoding existing URL escapes ([a1b9eaa](https://github.com/Kuingsmile/PicList-Core/commit/a1b9eaa))
+* **imgur:** stop Imgur album lookup when the album is found ([7877bf0](https://github.com/Kuingsmile/PicList-Core/commit/7877bf0))
+* **s3:** cCorrect S3 base64 payload metadata and data-URI parsing ([b1ec9b2](https://github.com/Kuingsmile/PicList-Core/commit/b1ec9b2))
 # :tada: 3.0.0-alpha.2 (2026-09-26)
 
 ### :sparkles: Features
