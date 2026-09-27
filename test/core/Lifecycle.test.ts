@@ -158,6 +158,191 @@ describe('Lifecycle preprocessing isolation', () => {
     await fs.remove(baseDir)
   })
 
+  describe.each(['default', 'disabled', 'skipped', 'unchanged', 'failed', 'unavailable watermark'])(
+    'single input load with %s processing',
+    processing => {
+      beforeEach(() => {
+        if (processing === 'default') picgo.unsetConfig('buildIn', 'compress')
+        if (processing === 'disabled') picgo.setConfig({ 'buildIn.compress': { quality: 100 } })
+        if (processing === 'skipped') picgo.setConfig({ 'buildIn.skipProcess': { skipProcessExtList: 'png' } })
+        if (processing === 'unchanged' || processing === 'failed') {
+          picgo.setConfig({
+            'buildIn.compress': { isConvert: true, convertFormat: processing === 'unchanged' ? 'png' : 'svg' },
+          })
+        }
+        if (processing === 'unavailable watermark') {
+          picgo.unsetConfig('buildIn', 'compress')
+          picgo.setConfig({ 'buildIn.watermark': { isAddWatermark: true } })
+          vi.spyOn(Lifecycle.prototype as any, 'downloadTTF').mockResolvedValue(false)
+        }
+      })
+
+      it('reads a local input only once and preserves its metadata', async () => {
+        const readSync = vi.spyOn(fs, 'readFileSync')
+        const read = vi.spyOn(fs, 'readFile')
+
+        const { ctx } = await picgo.uploadReturnCtx([inputPaths[0]])
+
+        const sourceReads = [...readSync.mock.calls, ...read.mock.calls].filter(([file]) => file === inputPaths[0])
+        expect(sourceReads).toHaveLength(1)
+        expect(uploaded).toHaveLength(1)
+        expect(uploaded[0]).toMatchObject({
+          buffer: inputBuffers[0],
+          fileName: 'photo.png',
+          filePath: inputPaths[0],
+          extname: '.png',
+          mimeType: 'image/png',
+          width: 8,
+          height: 6,
+        })
+        expect(ctx?.rawInputPath).toEqual([inputPaths[0]])
+      })
+
+      it('uploads a one-use URL without requesting it again', async () => {
+        const url = 'https://example.invalid/photo.png'
+        const request = vi
+          .spyOn(picgo.Request, 'request')
+          .mockResolvedValueOnce({ data: inputBuffers[0], headers: { 'content-type': 'image/png' } })
+          .mockRejectedValue(new Error('This URL has already been used'))
+
+        const { ctx } = await picgo.uploadReturnCtx([url])
+
+        expect(request).toHaveBeenCalledTimes(1)
+        expect(uploaded).toHaveLength(1)
+        expect(uploaded[0]).toMatchObject({
+          buffer: inputBuffers[0],
+          fileName: 'photo.png',
+          extname: '.png',
+          mimeType: 'image/png',
+          width: 8,
+          height: 6,
+        })
+        expect(ctx?.rawInputPath).toEqual([url])
+      })
+    },
+  )
+
+  it('avoids staging inputs when the profile disables global processing options', async () => {
+    picgo.setConfig({
+      'buildIn.watermark': { isAddWatermark: true },
+      'buildIn.list': [{ id: 'test', compress: { isReSizeByPercent: false }, watermark: { isAddWatermark: false } }],
+    })
+    const beforeTransform = vi.fn(async (ctx: IPicGo) => {
+      expect(ctx.input).toEqual(inputPaths)
+      expect(await fs.readdir(path.join(baseDir, 'piclistTemp'))).toEqual([])
+    })
+    picgo.helper.beforeTransformPlugins.register('inspect-inputs', { handle: beforeTransform })
+
+    await picgo.uploadReturnCtx(inputPaths)
+
+    expect(beforeTransform).toHaveBeenCalledTimes(1)
+    expect(uploaded.map(item => item.buffer)).toEqual(inputBuffers)
+  })
+
+  it.each([
+    { fileName: 'notes.txt', extname: '.txt', contentType: 'text/plain', buffer: Buffer.from('plain text') },
+    { fileName: 'download', extname: '.png', contentType: 'image/png', buffer: undefined },
+  ])('retains download metadata for an unchanged $fileName URL', async ({ fileName, extname, contentType, buffer }) => {
+    picgo.setConfig({ 'buildIn.skipProcess': { skipProcessExtList: 'png' } })
+    const bytes = buffer ?? inputBuffers[0]
+    const request = vi
+      .spyOn(picgo.Request, 'request')
+      .mockResolvedValueOnce({ data: bytes, headers: { 'content-type': contentType } })
+      .mockRejectedValue(new Error('This URL has already been used'))
+
+    await picgo.uploadReturnCtx([`https://example.invalid/${fileName}`])
+
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(uploaded).toHaveLength(1)
+    expect(uploaded[0]).toMatchObject({ buffer: bytes, fileName, extname, mimeType: contentType })
+  })
+
+  it.each(['sequential', 'concurrent'])('isolates source snapshots across %s uploads of a mutable URL', async mode => {
+    picgo.setConfig({ 'buildIn.compress': { isConvert: true, convertFormat: 'png' } })
+    const request = vi
+      .spyOn(picgo.Request, 'request')
+      .mockResolvedValueOnce({ data: inputBuffers[0], headers: { 'content-type': 'image/png' } })
+      .mockResolvedValueOnce({ data: inputBuffers[1], headers: { 'content-type': 'image/png' } })
+      .mockRejectedValue(new Error('Unexpected repeated download'))
+    if (mode === 'concurrent') {
+      let release!: () => void
+      let arrivals = 0
+      const ready = new Promise<void>(resolve => (release = resolve))
+      picgo.helper.beforeTransformPlugins.register('wait-for-both-downloads', {
+        handle: async () => {
+          if (++arrivals === 2) release()
+          await ready
+        },
+      })
+    }
+    const input = ['https://example.invalid/photo.png']
+    const results =
+      mode === 'concurrent'
+        ? await Promise.all([picgo.uploadReturnCtx(input), picgo.uploadReturnCtx(input)])
+        : [await picgo.uploadReturnCtx(input), await picgo.uploadReturnCtx(input)]
+
+    expect(request).toHaveBeenCalledTimes(2)
+    expect(results.map(result => result.ctx?.processedInput[0]?.buffer)).toEqual(expect.arrayContaining(inputBuffers))
+  })
+
+  it('loads a replacement input supplied by a before-transform hook', async () => {
+    picgo.setConfig({ 'buildIn.compress': { isConvert: true, convertFormat: 'png' } })
+    picgo.helper.beforeTransformPlugins.register('replace-input', {
+      handle: async ctx => {
+        ctx.input[0] = inputPaths[1]
+      },
+    })
+
+    await picgo.uploadReturnCtx([inputPaths[0]])
+
+    expect(uploaded).toHaveLength(1)
+    expect(uploaded[0]).toMatchObject({ buffer: inputBuffers[1], filePath: inputPaths[1] })
+  })
+
+  it('does not retry failed downloads during transformation', async () => {
+    const url = 'https://example.invalid/missing.png'
+    const request = vi.spyOn(picgo.Request, 'request').mockRejectedValue(new Error('Synthetic download failure'))
+
+    const { ctx } = await picgo.uploadReturnCtx([url, inputPaths[0]])
+
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(uploaded).toHaveLength(1)
+    expect(uploaded[0]).toMatchObject({ inputIndex: 1, fileName: 'photo.png', width: 4, height: 3 })
+    expect(ctx?.rawInputPath).toEqual([url, inputPaths[0]])
+  })
+
+  it('still processes inputs when only EXIF removal is enabled', async () => {
+    picgo.setConfig({ 'buildIn.compress': { isRemoveExif: true } })
+    const input = await sharp(inputBuffers[0]).withMetadata().jpeg().toBuffer()
+    const inputPath = path.join(baseDir, 'metadata.jpg')
+    await fs.writeFile(inputPath, input)
+    expect((await sharp(input).metadata()).exif).toBeDefined()
+
+    await picgo.uploadReturnCtx([inputPath])
+
+    expect(uploaded).toHaveLength(1)
+    expect((await sharp(uploaded[0].buffer!).metadata()).exif).toBeUndefined()
+  })
+
+  it('still processes inputs when only watermarking is enabled', async () => {
+    picgo.unsetConfig('buildIn', 'compress')
+    picgo.setConfig({
+      'buildIn.watermark': {
+        isAddWatermark: true,
+        watermarkType: 'image',
+        watermarkImagePath: inputPaths[1],
+        watermarkScaleRatio: 0.5,
+        watermarkImageOpacity: 255,
+      },
+    })
+
+    await picgo.uploadReturnCtx([inputPaths[0]])
+
+    expect(uploaded).toHaveLength(1)
+    const pixels = await sharp(uploaded[0].buffer!).removeAlpha().raw().toBuffer()
+    expect([...pixels.subarray(-3)]).toEqual([0, 0, 255])
+  })
+
   /**
    * Asserts that same-name inputs retain separate paths, bytes, dimensions, and their expected source
    * colors.

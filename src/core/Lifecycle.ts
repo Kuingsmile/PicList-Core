@@ -23,6 +23,7 @@ import {
 } from '../types'
 import {
   getConvertedFormat,
+  getFSFile,
   getImageTypeByMagicNumber,
   getTreatedCompressOptions,
   getTreatedWaterMarkOptions,
@@ -39,6 +40,7 @@ import {
 } from '../utils/common'
 import { createContext } from '../utils/createContext'
 import { IBuildInEvent } from '../utils/enum'
+import { cachePreprocessedInput, clearPreprocessedInputs } from '../utils/preprocessedInput'
 import { ScriptHandler } from '../utils/runScripts'
 
 // Constants
@@ -265,6 +267,8 @@ export class Lifecycle extends EventEmitter {
       return await this.executeLifecycle(ctx, tempDirs)
     } catch (e: any) {
       return this.handleError(ctx, e)
+    } finally {
+      clearPreprocessedInputs(ctx)
     }
   }
 
@@ -335,7 +339,7 @@ export class Lifecycle extends EventEmitter {
     ctx.emit(IBuildInEvent.BEFORE_TRANSFORM, ctx)
     ctx.log.info('Pre-processing images, please wait...')
 
-    if (compressOptions || watermarkOptions) {
+    if (isNeedCompress(compressOptions) || compressOptions?.isRemoveExif || watermarkOptions?.isAddWatermark) {
       const tempFilePath = path.join(ctx.baseDir, 'piclistTemp')
       await this.processImages(ctx, tempFilePath, compressOptions, watermarkOptions, skipExtensions, tempDirs)
     } else {
@@ -379,8 +383,7 @@ export class Lifecycle extends EventEmitter {
   }
 
   /**
-   * Loads a local or remote input, applies eligible processing, and replaces its path when bytes
-   * change.
+   * Loads an input once, replacing its path after processing or retaining its bytes for transformation.
    */
   private async processImage(
     item: string,
@@ -391,30 +394,33 @@ export class Lifecycle extends EventEmitter {
     watermarkOptions: Undefinable<IBuildInWaterMarkOptions>,
     skipExtensions: Set<string>,
   ): Promise<void> {
+    if (typeof item !== 'string') return
     const itemIsUrl = isUrl(item)
-    const info: IPathTransformedImgInfo = itemIsUrl ? await getURLFile(item, ctx) : { success: false }
-
-    if (itemIsUrl && (!info.success || !info.buffer)) return
-
     ctx.rawInputPath[index] = item
-    const localFileBuffer = itemIsUrl ? undefined : fs.readFileSync(item)
-    const extension = itemIsUrl ? info.extname || '' : getLocalFileExtension(item, localFileBuffer!)
-    const shouldSkipExtension = skipExtensions.has(extension.toLowerCase())
+    const info = itemIsUrl ? await getURLFile(item, ctx) : await getFSFile(item)
 
-    const fileBuffer: Buffer = itemIsUrl ? info.buffer! : localFileBuffer!
-    const processedImage = await this.applyProcessing(
-      fileBuffer,
-      extension,
-      compressOptions,
-      watermarkOptions,
-      shouldSkipExtension,
-      item,
-      tempFilePath,
-      ctx,
-    )
+    try {
+      if (!info.success || !info.buffer) return
 
-    if (processedImage) {
-      await this.saveProcessedImage(item, index, ctx, tempFilePath, processedImage, extension, itemIsUrl, info)
+      const extension = itemIsUrl ? info.extname || '' : getLocalFileExtension(item, info.buffer)
+      const shouldSkipExtension = skipExtensions.has(extension.toLowerCase())
+      const processedImage = await this.applyProcessing(
+        info.buffer,
+        extension,
+        compressOptions,
+        watermarkOptions,
+        shouldSkipExtension,
+        item,
+        tempFilePath,
+        ctx,
+      )
+
+      if (processedImage) {
+        await this.saveProcessedImage(item, index, ctx, tempFilePath, processedImage, extension, itemIsUrl, info)
+      }
+    } finally {
+      // A skipped or failed transform must reuse the same source snapshot, even for one-use URLs.
+      if (ctx.input[index] === item) cachePreprocessedInput(ctx, index, item, info)
     }
   }
 

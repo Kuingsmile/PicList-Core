@@ -627,6 +627,18 @@ describe('getConvertedFormat', () => {
 })
 
 describe('isNeedCompress', () => {
+  it('detects enabled operations before the input extension is known', () => {
+    expect(isNeedCompress(undefined)).toBe(false)
+    expect(isNeedCompress({ quality: 100, isReSize: true, reSizeWidth: 0, reSizeHeight: 0 })).toBe(false)
+    expect(isNeedCompress({ quality: 80 })).toBe(true)
+    expect(isNeedCompress({ isConvert: true, convertFormat: 'png' })).toBe(true)
+    expect(isNeedCompress({ isReSize: true, reSizeWidth: 100 })).toBe(true)
+    expect(isNeedCompress({ isReSizeByPercent: true, reSizePercent: 50 })).toBe(true)
+    expect(isNeedCompress({ isRotate: true, rotateDegree: 90 })).toBe(true)
+    expect(isNeedCompress({ isFlip: true })).toBe(true)
+    expect(isNeedCompress({ isFlop: true })).toBe(true)
+  })
+
   it('should detect only active compression operations', () => {
     expect(isNeedCompress(undefined, '.jpg')).toBe(false)
     expect(isNeedCompress({ quality: 100 }, '.jpg')).toBe(false)

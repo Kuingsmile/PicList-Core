@@ -1129,8 +1129,10 @@ export const isNeedAddWatermark = (
 
 /**
  * Checks whether normalized settings request a transform, resize, quality reduction, or format change.
+ * Omitting the extension checks whether any supported image format could require compression.
  */
-export const isNeedCompress = (compressOptions: IBuildInCompressOptions | undefined, fileExt: string): boolean => {
+export const isNeedCompress = (compressOptions: IBuildInCompressOptions | undefined, fileExt?: string): boolean => {
+  if (fileExt === undefined) return imageFormatList.some(extension => isNeedCompress(compressOptions, extension))
   if (!imageFormatList.includes(normalizeImageExt(fileExt)) || !compressOptions) return false
 
   const {

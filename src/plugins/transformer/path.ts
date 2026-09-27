@@ -3,6 +3,7 @@ import mime from 'mime'
 
 import { IImgInfo, IImgSize, IPathTransformedImgInfo, IPicGo } from '../../types'
 import { getFSFile, getImageSize, getURLFile, isUrl } from '../../utils/common'
+import { takePreprocessedInput } from '../../utils/preprocessedInput'
 
 /**
  * Loads files, URLs, or buffers into image records concurrently and drops failed inputs.
@@ -15,7 +16,10 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   await Promise.all(
     ctx.input.map(async (item: string | Buffer, index: number) => {
       let info: IPathTransformedImgInfo
-      if (Buffer.isBuffer(item)) {
+      const cached = takePreprocessedInput(ctx, index, item)
+      if (cached) {
+        info = cached
+      } else if (Buffer.isBuffer(item)) {
         info = {
           success: true,
           buffer: item,
