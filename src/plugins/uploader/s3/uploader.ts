@@ -73,7 +73,7 @@ async function createUploadTask(opts: ICreateUploadTaskOpts): Promise<IUploadRes
     throw new Error('undefined image')
   }
   try {
-    const { body, contentType, contentEncoding } = await extractInfo(opts.item)
+    const { body, contentType } = await extractInfo(opts.item)
 
     const command = new PutObjectCommand({
       Bucket: opts.bucketName,
@@ -81,7 +81,6 @@ async function createUploadTask(opts: ICreateUploadTaskOpts): Promise<IUploadRes
       ACL: opts.acl,
       Body: body,
       ContentType: contentType,
-      ContentEncoding: contentEncoding,
     })
 
     const output: PutObjectCommandOutput = await opts.client.send(command)

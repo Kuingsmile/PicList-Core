@@ -13,19 +13,18 @@ import { IImgInfo } from '../../../types'
 export async function extractInfo(info: IImgInfo): Promise<{
   body?: Buffer
   contentType?: string
-  contentEncoding?: string
 }> {
   const result: {
     body?: Buffer
     contentType?: string
-    contentEncoding?: string
   } = {}
 
   if (info.base64Image) {
-    const body = info.base64Image.replace(/^data:[/\w]+;base64,/, '')
-    result.contentType = info.base64Image.match(/[^:]\w+\/[\w-+\d.]+(?=;|,)/)?.[0]
+    const dataUri = /^data:([^;,]*)(?:;[^;,]*)*;base64,/i.exec(info.base64Image)
+    const body = dataUri ? info.base64Image.slice(dataUri[0].length) : info.base64Image
+    result.contentType = dataUri?.[1] || undefined
+    // Base64 is only the input representation; the uploaded bytes have no content encoding.
     result.body = Buffer.from(body, 'base64')
-    result.contentEncoding = 'base64'
   } else {
     if (info.extname) {
       result.contentType = mime.getType(info.extname) || undefined

@@ -1,13 +1,78 @@
-import { GetObjectCommand, ObjectCannedACL, PutObjectCommandOutput, S3Client } from '@aws-sdk/client-s3'
+import {
+  GetObjectCommand,
+  ObjectCannedACL,
+  PutObjectCommand,
+  PutObjectCommandOutput,
+  S3Client,
+} from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import uploader from '../../../src/plugins/uploader/s3/uploader'
+import type { IImgInfo } from '../../../src/types'
 
 const bucketName = 'test-bucket'
 const path = 'images/photo + #?.png'
 const versionId = 'test/version+id='
 const eTag = '"test-etag"'
+
+describe('S3 upload bodies and metadata', () => {
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jPp8AAAAASUVORK5CYII=',
+    'base64',
+  )
+  const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><text>Test image</text></svg>')
+  const send = vi.fn<(_command: PutObjectCommand) => Promise<PutObjectCommandOutput>>()
+
+  beforeEach(() => {
+    send.mockReset().mockResolvedValue({ $metadata: {} })
+  })
+
+  /** Captures the actual S3 command without making a network request. */
+  async function upload(item: IImgInfo) {
+    await uploader.createUploadTask({
+      client: { send },
+      bucketName,
+      path,
+      item,
+      urlPrefix: 'https://cdn.example.invalid',
+      options: '',
+    })
+
+    expect(send).toHaveBeenCalledOnce()
+    const command = send.mock.calls[0][0]
+    expect(command).toBeInstanceOf(PutObjectCommand)
+    return command.input
+  }
+
+  it.each([
+    ['', 'image/png', png],
+    ['data:image/png;base64,', 'image/png', png],
+    ['data:image/svg+xml;base64,', 'image/svg+xml', svg],
+    ['data:image/svg+xml;charset=utf-8;base64,', 'image/svg+xml', svg],
+    [
+      'data:application/vnd.example-test+json;base64,',
+      'application/vnd.example-test+json',
+      Buffer.from('{"test":true}'),
+    ],
+    ['data:;base64,', 'image/png', png],
+    ['DATA:image/svg+xml;BASE64,', 'image/svg+xml', svg],
+  ])('uploads base64 with prefix "%s" as decoded bytes with MIME type %s', async (prefix, contentType, body) => {
+    const input = await upload({ base64Image: `${prefix}${body.toString('base64')}` })
+
+    expect(input.Body).toEqual(body)
+    expect(input.ContentType).toBe(contentType)
+    expect(input.ContentEncoding).toBeUndefined()
+  })
+
+  it.each(['.png', undefined])('preserves buffer bytes and MIME detection with extname %s', async extname => {
+    const input = await upload({ buffer: png, extname })
+
+    expect(input.Body).toEqual(png)
+    expect(input.ContentType).toBe('image/png')
+    expect(input.ContentEncoding).toBeUndefined()
+  })
+})
 
 describe('S3 download URLs', () => {
   let client: S3Client
