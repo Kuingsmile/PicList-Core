@@ -7,6 +7,9 @@ import { createUploader } from '../../helpers/uploader'
 
 const config = { repo: 'owner/images', branch: 'main', token: 'synthetic-token', path: '/uploads//' }
 const downloadUrl = 'https://raw.example.invalid/photo.png'
+// Independently calculated with git hash-object --stdin for the exact fixture bytes.
+const photoSha = '9e2c0a25a7c5e7ce95f921514343f2623000ad6c'
+const binarySha = '273261f612cde2714cfa601d8c27825e4608769e'
 
 function githubUploader(options: Record<string, unknown> | undefined = config, output?: IImgInfo[]) {
   return createUploader(registerGithubUploader, 'picBed.github', options, output)
@@ -95,7 +98,7 @@ describe('GitHub uploader', () => {
       if (existing) {
         ctx.request
           .mockRejectedValueOnce({ statusCode: 422 })
-          .mockResolvedValueOnce({ download_url: downloadUrl, sha: 'existing-sha' })
+          .mockResolvedValueOnce({ type: 'file', download_url: downloadUrl, sha: photoSha })
       } else {
         ctx.request.mockResolvedValueOnce({ content: { download_url: downloadUrl, sha: 'new-sha' } })
       }
@@ -103,7 +106,7 @@ describe('GitHub uploader', () => {
       await upload()
 
       expect(ctx.output).toEqual([
-        { fileName: 'photo #1.png', imgUrl: expected, hash: existing ? 'existing-sha' : 'new-sha' },
+        { fileName: 'photo #1.png', imgUrl: expected, hash: existing ? photoSha : 'new-sha' },
       ])
       expect(ctx.request).toHaveBeenCalledTimes(existing ? 2 : 1)
       if (existing) {
@@ -117,6 +120,76 @@ describe('GitHub uploader', () => {
       expect(ctx.emit).not.toHaveBeenCalled()
     },
   )
+
+  it.each([
+    { source: 'binary buffer', data: { buffer: Buffer.from([0, 255, 128, 195, 169, 10]) }, sha: binarySha },
+    { source: 'base64', data: { base64Image: 'AP+Aw6kK' }, sha: binarySha },
+    {
+      source: 'base64 preferred over a different buffer',
+      data: { base64Image: 'cGhvdG8=', buffer: Buffer.from('other-data') },
+      sha: photoSha,
+    },
+  ])('accepts an identical existing image from $source', async ({ data, sha }) => {
+    const { ctx, upload } = githubUploader(config, [{ fileName: 'photo.png', width: 40, ...data }])
+    ctx.request
+      .mockRejectedValueOnce({ statusCode: 422 })
+      .mockResolvedValueOnce({ type: 'file', download_url: downloadUrl, sha, content: '', encoding: 'none' })
+
+    await expect(upload()).resolves.toBe(ctx)
+
+    expect(ctx.output).toEqual([{ fileName: 'photo.png', width: 40, imgUrl: downloadUrl, hash: sha }])
+    expect(ctx.request).toHaveBeenCalledTimes(2)
+    expect(ctx.emit).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { source: 'buffer', data: { buffer: Buffer.from('different-image') } },
+    { source: 'base64', data: { base64Image: Buffer.from('different-image').toString('base64') } },
+    {
+      source: 'base64 preferred over an identical buffer',
+      data: { base64Image: Buffer.from('different-image').toString('base64'), buffer: Buffer.from('photo') },
+    },
+  ])('rejects different content from $source and preserves pending images', async ({ data }) => {
+    const first: IImgInfo = { fileName: 'photo.png', width: 40, ...data }
+    const second: IImgInfo = { fileName: 'second.png', buffer: Buffer.from('second') }
+    const pending = [{ ...first }, { ...second }]
+    const { ctx, upload } = githubUploader(config, [first, second])
+    const conflict = Object.assign(new Error('Validation failed'), { statusCode: 422 })
+    ctx.request
+      .mockRejectedValueOnce(conflict)
+      .mockResolvedValueOnce({ type: 'file', download_url: downloadUrl, sha: photoSha })
+      .mockResolvedValueOnce({ content: { download_url: downloadUrl, sha: 'second-sha' } })
+
+    await expect(upload()).rejects.toMatchObject({
+      message: 'Upload failed because a different image already exists at this path',
+      cause: conflict,
+    })
+
+    expect(ctx.request).toHaveBeenCalledTimes(2)
+    expect(ctx.output).toEqual(pending)
+    expect(ctx.emit).toHaveBeenCalledExactlyOnceWith(IBuildInEvent.NOTIFICATION, {
+      title: 'UPLOAD_FAILED',
+      body: 'CHECK_SETTINGS_AND_NETWORK',
+    })
+  })
+
+  it('encodes the branch when verifying existing content', async () => {
+    const { ctx, upload } = githubUploader({ ...config, branch: 'images/release&preview#1' }, [
+      { fileName: 'photo.png', base64Image: 'cGhvdG8=' },
+    ])
+    ctx.request
+      .mockRejectedValueOnce({ statusCode: 422 })
+      .mockResolvedValueOnce({ type: 'file', download_url: downloadUrl, sha: photoSha })
+
+    await upload()
+
+    expect(ctx.request).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        method: 'GET',
+        url: 'https://api.github.com/repos/owner/images/contents/uploads/photo.png?ref=images%2Frelease%26preview%231',
+      }),
+    )
+  })
 
   it('reports a failed duplicate lookup with the original upload error as its cause', async () => {
     const { ctx, upload } = githubUploader()
@@ -133,6 +206,53 @@ describe('GitHub uploader', () => {
       body: 'CHECK_SETTINGS_AND_NETWORK',
     })
     expect(ctx.output[0].imgUrl).toBeUndefined()
+    expect(ctx.output[0].buffer).toEqual(Buffer.from('synthetic-image'))
+  })
+
+  it.each([
+    { response: 'null', value: null },
+    { response: 'undefined', value: undefined },
+    { response: 'directory listing', value: [{ type: 'file', download_url: downloadUrl, sha: photoSha }] },
+    { response: 'directory object', value: { type: 'dir', download_url: downloadUrl, sha: photoSha } },
+    { response: 'missing file type', value: { download_url: downloadUrl, sha: photoSha } },
+    { response: 'missing hash', value: { type: 'file', download_url: downloadUrl } },
+    { response: 'missing download URL', value: { type: 'file', sha: photoSha } },
+    { response: 'null download URL', value: { type: 'file', download_url: null, sha: photoSha } },
+  ])('rejects a $response lookup without discarding the image', async ({ value }) => {
+    const image: IImgInfo = { fileName: 'photo.png', base64Image: 'cGhvdG8=', buffer: Buffer.from('photo') }
+    const pending = { ...image }
+    const { ctx, upload } = githubUploader(config, [image])
+    const conflict = Object.assign(new Error('Validation failed'), { statusCode: 422 })
+    ctx.request.mockRejectedValueOnce(conflict).mockResolvedValueOnce(value)
+
+    await expect(upload()).rejects.toMatchObject({ cause: conflict })
+
+    expect(ctx.request).toHaveBeenCalledTimes(2)
+    expect(ctx.output).toEqual([pending])
+    expect(ctx.emit).toHaveBeenCalledExactlyOnceWith(IBuildInEvent.NOTIFICATION, {
+      title: 'UPLOAD_FAILED',
+      body: 'CHECK_SETTINGS_AND_NETWORK',
+    })
+  })
+
+  it.each(['network', 'not found'])('preserves the image when the lookup fails: %s', async failureType => {
+    const image: IImgInfo = { fileName: 'photo.png', base64Image: 'cGhvdG8=', buffer: Buffer.from('photo') }
+    const pending = { ...image }
+    const { ctx, upload } = githubUploader(config, [image])
+    const lookupError =
+      failureType === 'network'
+        ? new Error('Connection failed')
+        : Object.assign(new Error('Not found'), { statusCode: 404 })
+    ctx.request.mockRejectedValueOnce({ statusCode: 422 }).mockRejectedValueOnce(lookupError)
+
+    await expect(upload()).rejects.toBe(lookupError)
+
+    expect(ctx.request).toHaveBeenCalledTimes(2)
+    expect(ctx.output).toEqual([pending])
+    expect(ctx.emit).toHaveBeenCalledExactlyOnceWith(IBuildInEvent.NOTIFICATION, {
+      title: 'UPLOAD_FAILED',
+      body: 'CHECK_SETTINGS_AND_NETWORK',
+    })
   })
 
   it.each(['network', 'empty response'])(

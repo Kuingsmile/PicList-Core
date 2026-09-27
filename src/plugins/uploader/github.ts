@@ -1,3 +1,5 @@
+import crypto from 'node:crypto'
+
 import mime from 'mime'
 
 import { ILocalesKey } from '../../i18n/zh-CN'
@@ -35,12 +37,12 @@ const postOptions = (fileName: string, options: IGithubConfig, data: any): IOldR
   } as const
 }
 
-/** Builds a branch-specific contents lookup used to recover an existing image after HTTP 422. */
+/** Builds a branch-specific contents lookup used to verify an existing image after HTTP 422. */
 const getOptions = (fileName: string, options: IGithubConfig): IOldReqOptionsWithJSON => {
   const { token, repo, branch } = options
   return {
     method: 'GET',
-    url: buildGithubApiUrl(repo, options.path, fileName, `?ref=${branch}`),
+    url: buildGithubApiUrl(repo, options.path, fileName, `?ref=${encodeURIComponent(branch)}`),
     headers: {
       Authorization: `token ${token}`,
       'User-Agent': 'PicList',
@@ -50,8 +52,8 @@ const getOptions = (fileName: string, options: IGithubConfig): IOldReqOptionsWit
 }
 
 /**
- * Creates repository files and records their URLs and hashes, looking up existing files after HTTP
- * 422.
+ * Creates repository files and records their URLs and hashes. An existing file is reused after HTTP
+ * 422 only when its blob hash matches the submitted content.
  */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const githubOptions = getAndCheckConfig<IGithubConfig>(ctx, 'picBed.github', ['token'])
@@ -84,20 +86,28 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           ? `${githubOptions.customUrl}/${encodePath(`${webPath || uploadPath}${img.fileName}`)}`
           : body.content.download_url
         img.hash = body.content.sha
-        delete img.base64Image
-        delete img.buffer
       } catch (err: any) {
         if (err.statusCode !== 422) throw err
-        delete img.base64Image
-        delete img.buffer
         const res = (await ctx.request(getOptions(img.fileName, githubOptions))) as any
-        if (!Object.keys(res).length)
+        if (res?.type !== 'file' || typeof res.sha !== 'string')
           throw new Error('Upload failed and the image does not exist in the repo', { cause: err })
-        img.hash = res.sha
-        img.imgUrl = githubOptions.customUrl
+
+        // Git hashes the blob header and decoded bytes, not the base64 text.
+        const imageBuffer = Buffer.from(base64Image, 'base64')
+        const sha = crypto.createHash('sha1').update(`blob ${imageBuffer.length}\0`).update(imageBuffer).digest('hex')
+        if (res.sha !== sha)
+          throw new Error('Upload failed because a different image already exists at this path', { cause: err })
+
+        const imgUrl = githubOptions.customUrl
           ? `${githubOptions.customUrl}/${encodePath(`${webPath || uploadPath}${img.fileName}`)}`
           : res.download_url
+        if (typeof imgUrl !== 'string' || !imgUrl)
+          throw new Error('Upload failed because the existing image has no download URL', { cause: err })
+        img.hash = res.sha
+        img.imgUrl = imgUrl
       }
+      delete img.base64Image
+      delete img.buffer
     }
     return ctx
   } catch (err: any) {
