@@ -1,3 +1,5 @@
+import { isIP } from 'node:net'
+
 import mime from 'mime'
 
 import { IOldReqOptionsWithFullResponse, IPicGo, IPicListConfig, IPluginConfig } from '../../types'
@@ -5,20 +7,46 @@ import { IBuildInEvent } from '../../utils/enum'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames } from './utils'
 
+/** Resolves a server base address and encodes the configured upload destination and key. */
+const getUploadUrl = (options: IPicListConfig): string => {
+  const { host = '127.0.0.1', port = '', picbed = '', configName = 'Default', serverKey = '' } = options
+  const address = host.trim()
+  const scheme = /^[a-z][\da-z+.-]*:\/\//i
+  const value = scheme.test(address) ? address : `http://${address}`
+  const invalidHost = new Error('PicList host must be an HTTP(S) base address without credentials, query, or fragment')
+  if (!URL.canParse(value)) throw invalidHost
+  const url = new URL(value)
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || /[\\?#]/.test(address)) {
+    throw invalidHost
+  }
+
+  // Inspect the authority because URL.port omits explicit default ports such as :80 and :443.
+  const authority = address.replace(scheme, '').split('/', 1)[0]
+  const hasPort = /:\d+$/.test(authority)
+  const configuredPort = String(port).trim()
+  if (configuredPort) {
+    if (!/^\d+$/.test(configuredPort) || Number(configuredPort) < 1 || Number(configuredPort) > 65535) {
+      throw new Error('PicList port must be an integer between 1 and 65535')
+    }
+    url.port = configuredPort
+  } else if (!hasPort && isIP(url.hostname.replace(/^\[|\]$/g, ''))) {
+    url.port = '36677'
+  }
+
+  url.pathname = `${url.pathname}/upload`.replace(/\/+/g, '/')
+  const params = new URLSearchParams({ configName })
+  if (picbed) params.set('picbed', picbed)
+  // Both the desktop and standalone servers currently authenticate through this query parameter.
+  if (serverKey) params.set('key', serverKey)
+  url.search = params.toString()
+  return url.href
+}
+
 /** Builds a PicList server upload request with destination/profile selection and optional server key. */
 const postOptions = (options: IPicListConfig, fileName: string, image: Buffer): IOldReqOptionsWithFullResponse => {
-  const { host = '127.0.0.1', port = '', picbed = '', configName = 'Default', serverKey = '' } = options
-  const isIp = host.match(/(\d+)\.(\d+)\.(\d+)\.(\d+)/)
-  const protocol = host.startsWith('https://') ? 'https://' : 'http://'
-  const formatHost = host.replace(/(http:\/\/|https:\/\/)/, '')
-  const defaultPort = port || '36677'
-  const endpoint = isIp
-    ? `${protocol}${formatHost}:${defaultPort}`
-    : `${protocol}${formatHost}${port ? `:${port}` : ''}`
-  const url = `${endpoint}/upload?configName=${configName}${picbed ? `&picbed=${picbed}` : ''}${serverKey ? `&key=${serverKey}` : ''}`
   return {
     method: 'POST',
-    url,
+    url: getUploadUrl(options),
     headers: {
       'content-type': 'multipart/form-data',
     },
