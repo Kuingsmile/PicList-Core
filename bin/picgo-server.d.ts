@@ -10,14 +10,14 @@ interface UploadResult {
 interface PicGoServer {
   httpServer: Server
   /** Starts listening on the configured default port and host. */
-  startup: () => void
+  startup: () => Promise<void>
   /**
    * Closes the listener; hasStarted suppresses the ordinary shutdown log when an existing server was
    * found.
    */
-  shutdown: (hasStarted?: boolean) => void
+  shutdown: (hasStarted?: boolean) => Promise<void>
   /** Closes the current listener and starts it again with configured defaults. */
-  restart: () => void
+  restart: () => Promise<void>
 }
 
 declare const server: PicGoServer

@@ -567,7 +567,6 @@ class Server {
     return this.enqueue(async () => {
       await closeServer(this.httpServer)
       this.httpServer = http.createServer(this.handleRequest)
-      this.config = this.getConfigWithDefaults()
       await this.listen(generation)
     })
   }
@@ -607,13 +606,13 @@ function closeServer(server) {
 const server = new Server()
 server.startup()
 
-process.on('SIGINT', () => {
-  server.shutdown()
-  process.exit(0)
-})
-process.on('SIGTERM', () => {
-  server.shutdown()
-  process.exit(0)
-})
+const shutdown = async () => {
+  await server.shutdown()
+  await picgo.log.flush()
+  // Let pending request cleanup and output finish before Node exits naturally.
+  process.exitCode = 0
+}
+process.on('SIGINT', shutdown)
+process.on('SIGTERM', shutdown)
 
 export default server
