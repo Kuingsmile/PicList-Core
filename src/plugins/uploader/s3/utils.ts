@@ -1,7 +1,7 @@
 import { URL } from 'node:url'
 
 import { fileTypeFromBuffer } from 'file-type'
-import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent'
+import { HttpProxyAgent, HttpsProxyAgent, type ProxyAgentRequestOptions } from 'hpagent'
 import mime from 'mime'
 
 import { IImgInfo } from '../../../types'
@@ -42,20 +42,22 @@ export async function extractInfo(info: IImgInfo): Promise<{
   return result
 }
 
-/** Normalizes proxy host/port strings into HTTP URLs and substitutes localhost for 127.0.0.1. */
-function formatHttpProxyURL(url = ''): string {
-  if (!url) return ''
-
-  if (!/^https?:\/\//.test(url)) {
-    const [host, port] = url.split(':')
-    return `http://${host.replace('127.0.0.1', 'localhost')}:${port}`
-  }
+/** Parses HTTP(S) proxy URLs, retaining credentials and accepting bare hosts with an HTTP default. */
+function normalizeHttpProxyURL(url = ''): URL | undefined {
+  url = url.trim()
+  if (!url) return undefined
 
   try {
-    const { protocol, hostname, port } = new URL(url)
-    return `${protocol}//${hostname.replace('127.0.0.1', 'localhost')}:${port}`
-  } catch (_e) {
-    return ''
+    const proxyURL = new URL(url.includes('://') ? url : `http://${url}`)
+    if (proxyURL.protocol !== 'http:' && proxyURL.protocol !== 'https:') return undefined
+
+    // Match Request's credential validation, but leave decoding for hpagent's CONNECT request.
+    decodeURIComponent(proxyURL.username)
+    decodeURIComponent(proxyURL.password)
+    return proxyURL
+  } catch {
+    // URL parser errors can contain credentials; never log or propagate them.
+    return undefined
   }
 }
 
@@ -68,18 +70,24 @@ export function getProxyAgent(
   sslEnabled: boolean,
   rejectUnauthorized: boolean,
 ): HttpProxyAgent | HttpsProxyAgent | undefined {
-  const formatedProxy = formatHttpProxyURL(proxy)
-  if (!formatedProxy) {
+  const formattedProxy = normalizeHttpProxyURL(proxy)
+  if (!formattedProxy) {
     return undefined
   }
 
   const Agent = sslEnabled ? HttpsProxyAgent : HttpProxyAgent
+  // hpagent copies URL.hostname into host, but Node requires unbracketed IPv6 in request options.
+  // The hostname option takes precedence over host without changing the original proxy URL.
+  const proxyRequestOptions: ProxyAgentRequestOptions & { hostname: string } = {
+    hostname: formattedProxy.hostname.replace(/^\[|\]$/g, ''),
+  }
   const options = {
     keepAlive: true,
     keepAliveMsecs: 1000,
     scheduling: 'lifo' as 'lifo' | 'fifo' | undefined,
     rejectUnauthorized,
-    proxy: formatedProxy,
+    proxy: formattedProxy,
+    proxyRequestOptions,
   }
 
   return new Agent(options)
