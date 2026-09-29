@@ -5,6 +5,7 @@ import fs from 'fs-extra'
 import { IAdvancedPlistConfig, IOldReqOptions, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
 import { runScript } from '../../utils/runScripts'
+import { completeUploadFile, createUploadProgressCallback } from '../../utils/uploadProgress'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames } from './utils'
 
@@ -74,7 +75,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       advancedplistConfig.formDataKey || 'file',
     )
 
-    let body = (await ctx.request(postConfig)) as any
+    let body = (await ctx.request({ ...postConfig, onUploadProgress: createUploadProgressCallback(ctx, img) })) as any
     body = typeof body === 'string' ? JSON.parse(body) : body
 
     // Extract image URL from response using resDataPath
@@ -107,6 +108,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       console.error('AdvancedPlist upload failed:', body)
       throw new Error(body.message)
     }
+
+    if (img.imgUrl) completeUploadFile(ctx, img)
   }
   return ctx
 }

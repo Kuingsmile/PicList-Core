@@ -4,6 +4,7 @@ import qiniu from 'qiniu'
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IOldReqOptions, IPicGo, IPluginConfig, IQiniuConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { completeUploadFile, createUploadProgressCallback } from '../../utils/uploadProgress'
 import { getAndCheckConfig } from './helper'
 import { buildInUploaderNames, createField } from './utils'
 
@@ -59,7 +60,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       const base64Image = img.base64Image || (img.buffer ? Buffer.from(img.buffer).toString('base64') : null)
       if (!base64Image) continue
       const options = postOptions(qiniuOptions, img.fileName, getToken(qiniuOptions), base64Image)
-      const res = await ctx.request(options)
+      const res = await ctx.request({ ...options, onUploadProgress: createUploadProgressCallback(ctx, img) })
       const body = JSON.parse(res)
       if (body?.key) {
         delete img.base64Image
@@ -75,6 +76,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         ctx.log.error('qiniu error', body)
         throw new Error('Upload failed')
       }
+
+      if (img.imgUrl) completeUploadFile(ctx, img)
     }
     return ctx
   } catch (err: any) {

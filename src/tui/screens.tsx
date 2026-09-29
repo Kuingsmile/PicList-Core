@@ -61,15 +61,13 @@ export function Working({ state, quitting }: { state: SessionState; quitting: bo
   const t = useTranslation()
   const progress = state.progress
   const stage =
-    progress === undefined
-      ? 'Please wait…'
-      : progress >= 100
-        ? 'Finishing up…'
-        : progress >= 60
-          ? 'Uploading images…'
-          : progress >= 30
-            ? 'Preparing images…'
-            : 'Reading your images…'
+    state.uploadPhase === 'preparing'
+      ? 'Preparing images…'
+      : state.uploadPhase === 'uploading'
+        ? 'Uploading images…'
+        : state.uploadPhase === 'finalizing' || state.uploadPhase === 'completed'
+          ? 'Finishing up…'
+          : 'Please wait…'
   const filled = Math.round((progress || 0) / 5)
   return (
     <Box flexDirection='column' gap={1}>

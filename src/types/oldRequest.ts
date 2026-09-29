@@ -1,3 +1,5 @@
+import type { AxiosRequestConfig } from 'axios'
+
 export type IMethod =
   | 'get'
   | 'GET'
@@ -40,4 +42,6 @@ export interface IRequestPromiseOptions {
   proxy?: any
   /** Request timeout in milliseconds. */
   timeout?: number
+  /** Upload request byte events; preserved by the Axios compatibility adapter. */
+  onUploadProgress?: AxiosRequestConfig['onUploadProgress']
 }

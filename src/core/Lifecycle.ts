@@ -42,6 +42,7 @@ import { createContext } from '../utils/createContext'
 import { IBuildInEvent } from '../utils/enum'
 import { cachePreprocessedInput, clearPreprocessedInputs } from '../utils/preprocessedInput'
 import { ScriptHandler } from '../utils/runScripts'
+import { UploadProgress } from '../utils/uploadProgress'
 
 // Constants
 const MESSAGES = {
@@ -52,15 +53,6 @@ const MESSAGES = {
   DOWNLOAD_TTF_SUCCESS: 'Download ttf file successfully',
   DOWNLOAD_TTF_FAILED: 'Download ttf file failed',
   DOWNLOAD_TTF_SKIP: 'Download ttf file failed, skip add watermark',
-} as const
-
-/** Lifecycle progress percentages, with a negative sentinel indicating failure. */
-const PROGRESS = {
-  START: 0,
-  TRANSFORM: 30,
-  UPLOAD: 60,
-  COMPLETE: 100,
-  FAILED: -1,
 } as const
 
 /** Archive extensions excluded from image processing unless a configured list overrides them. */
@@ -250,22 +242,32 @@ export class Lifecycle extends EventEmitter {
    * cleanup.
    * @returns The derived context, including partial output on failure unless debug mode rethrows.
    */
-  async start(input: any[], skipProcess = false, tempDirs?: string[]): Promise<IPicGo> {
+  async start(
+    input: any[],
+    skipProcess = false,
+    tempDirs?: string[],
+    destination: 'primary' | 'secondary' = 'primary',
+  ): Promise<IPicGo> {
     // Secondary uploads share ownership until all upload hooks and scripts finish.
-    if (!tempDirs) return this.withTempFileCleanup(dirs => this.start(input, skipProcess, dirs))
+    if (!tempDirs) return this.withTempFileCleanup(dirs => this.start(input, skipProcess, dirs, destination))
 
     const ctx = createContext(this.ctx)
+    const progress = new UploadProgress(ctx, destination)
     try {
+      progress.preparing()
       if (!Array.isArray(input)) throw new Error('Input must be an array.')
 
       this.initializeContext(ctx, input)
 
       if (skipProcess) {
-        return await this.handleSkipProcess(ctx)
+        await this.handleSkipProcess(ctx, progress)
+      } else {
+        await this.executeLifecycle(ctx, tempDirs, progress)
       }
-
-      return await this.executeLifecycle(ctx, tempDirs)
+      progress.finish()
+      return ctx
     } catch (e: any) {
+      progress.finish(true)
       return this.handleError(ctx, e)
     } finally {
       clearPreprocessedInputs(ctx)
@@ -282,11 +284,11 @@ export class Lifecycle extends EventEmitter {
   }
 
   /** Uploads already processed records and runs upload and after-upload scripts and hooks. */
-  private async handleSkipProcess(ctx: IPicGo): Promise<IPicGo> {
+  private async handleSkipProcess(ctx: IPicGo, progress: UploadProgress): Promise<IPicGo> {
     const handler = new ScriptHandler(ctx)
     await handler.refreshCache()
     ctx.output = ctx.input
-    await this.doUpload(ctx)
+    await this.doUpload(ctx, progress)
     await handler.runStage('upload')
     ctx.input = ctx.rawInput
     await this.afterUpload(ctx)
@@ -295,7 +297,7 @@ export class Lifecycle extends EventEmitter {
   }
 
   /** Runs processing, transformation, renaming, upload, and corresponding script stages in order. */
-  private async executeLifecycle(ctx: IPicGo, tempDirs: string[]): Promise<IPicGo> {
+  private async executeLifecycle(ctx: IPicGo, tempDirs: string[], progress: UploadProgress): Promise<IPicGo> {
     const handler = new ScriptHandler(ctx)
     await handler.refreshCache()
     await this.preprocess(ctx, tempDirs)
@@ -308,7 +310,7 @@ export class Lifecycle extends EventEmitter {
     await this.beforeUpload(ctx)
     await handler.runStage('beforeUpload')
     ctx.processedInput = cloneDeep(ctx.output)
-    await this.doUpload(ctx)
+    await this.doUpload(ctx, progress)
     await handler.runStage('upload')
     ctx.input = ctx.rawInput
     await this.afterUpload(ctx)
@@ -319,7 +321,6 @@ export class Lifecycle extends EventEmitter {
   /** Emits failure events and logs the error, rethrowing only when debug mode is enabled. */
   private handleError(ctx: IPicGo, error: any): IPicGo {
     ctx.log.warn(IBuildInEvent.FAILED)
-    ctx.emit(IBuildInEvent.UPLOAD_PROGRESS, PROGRESS.FAILED)
     ctx.emit(IBuildInEvent.FAILED, error)
     ctx.log.error(error)
 
@@ -335,7 +336,6 @@ export class Lifecycle extends EventEmitter {
     const { compressOptions, watermarkOptions } = this.getProcessingOptions(ctx)
     const skipExtensions = this.getSkipExtensions(ctx)
 
-    ctx.emit(IBuildInEvent.UPLOAD_PROGRESS, PROGRESS.START)
     ctx.emit(IBuildInEvent.BEFORE_TRANSFORM, ctx)
     ctx.log.info('Pre-processing images, please wait...')
 
@@ -617,7 +617,6 @@ export class Lifecycle extends EventEmitter {
 
   /** Runs the selected transformer, falling back to the built-in path transformer if unavailable. */
   private async doTransform(ctx: IPicGo): Promise<IPicGo> {
-    ctx.emit(IBuildInEvent.UPLOAD_PROGRESS, PROGRESS.TRANSFORM)
     const type = ctx.getConfig<Undefinable<string>>('picBed.transformer') || 'path'
     let transformer = ctx.helper.transformer.get(type)
     let currentTransformer = type
@@ -635,7 +634,6 @@ export class Lifecycle extends EventEmitter {
 
   /** Announces upload preparation and awaits all before-upload hooks. */
   private async beforeUpload(ctx: IPicGo): Promise<IPicGo> {
-    ctx.emit(IBuildInEvent.UPLOAD_PROGRESS, PROGRESS.UPLOAD)
     ctx.log.info('Before upload')
     ctx.emit(IBuildInEvent.BEFORE_UPLOAD, ctx)
     await this.handlePlugins(ctx.helper.beforeUploadPlugins, ctx)
@@ -643,7 +641,7 @@ export class Lifecycle extends EventEmitter {
   }
 
   /** Runs the selected uploader or SM.MS fallback and records its type on each output image. */
-  private async doUpload(ctx: IPicGo): Promise<IPicGo> {
+  private async doUpload(ctx: IPicGo, progress: UploadProgress): Promise<IPicGo> {
     const uploaderType = this.getUploaderType(ctx)
     let uploader = ctx.helper.uploader.get(uploaderType.picBed)
     let currentUploader = uploaderType.picBed
@@ -656,7 +654,9 @@ export class Lifecycle extends EventEmitter {
     ctx.log.info(
       `Uploading... Current uploader is [${currentUploader}] with config id [${uploaderType.id || 'default'}]`,
     )
+    progress.start(ctx.output)
     await uploader?.handle(ctx)
+    progress.finalizing(ctx.output)
 
     for (const outputImg of ctx.output) {
       outputImg.type = currentUploader
@@ -667,7 +667,6 @@ export class Lifecycle extends EventEmitter {
   /** Runs final hooks, removes image payloads, emits completion, and logs uploaded URLs. */
   private async afterUpload(ctx: IPicGo): Promise<IPicGo> {
     ctx.emit(IBuildInEvent.AFTER_UPLOAD, ctx)
-    ctx.emit(IBuildInEvent.UPLOAD_PROGRESS, 100)
     await this.handlePlugins(ctx.helper.afterUploadPlugins, ctx)
     let msg = ''
     const length = ctx.output.length

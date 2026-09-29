@@ -7,6 +7,7 @@ import { ILocalesKey } from '../../i18n/zh-CN'
 import { ILocalConfig, IPicGo, IPluginConfig } from '../../types'
 import { getSha256 } from '../../utils/common/hash'
 import { IBuildInEvent } from '../../utils/enum'
+import { completeUploadFile } from '../../utils/uploadProgress'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
@@ -102,6 +103,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       })
       throw new Error(`Failed to upload image: ${e}`, { cause: e })
     }
+
+    if (img.imgUrl) completeUploadFile(ctx, img)
   }
   return ctx
 }

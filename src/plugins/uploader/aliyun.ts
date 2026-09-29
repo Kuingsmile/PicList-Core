@@ -4,6 +4,7 @@ import mime from 'mime'
 
 import { IAliyunConfig, IOldReqOptionsWithFullResponse, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { completeUploadFile, createUploadProgressCallback } from '../../utils/uploadProgress'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
@@ -55,7 +56,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       const date = getCurrentUTCDate()
       const signature = generateSignature(aliYunOptions, img.fileName, date)
       const options = postOptions(aliYunOptions, img.fileName, signature, image, date)
-      const body = await ctx.request(options)
+      const body = await ctx.request({ ...options, onUploadProgress: createUploadProgressCallback(ctx, img) })
       if (body.statusCode !== 200) {
         throw new Error('Upload failed')
       }
@@ -65,6 +66,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         : `https://${bucket}.${area}.aliyuncs.com/${encodedPath}${urlOptions}`
       delete img.base64Image
       delete img.buffer
+
+      if (img.imgUrl) completeUploadFile(ctx, img)
     }
     return ctx
   } catch (err: any) {

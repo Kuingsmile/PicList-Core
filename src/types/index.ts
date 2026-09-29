@@ -255,6 +255,20 @@ export interface IImgInfo {
   [propName: string]: any
 }
 
+/** Byte-weighted progress for one destination. Emitted as the second uploadProgress argument. */
+export interface IUploadProgressEvent {
+  uploadId: string
+  destination: 'primary' | 'secondary'
+  phase: 'preparing' | 'uploading' | 'finalizing' | 'completed' | 'failed'
+  /** Null when transfer progress cannot be measured, including preparation and finalization. */
+  progress: number | null
+  /** Transformed file bytes, excluding multipart/base64 transport overhead. */
+  transferredBytes: number
+  totalBytes: number | null
+  completedFiles: number
+  totalFiles: number
+}
+
 /** File or URL load result with an explicit success flag and optional failure reason in extra fields. */
 export interface IPathTransformedImgInfo extends IImgInfo {
   success: boolean

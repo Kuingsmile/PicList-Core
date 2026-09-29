@@ -7,6 +7,7 @@ import { AuthType, createClient, WebDAVClient, WebDAVClientOptions } from 'webda
 import { IPicGo, IPluginConfig, IWebdavPlistConfig } from '../../types'
 import { getSha256 } from '../../utils/common/hash'
 import { IBuildInEvent } from '../../utils/enum'
+import { completeUploadFile } from '../../utils/uploadProgress'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
@@ -76,6 +77,8 @@ const uploadImage = async (
   }
 
   const filePath = `${uploadPath}${fileName}`.replace(/^\/+|\/+$/g, '')
+  // This WebDAV client's fetch transport ignores onUploadProgress. Keep the retryable
+  // buffer (including digest-auth retries) and report confirmed file completion instead.
   return await client.putFileContents(filePath, imageBuffer, { overwrite: true })
 }
 
@@ -112,6 +115,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
       } catch (_error) {
         ctx.log.warn('WebDAV upload succeeded, but the gallery cache could not be updated.')
       }
+
+      if (img.imgUrl) completeUploadFile(ctx, img)
     }
     return ctx
   } catch (err: any) {

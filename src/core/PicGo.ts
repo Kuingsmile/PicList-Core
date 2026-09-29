@@ -484,8 +484,8 @@ export class PicGo extends EventEmitter implements IPicGo {
       try {
         ctxResult.backupCtx = await this.uploadConfig.run(secondaryConfig, () =>
           secondPicBedMode === 'separate'
-            ? this.lifecycle.start(rawInput, false, tempDirs)
-            : this.lifecycle.start(ctxP.processedInput, true, tempDirs),
+            ? this.lifecycle.start(rawInput, false, tempDirs, 'secondary')
+            : this.lifecycle.start(ctxP.processedInput, true, tempDirs, 'secondary'),
         )
       } catch (e: any) {
         this.log.error('Failed to upload to second uploader:', e)

@@ -1,10 +1,10 @@
 // https://github.com/hellodk34/picgo-plugin-lankong
 // LICENSE: MIT
-
 import https from 'node:https'
 
 import { ILskyConfig, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { completeUploadFile, createUploadProgressCallback } from '../../utils/uploadProgress'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames } from './utils'
 
@@ -110,7 +110,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     if (!imageBuffer) continue
 
     const postConfig = postOptions(lskyOptions, img.fileName, imageBuffer)
-    let body = (await ctx.request(postConfig)) as any
+    let body = (await ctx.request({ ...postConfig, onUploadProgress: createUploadProgressCallback(ctx, img) })) as any
     body = typeof body === 'string' ? JSON.parse(body) : body
     const isV2 = lskyOptions.version === 'V2'
     const condition = isV2 ? body.status === true : body.code === 200
@@ -128,6 +128,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       })
       throw new Error(body.message)
     }
+
+    if (img.imgUrl) completeUploadFile(ctx, img)
   }
   return ctx
 }

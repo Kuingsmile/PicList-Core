@@ -1,5 +1,6 @@
 import { IFullResponse, IImgurConfig, IOldReqOptions, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { completeUploadFile, createUploadProgressCallback } from '../../utils/uploadProgress'
 import { buildInUploaderNames } from './utils'
 
 /** Adds the Bearer prefix when a nonempty access token does not already include it. */
@@ -99,7 +100,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
           name: img.fileName,
         },
       }
-      const res: string = await ctx.request(options)
+      const res: string = await ctx.request({ ...options, onUploadProgress: createUploadProgressCallback(ctx, img) })
       const body = typeof res === 'string' ? JSON.parse(res) : res
       if (body.success) {
         delete img.base64Image
@@ -109,6 +110,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       } else {
         throw new Error('Server error, please try again')
       }
+
+      if (img.imgUrl) completeUploadFile(ctx, img)
     }
     return ctx
   } catch (err: any) {

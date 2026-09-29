@@ -5,6 +5,7 @@ import mime from 'mime'
 import { IOldReqOptionsWithFullResponse, IPicGo, IPluginConfig, IUpyunConfig } from '../../types'
 import { getMd5, safeParse } from '../../utils/common'
 import { IBuildInEvent } from '../../utils/enum'
+import { completeUploadFile, createUploadProgressCallback } from '../../utils/uploadProgress'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
@@ -74,7 +75,7 @@ const processImage = async (ctx: IPicGo, img: any, upyunOptions: IUpyunConfig, p
   if (!image) return
 
   const options = postOptions(upyunOptions, img.fileName, image)
-  const body = await ctx.request(options)
+  const body = await ctx.request({ ...options, onUploadProgress: createUploadProgressCallback(ctx, img) })
 
   if (body.statusCode !== SUCCESS_STATUS_CODE) {
     throw new Error('Upload failed')
@@ -105,6 +106,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
 
     for (const img of ctx.output) {
       await processImage(ctx, img, upyunOptions, path)
+
+      if (img.imgUrl) completeUploadFile(ctx, img)
     }
 
     return ctx

@@ -2,6 +2,7 @@ import { ObjectCannedACL } from '@aws-sdk/client-s3'
 
 import { IAwsS3PListUserConfig, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { completeUploadFile, createUploadProgressCallback } from '../../utils/uploadProgress'
 import uploader from './s3/uploader'
 import { buildInUploaderNames, formatPathHelper } from './utils'
 
@@ -41,11 +42,14 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         acl: (awsS3Options.acl || 'public-read') as ObjectCannedACL,
         urlPrefix,
         options: awsS3Options.options || '',
+        onProgress: createUploadProgressCallback(ctx, img),
       })
       img.imgUrl = task.imgURL
       img.url = task.url
       delete img.buffer
       delete img.base64Image
+
+      if (img.imgUrl) completeUploadFile(ctx, img)
     }
     return ctx
   } catch (err: any) {

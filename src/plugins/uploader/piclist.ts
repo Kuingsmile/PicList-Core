@@ -4,6 +4,7 @@ import mime from 'mime'
 
 import { IOldReqOptionsWithFullResponse, IPicGo, IPicListConfig, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { completeUploadFile, createUploadProgressCallback } from '../../utils/uploadProgress'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames } from './utils'
 
@@ -75,7 +76,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
       const options = postOptions(piclistOptions, img.fileName, image)
 
       const res = await ctx
-        .request(options)
+        .request({ ...options, onUploadProgress: createUploadProgressCallback(ctx, img) })
         .then((res: any) => res)
         .catch((err: Error) => {
           return {
@@ -94,6 +95,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
       } else {
         throw new Error(res.body.message)
       }
+
+      if (img.imgUrl) completeUploadFile(ctx, img)
     }
     return ctx
   } catch (err: any) {

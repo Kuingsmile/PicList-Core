@@ -1,5 +1,6 @@
 import { IOldReqOptions, IPicGo, IPluginConfig, ISmmsConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { completeUploadFile, createUploadProgressCallback } from '../../utils/uploadProgress'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField } from './utils'
 
@@ -35,7 +36,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     if (!imageBuffer) continue
 
     const postConfig = postOptions(img.fileName, imageBuffer, smmsConfig.token)
-    const res: string = await ctx.request(postConfig)
+    const res: string = await ctx.request({ ...postConfig, onUploadProgress: createUploadProgressCallback(ctx, img) })
     const body = JSON.parse(res)
     if (body.code !== 200 && body.message !== 'success') {
       const errorMsg = body.message || 'Upload failed'
@@ -49,6 +50,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     img.hash = body.data.hash
     delete img.base64Image
     delete img.buffer
+
+    if (img.imgUrl) completeUploadFile(ctx, img)
   }
   return ctx
 }

@@ -8,6 +8,7 @@ import { IPicGo, IPluginConfig, ISftpPlistConfig } from '../../types'
 import { getSha256 } from '../../utils/common/hash'
 import { IBuildInEvent } from '../../utils/enum'
 import SSHClient from '../../utils/sshClient'
+import { completeUploadFile, createUploadProgressCallback } from '../../utils/uploadProgress'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, encodePath } from './utils'
 
@@ -106,7 +107,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         const tempFilePath = path.join(uploadTempPath, path.posix.basename(fileName))
         await writeFile(tempFilePath, image)
         if (!client.isConnected) await client.connect(sftpplistConfig)
-        await client.upload(tempFilePath, remotePath, sftpplistConfig)
+        await client.upload(tempFilePath, remotePath, sftpplistConfig, createUploadProgressCallback(ctx, img))
         delete img.base64Image
         delete img.buffer
         img.imgUrl = imgUrl
@@ -118,6 +119,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         } catch (_error) {
           ctx.log.warn('SFTP upload succeeded, but the gallery cache could not be updated.')
         }
+
+        if (img.imgUrl) completeUploadFile(ctx, img)
       }
     } finally {
       try {

@@ -61,7 +61,12 @@ class SSHClient {
    *
    * @throws If no connection is active or the SFTP operation fails.
    */
-  public async upload(local: string, remote: string, config: ISftpPlistConfig): Promise<void> {
+  public async upload(
+    local: string,
+    remote: string,
+    config: ISftpPlistConfig,
+    onProgress?: (progress: { loaded: number; total: number }) => void,
+  ): Promise<void> {
     if (!this.isConnected) {
       throw new Error('SSH client is not connected')
     }
@@ -79,7 +84,9 @@ class SSHClient {
         await new Promise<void>((resolve, reject) => {
           sftp.close(handle, err => (err ? reject(err) : resolve()))
         })
-        await this.client.putFile(local, stagedPath, sftp)
+        await this.client.putFile(local, stagedPath, sftp, {
+          step: (loaded, _chunk, total) => onProgress?.({ loaded, total }),
+        })
         if (config.fileUser) await this.chown(stagedPath, config.fileUser)
         if (config.fileMode) await this.chmod(stagedPath, config.fileMode, 'Setting file permissions')
         await this.rename(sftp, stagedPath, remote)

@@ -1,13 +1,7 @@
 import url from 'node:url'
 
-import {
-  GetObjectCommand,
-  ObjectCannedACL,
-  PutObjectCommand,
-  PutObjectCommandOutput,
-  S3Client,
-  S3ClientConfig,
-} from '@aws-sdk/client-s3'
+import { GetObjectCommand, ObjectCannedACL, S3Client, S3ClientConfig } from '@aws-sdk/client-s3'
+import { Upload } from '@aws-sdk/lib-storage'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { NodeHttpHandler, NodeHttpHandlerOptions } from '@smithy/node-http-handler'
 import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent'
@@ -65,6 +59,7 @@ interface ICreateUploadTaskOpts {
   acl?: ObjectCannedACL
   urlPrefix?: string
   options: string
+  onProgress?: (progress: { loaded?: number; total?: number }) => void
 }
 
 /** Uploads one image with its content metadata and resolves a custom, public, or signed download URL. */
@@ -75,15 +70,19 @@ async function createUploadTask(opts: ICreateUploadTaskOpts): Promise<IUploadRes
   try {
     const { body, contentType } = await extractInfo(opts.item)
 
-    const command = new PutObjectCommand({
-      Bucket: opts.bucketName,
-      Key: opts.path,
-      ACL: opts.acl,
-      Body: body,
-      ContentType: contentType,
+    const task = new Upload({
+      client: opts.client,
+      params: {
+        Bucket: opts.bucketName,
+        Key: opts.path,
+        ACL: opts.acl,
+        Body: body,
+        ContentType: contentType,
+      },
+      leavePartsOnError: false,
     })
-
-    const output: PutObjectCommandOutput = await opts.client.send(command)
+    if (opts.onProgress) task.on('httpUploadProgress', opts.onProgress)
+    const output = await task.done()
 
     let url: string
     if (!opts.urlPrefix) {

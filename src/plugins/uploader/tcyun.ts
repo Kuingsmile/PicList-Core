@@ -4,6 +4,7 @@ import mime from 'mime'
 
 import { IOldReqOptionsWithFullResponse, IPicGo, IPluginConfig, ITcyunConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { completeUploadFile, createUploadProgressCallback } from '../../utils/uploadProgress'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
@@ -109,10 +110,12 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
 
       const signature = generateSignature(tcYunOptions, img.fileName)
       const options = postOptions(tcYunOptions, img.fileName, signature, imageBuffer, ctx.GUI_VERSION || ctx.VERSION)
-      const res = await ctx.request(options).catch((err: Error) => ({
-        statusCode: 400,
-        body: { msg: ctx.i18n.t('AUTH_FAILED'), err },
-      }))
+      const res = await ctx
+        .request({ ...options, onUploadProgress: createUploadProgressCallback(ctx, img) })
+        .catch((err: Error) => ({
+          statusCode: 400,
+          body: { msg: ctx.i18n.t('AUTH_FAILED'), err },
+        }))
       const body = useV4 && typeof res.body === 'string' ? JSON.parse(res.body) : res.body
       if (res.statusCode === 400) {
         throw body?.err || new Error(body?.msg || body?.message)
@@ -139,6 +142,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
       if (slim) {
         img.imgUrl += optionUrl ? '&imageSlim' : '?imageSlim'
       }
+
+      if (img.imgUrl) completeUploadFile(ctx, img)
     }
     return ctx
   } catch (err: any) {

@@ -5,6 +5,7 @@ import axios from 'axios'
 import { IAlistConfig, IAlistTokenStore, IFullResponse, IOldReqOptions, IPicGo, IPluginConfig } from '../../types'
 import { getSha256 } from '../../utils/common/hash'
 import { IBuildInEvent } from '../../utils/enum'
+import { completeUploadFile, createUploadProgressCallback } from '../../utils/uploadProgress'
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
@@ -140,7 +141,10 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
 
     const fullUploadPath = `${uploadPath}${img.fileName}`
     const postConfig = postOptions(url, token, img.fileName, fullUploadPath, imageBuffer)
-    const uploadRes = (await ctx.request(postConfig)) as unknown as IFullResponse
+    const uploadRes = (await ctx.request({
+      ...postConfig,
+      onUploadProgress: createUploadProgressCallback(ctx, img),
+    })) as unknown as IFullResponse
     handleResError(ctx, uploadRes)
 
     const refreshRes = (await ctx.request(
@@ -171,6 +175,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     img.imgUrl += (!customUrl || customUrl === url) && sign ? `?sign=${sign}` : ''
     delete img.base64Image
     delete img.buffer
+
+    if (img.imgUrl) completeUploadFile(ctx, img)
   }
   return ctx
 }

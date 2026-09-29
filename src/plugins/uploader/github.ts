@@ -5,6 +5,7 @@ import mime from 'mime'
 import { ILocalesKey } from '../../i18n/zh-CN'
 import { IGithubConfig, IOldReqOptionsWithJSON, IPicGo, IPluginConfig } from '../../types'
 import { IBuildInEvent } from '../../utils/enum'
+import { completeUploadFile, createUploadProgressCallback } from '../../utils/uploadProgress'
 import { getAndCheckConfig } from './helper'
 import { buildInUploaderNames, createField, encodePath, formatPathHelper } from './utils'
 
@@ -80,7 +81,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
             download_url: string
             sha: string
           }
-        } = await ctx.request(postConfig)
+        } = await ctx.request({ ...postConfig, onUploadProgress: createUploadProgressCallback(ctx, img) })
         if (!body) throw new Error('Server error, please try again')
         img.imgUrl = githubOptions.customUrl
           ? `${githubOptions.customUrl}/${encodePath(`${webPath || uploadPath}${img.fileName}`)}`
@@ -108,6 +109,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       }
       delete img.base64Image
       delete img.buffer
+
+      if (img.imgUrl) completeUploadFile(ctx, img)
     }
     return ctx
   } catch (err: any) {

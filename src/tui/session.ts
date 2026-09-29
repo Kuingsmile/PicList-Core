@@ -1,4 +1,4 @@
-import type { IPicGo } from '../types'
+import type { IPicGo, IUploadProgressEvent } from '../types'
 import { IBuildInEvent } from '../utils/enum'
 import type { IInquirerAdapter, IInquirerQuestion } from '../utils/inquirerShim'
 import { english, type Translate, translator } from './i18n'
@@ -57,6 +57,7 @@ export interface SessionState {
   error: boolean
   outcome?: 'success' | 'warning' | 'cancelled' | 'error'
   progress?: number
+  uploadPhase?: IUploadProgressEvent['phase']
   results: string[]
   resultTitle?: string
   /**
@@ -128,10 +129,13 @@ export class TuiSession {
       },
     }
     /** Marks negative progress as failure and clamps finite progress values for an active operation. */
-    const onProgress = (progress: number) => {
+    const onProgress = (progress: number, details?: IUploadProgressEvent) => {
       if (this.state.busy && Number.isFinite(progress)) {
         if (progress < 0) this.failed = true
-        this.update({ progress: Math.max(0, Math.min(100, progress)) })
+        this.update({
+          progress: details?.progress === null ? undefined : Math.max(0, Math.min(100, progress)),
+          uploadPhase: details?.phase ?? (progress <= 0 ? 'preparing' : progress >= 100 ? 'finalizing' : 'uploading'),
+        })
       }
     }
     ctx.on(IBuildInEvent.UPLOAD_PROGRESS, onProgress)
@@ -185,6 +189,7 @@ export class TuiSession {
       error: false,
       outcome: undefined,
       progress: undefined,
+      uploadPhase: undefined,
     })
     this.task = (async () => {
       try {
