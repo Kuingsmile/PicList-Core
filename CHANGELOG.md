@@ -1,3 +1,8 @@
+# :tada: 3.0.0-alpha.4 (2026-09-29)
+
+### :sparkles: Features
+
+* optimize upload progress ([f762e41](https://github.com/Kuingsmile/PicList-Core/commit/f762e41))
 # :tada: 3.0.0-alpha.3 (2026-09-27)
 
 ### :sparkles: Features
