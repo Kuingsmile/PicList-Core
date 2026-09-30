@@ -168,7 +168,9 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
   const userConfig = ctx.getConfig<ITcyunConfig>('picBed.tcyun') || {}
 
   return [
-    createField(ctx, 'TENCENTCLOUD', 'version', 'list', 'v5', false, undefined, { choices: ['v4', 'v5'] }),
+    createField(ctx, 'TENCENTCLOUD', 'version', 'list', userConfig.version ?? 'v5', false, undefined, {
+      choices: ['v4', 'v5'],
+    }),
     createField(ctx, 'TENCENTCLOUD', 'secretId', 'input', userConfig.secretId || '', true),
     createField(ctx, 'TENCENTCLOUD', 'secretKey', 'input', userConfig.secretKey || '', true),
     createField(ctx, 'TENCENTCLOUD', 'bucket', 'input', userConfig.bucket || '', true),
