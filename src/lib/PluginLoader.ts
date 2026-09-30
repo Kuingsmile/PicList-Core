@@ -7,7 +7,7 @@ import resolve from 'resolve'
 
 import { IPicGo, IPicGoPlugin, IPicGoPluginInterface, IPluginLoader } from '../types/index'
 import { IBuildInEvent } from '../utils/enum'
-import { setCurrentPluginName } from './LifecyclePlugins'
+import { getCurrentPluginName, setCurrentPluginName } from './LifecyclePlugins'
 
 /**
  * Local plugin loader, file system is required
@@ -82,7 +82,8 @@ export class PluginLoader implements IPluginLoader {
    *
    * @remarks
    * Installed packages respect persisted enablement and save their enabled state. Supplied factories
-   * register without saving enablement. Failures are logged, notified, and removed from loader caches.
+   * register without saving enablement. Failures roll back owned handlers and commands, clear loader
+   * caches, and are logged and notified. Registration ownership is restored after each factory and hook.
    *
    * @param name - Package name or runtime registration name.
    * @param plugin - Optional factory to use instead of importing an installed package.
@@ -92,33 +93,35 @@ export class PluginLoader implements IPluginLoader {
       this.ctx.log.warn('Please provide valid plugin')
       return
     }
+    if (this.list.includes(name)) return
     this.fullList.add(name)
     try {
-      // register local plugin
       if (!plugin) {
-        if (
-          this.ctx.getConfig(`picgoPlugins.${name}`) === true ||
-          this.ctx.getConfig(`picgoPlugins.${name}`) === undefined
-        ) {
-          this.list.push(name)
-          setCurrentPluginName(name)
-          const plugins = await this.getPlugin(name)
-          plugins!.register(this.ctx)
-          const plugin = `picgoPlugins[${name}]`
-          this.ctx.saveConfig({
-            [plugin]: true,
-          })
-        }
-      } else {
-        // register provided plugin
-        // && won't write config to files
-        this.list.push(name)
-        setCurrentPluginName(name)
-        const pluginInterface = plugin(this.ctx)
-        this.pluginMap.set(name, pluginInterface)
-        pluginInterface.register(this.ctx)
+        const enabled = this.ctx.getConfig(`picgoPlugins.${name}`)
+        if (enabled !== true && enabled !== undefined) return
       }
+
+      // Resolve installed packages before setting the synchronous registration owner.
+      const loadedPlugin = plugin ? undefined : await this.getPlugin(name)
+      const previousPluginName = getCurrentPluginName()
+      setCurrentPluginName(name)
+      try {
+        const pluginInterface = plugin ? plugin(this.ctx) : loadedPlugin!
+        pluginInterface.register(this.ctx)
+        this.pluginMap.set(name, pluginInterface)
+      } finally {
+        setCurrentPluginName(previousPluginName)
+      }
+
+      // Supplied factories do not persist enablement.
+      if (!plugin) {
+        this.ctx.saveConfig({
+          [`picgoPlugins[${name}]`]: true,
+        })
+      }
+      this.list.push(name)
     } catch (e) {
+      this.unregisterPluginHandlers(name)
       this.pluginMap.delete(name)
       this.list = this.list.filter((item: string) => item !== name)
       this.fullList.delete(name)
@@ -135,14 +138,18 @@ export class PluginLoader implements IPluginLoader {
     this.list = this.list.filter((item: string) => item !== name)
     this.fullList.delete(name)
     this.pluginMap.delete(name)
-    setCurrentPluginName(name)
+    this.unregisterPluginHandlers(name)
+    this.ctx.removeConfig('picgoPlugins', name)
+  }
+
+  /** Removes owned registrations without changing saved enablement or registration ownership. */
+  private unregisterPluginHandlers(name: string): void {
     this.ctx.helper.uploader.unregister(name)
     this.ctx.helper.transformer.unregister(name)
     this.ctx.helper.beforeTransformPlugins.unregister(name)
     this.ctx.helper.beforeUploadPlugins.unregister(name)
     this.ctx.helper.afterUploadPlugins.unregister(name)
     this.ctx.cmd.unregister(name)
-    this.ctx.removeConfig('picgoPlugins', name)
   }
 
   // get plugin by name
@@ -193,9 +200,15 @@ export class PluginLoader implements IPluginLoader {
 
     const pluginUrl = pathToFileURL(pluginPath).href
     const mod = await import(pluginUrl)
-    const plugin = (mod.default || mod)(this.ctx)
-    this.pluginMap.set(name, plugin)
-    return plugin
+    const previousPluginName = getCurrentPluginName()
+    setCurrentPluginName(name)
+    try {
+      const plugin = (mod.default || mod)(this.ctx)
+      this.pluginMap.set(name, plugin)
+      return plugin
+    } finally {
+      setCurrentPluginName(previousPluginName)
+    }
   }
 
   /**

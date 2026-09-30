@@ -3,7 +3,7 @@ import { ILifecyclePlugins, IPlugin } from '../types'
 /** Registry of lifecycle handlers with ownership tracking for package-wide removal. */
 export class LifecyclePlugins implements ILifecyclePlugins {
   /** Registration owner shared by lifecycle registries while a plugin registers its handlers. */
-  static currentPlugin: string | null
+  static currentPlugin: string | null = null
 
   /**
    * The name of the plugin
@@ -52,6 +52,7 @@ export class LifecyclePlugins implements ILifecyclePlugins {
       pluginList?.forEach((plugin: string) => {
         this.list.delete(plugin)
       })
+      this.pluginIdMap.delete(pluginName)
     }
   }
 

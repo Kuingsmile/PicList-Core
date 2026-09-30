@@ -83,6 +83,7 @@ export class Commander implements ICommander {
       pluginList?.forEach((plugin: string) => {
         this.list.delete(plugin)
       })
+      this.pluginIdMap.delete(pluginName)
     }
   }
 
