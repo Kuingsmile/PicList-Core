@@ -30,7 +30,7 @@ import {
   IUploadResultWithBackup,
 } from '../types'
 import { isConfigKeyInBlackList, isInputConfigValid } from '../utils/common'
-import { ConfigManager } from '../utils/configManager'
+import { ConfigManager, findUploaderConfigByName } from '../utils/configManager'
 import DB from '../utils/db'
 import { IBuildInEvent, IBusEvent } from '../utils/enum'
 import { eventBus } from '../utils/eventBus'
@@ -336,7 +336,7 @@ export class PicGo extends EventEmitter implements IPicGo {
   /**
    * Clones effective settings and applies an optional uploader and named profile for one upload.
    *
-   * @throws If a requested profile cannot be found in the saved configuration list.
+   * @throws If a requested profile name is invalid, ambiguous, or absent from the saved configuration list.
    */
   private getUploadConfig(options: IUploadOptions = {}): IConfig {
     const config = cloneDeep(this.getConfig<IConfig>())
@@ -345,10 +345,10 @@ export class PicGo extends EventEmitter implements IPicGo {
 
     const picBed = config.picBed || {}
     const currentType = picBed.uploader || picBed.current || 'smms'
-    const configName = options.configName || picBed[type]?._configName
+    const configName = options.configName ?? picBed[type]?._configName
     const configList = config.uploader?.[type]?.configList
-    if (options.configName || (type !== currentType && configName && configList)) {
-      const selected = configList?.find(item => item._configName === configName)
+    if (options.configName !== undefined || (type !== currentType && configName && configList)) {
+      const selected = findUploaderConfigByName(configList || [], configName)
       if (!selected) throw new Error('Uploader configuration not found')
       set(config, `picBed.${type}`, cloneDeep(selected))
       if (selected._id) set(config, `uploader.${type}.defaultId`, selected._id)

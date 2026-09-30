@@ -2,6 +2,28 @@ import { v4 as uuid } from 'uuid'
 
 import type { IConfig, IConfigItem, IPicGo, IStringKeyMap, IUploaderConfigList } from '../types'
 
+/** Normalizes profile names before validation, persistence, or lookup. */
+const normalizeConfigName = (configName: string): string => {
+  if (typeof configName !== 'string' || !configName.trim()) {
+    throw new Error('Uploader profile name must be a nonempty string')
+  }
+  return configName.trim()
+}
+
+/** Resolves a trimmed profile name without migrating settings or selecting an ambiguous match. */
+export const findUploaderConfigByName = (configList: IConfigItem[], configName: string): IConfigItem | null => {
+  const name = normalizeConfigName(configName)
+  let selected: IConfigItem | null = null
+  for (const item of configList) {
+    if (typeof item._configName !== 'string' || item._configName.trim() !== name) continue
+    if (selected) {
+      throw new Error('Uploader profile name is ambiguous; rename profiles by ID to make names unique')
+    }
+    selected = item
+  }
+  return selected
+}
+
 /** Manages named uploader profiles and synchronizes active and secondary uploader settings. */
 export class ConfigManager {
   private readonly ctx: IPicGo
@@ -31,16 +53,22 @@ export class ConfigManager {
     return this.getUploaderData(uploaderName, this.ctx.getConfig<IConfig>()).configList
   }
 
-  /** Persists a profile with fresh identity and timestamps, making the first profile the default. */
+  /**
+   * Persists a profile with fresh identity and timestamps, making the first profile the default.
+   *
+   * @throws If the name is empty, invalid, or already used by this uploader.
+   */
   addUploaderConfig(uploaderName: string, configName: string, configData: any): IConfigItem {
+    const name = normalizeConfigName(configName)
     const config = this.ctx.getConfig<IConfig>()
     const uploaderData = this.getUploaderData(uploaderName, config)
+    this.validateConfigName(name, uploaderData.configList)
     const now = Date.now()
 
     const newConfig: IConfigItem = {
       ...configData,
       _id: uuid(),
-      _configName: configName,
+      _configName: name,
       _createdAt: now,
       _updatedAt: now,
     }
@@ -60,6 +88,7 @@ export class ConfigManager {
    * active copies.
    *
    * @returns False if the profile ID does not exist.
+   * @throws If the resulting name is empty, invalid, or used by another profile of this uploader.
    */
   updateUploaderConfig(uploaderName: string, configId: string, configData: any): boolean {
     const config = this.ctx.getConfig<IConfig>()
@@ -74,7 +103,11 @@ export class ConfigManager {
     const updatedConfig: IConfigItem = {
       ...configData,
       _id: existingConfig._id,
-      _configName: configData._configName || existingConfig._configName,
+      _configName: this.validateConfigName(
+        Object.hasOwn(configData, '_configName') ? configData._configName : existingConfig._configName,
+        uploaderData.configList,
+        configId,
+      ),
       _createdAt: existingConfig._createdAt,
       _updatedAt: Date.now(),
     }
@@ -155,16 +188,22 @@ export class ConfigManager {
     return true
   }
 
-  /** Migrates legacy settings if needed and returns the first matching profile name, or null. */
+  /**
+   * Migrates legacy settings if needed and returns the uniquely matching trimmed profile name, or null.
+   *
+   * @throws If the name is empty, invalid, or ambiguous in existing settings.
+   */
   getConfigByName(uploaderName: string, configName: string): IConfigItem | null {
+    const name = normalizeConfigName(configName)
     const uploaderData = this.getUploaderData(uploaderName, this.ctx.getConfig<IConfig>())
-    return uploaderData.configList.find(item => item._configName === configName) || null
+    return findUploaderConfigByName(uploaderData.configList, name)
   }
 
   /**
    * Persists a profile name and modification time, synchronizing active and secondary copies.
    *
    * @returns False if the profile ID does not exist.
+   * @throws If the name is empty, invalid, or used by another profile of this uploader.
    */
   renameConfig(uploaderName: string, configId: string, newName: string): boolean {
     const config = this.ctx.getConfig<IConfig>()
@@ -177,7 +216,7 @@ export class ConfigManager {
 
     const updatedConfig: IConfigItem = {
       ...uploaderData.configList[configIndex],
-      _configName: newName,
+      _configName: this.validateConfigName(newName, uploaderData.configList, configId),
       _updatedAt: Date.now(),
     }
     const configList = [...uploaderData.configList]
@@ -185,6 +224,19 @@ export class ConfigManager {
     this.saveUploaderData(uploaderName, { ...uploaderData, configList }, config, updatedConfig)
 
     return true
+  }
+
+  /** Enforces nonempty names and uniqueness within an uploader, excluding the profile being edited. */
+  private validateConfigName(configName: string, configList: IConfigItem[], configId?: string): string {
+    const name = normalizeConfigName(configName)
+    if (
+      configList.some(
+        item => item._id !== configId && typeof item._configName === 'string' && item._configName.trim() === name,
+      )
+    ) {
+      throw new Error('Uploader profile name already exists')
+    }
+    return name
   }
 
   /** Resolves or migrates one uploader from a single fresh snapshot without rewriting other uploaders. */
@@ -213,7 +265,7 @@ export class ConfigManager {
       const profile: IConfigItem = {
         ...legacy,
         _id: legacy._id || uuid(),
-        _configName: legacy._configName || 'Default',
+        _configName: normalizeConfigName(legacy._configName || 'Default'),
         _createdAt: legacy._createdAt ?? now,
         _updatedAt: legacy._updatedAt ?? now,
       }

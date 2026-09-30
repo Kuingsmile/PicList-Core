@@ -61,8 +61,8 @@ export const handleSecondUploader = async (
   }
 
   let selectedConfig: IConfigItem | undefined
-  if (configName) {
-    selectedConfig = configs.find(config => config._configName === configName)
+  if (configName !== undefined) {
+    selectedConfig = ctx.configManager.getConfigByName(uploaderName, configName) || undefined
   } else {
     const selectedId = currentUploader === uploaderName ? currentConfig?._id : undefined
     const defaultId = configs.some(config => config._id === selectedId)

@@ -29,7 +29,7 @@ const handleConfig = async (
   configName?: string,
   uploaderName?: string,
 ): Promise<void> => {
-  const actualConfigName = configName || 'Default'
+  const actualConfigName = configName ?? 'Default'
   const existingConfig = module === 'uploader' ? ctx.configManager.getConfigByName(name, actualConfigName) : null
   if (existingConfig) {
     prompts = prompts.map(question => ({
@@ -37,7 +37,7 @@ const handleConfig = async (
       default: question.name in existingConfig ? existingConfig[question.name] : question.default,
     }))
   } else if (module === 'buildin' && uploaderName) {
-    const config = ctx.configManager.getConfigByName(uploaderName, configName || 'Default')
+    const config = ctx.configManager.getConfigByName(uploaderName, actualConfigName)
     const linked = (ctx.getConfig<any[]>('buildIn.list') || []).find(item => item.id === config?._id)?.[name]
     if (linked) {
       prompts = prompts.map(question => ({
@@ -69,11 +69,9 @@ const handleConfig = async (
         ctx.log.error(`No config found for uploader ${uploaderName}`)
         return
       }
-      const idOfConfigName = uploader.configList.find(
-        (item: any) => item._configName === (configName || 'Default'),
-      )?._id
+      const idOfConfigName = ctx.configManager.getConfigByName(uploaderName, actualConfigName)?._id
       if (!idOfConfigName) {
-        ctx.log.error(`No config named "${configName || 'Default'}" found for uploader ${uploaderName}`)
+        ctx.log.error(`No config named "${actualConfigName}" found for uploader ${uploaderName}`)
         return
       }
       const buildInList = ctx.getConfig<any[]>('buildIn.list') || []

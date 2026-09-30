@@ -16,7 +16,7 @@ const selectUploaderConfig = async (
   const configs = ctx.configManager.getAllUploaderConfigs(uploader)
   let selectedConfig: IConfigItem | undefined
   if (configName !== undefined) {
-    selectedConfig = configs.find(config => config._configName === configName)
+    selectedConfig = ctx.configManager.getConfigByName(uploader, configName) || undefined
     if (!selectedConfig) {
       ctx.log.error(`Config "${configName}" not found for ${uploader}`)
       return null

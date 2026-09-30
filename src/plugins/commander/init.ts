@@ -1,4 +1,5 @@
 import type { IConfigItem, IPicGo, IPlugin } from '../../types'
+import { findUploaderConfigByName } from '../../utils/configManager'
 import { invalidFields, isEmptyValue, isSecretQuestion } from '../../utils/configPrompts'
 import { uploaderTranslators } from './utils'
 
@@ -42,10 +43,10 @@ const setupUploader = async (ctx: IPicGo): Promise<void> => {
   const configs = ctx.getConfig<IConfigItem[] | undefined>(`uploader.${uploader}.configList`)
   const legacy = ctx.getConfig<Partial<IConfigItem> | undefined>(`picBed.${uploader}`)
   const existing = configs
-    ? configs.find(config => config._configName === configName)
+    ? findUploaderConfigByName(configs, configName)
     : legacy &&
         Object.values(legacy).some(value => !isEmptyValue(value)) &&
-        (legacy._configName || 'Default') === configName
+        (legacy._configName || 'Default').trim() === configName
       ? legacy
       : undefined
   if (existing) {
