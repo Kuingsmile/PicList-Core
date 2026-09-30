@@ -360,7 +360,7 @@ export class Lifecycle extends EventEmitter {
     }
   }
 
-  /** Processes inputs concurrently in isolated temporary directories and logs individual failures. */
+  /** Settles concurrent processing before surfacing failures and preventing an unprocessed upload. */
   private async processImages(
     ctx: IPicGo,
     tempFilePath: string,
@@ -382,7 +382,7 @@ export class Lifecycle extends EventEmitter {
     )
     for (const item of res) {
       if (item.status === 'rejected') {
-        ctx.log.error('Error processing image:', item.reason)
+        throw item.reason
       }
     }
   }

@@ -1,7 +1,7 @@
 import type { TypedTranslate } from '@piclist/i18n'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import type { Command } from 'commander'
-import type { FormatEnum, GravityEnum } from 'sharp'
+import type { GravityEnum } from 'sharp'
 
 import type { ILocalesKey, ZH_CN } from '../i18n/zh-CN'
 import type { ConfigManager } from '../utils/configManager'
@@ -766,7 +766,9 @@ export interface II18nManager {
   getLanguageList: () => string[]
 }
 
-export type availableConvertFormat = keyof FormatEnum
+/** Encoded image outputs; actual availability also depends on the installed Sharp build. */
+export type availableConvertFormat =
+  'avif' | 'gif' | 'heif' | 'jpeg' | 'jpg' | 'jp2' | 'jxl' | 'png' | 'tiff' | 'tif' | 'webp'
 
 export type availableWatermarkPosition = keyof GravityEnum
 

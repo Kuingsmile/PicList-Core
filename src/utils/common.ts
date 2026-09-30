@@ -1,4 +1,11 @@
-export { getConvertedFormat, imageCompress, isNeedAddWatermark, isNeedCompress, removeExif } from './common/compress'
+export {
+  getAvailableConvertFormats,
+  getConvertedFormat,
+  imageCompress,
+  isNeedAddWatermark,
+  isNeedCompress,
+  removeExif,
+} from './common/compress'
 export {
   configBlackList,
   forceNumber,

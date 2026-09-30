@@ -1,4 +1,5 @@
 import { IBuildInCompressOptions, IPicGo, IPluginConfig } from '../../types'
+import { getAvailableConvertFormats } from '../../utils/common/compress'
 import { createField } from '../uploader/utils'
 
 /** Builds the compression and conversion form with defaults from saved global processing settings. */
@@ -8,29 +9,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     createField(ctx, 'compress', 'quality', 'input', userConfig.quality || 100, false, 'BUILDIN'),
     createField(ctx, 'compress', 'isConvert', 'confirm', userConfig.isConvert || false, false, 'BUILDIN'),
     createField(ctx, 'compress', 'convertFormat', 'list', userConfig.convertFormat || 'jpg', false, 'BUILDIN', {
-      choices: [
-        'avif',
-        'dz',
-        'fits',
-        'gif',
-        'heif',
-        'input',
-        'jpeg',
-        'jpg',
-        'jp2',
-        'jxl',
-        'magick',
-        'openslide',
-        'pdf',
-        'png',
-        'ppm',
-        'raw',
-        'svg',
-        'tiff',
-        'tif',
-        'v',
-        'webp',
-      ],
+      choices: getAvailableConvertFormats(),
     }),
     createField(ctx, 'compress', 'isReSize', 'confirm', userConfig.isReSize || false, false, 'BUILDIN'),
     createField(ctx, 'compress', 'reSizeWidth', 'input', userConfig.reSizeWidth || 500, false, 'BUILDIN'),

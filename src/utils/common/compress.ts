@@ -1,6 +1,6 @@
 import sharp from 'sharp'
 
-import type { IBuildInCompressOptions, IBuildInWaterMarkOptions, ILogger } from '../../types'
+import type { availableConvertFormat, IBuildInCompressOptions, IBuildInWaterMarkOptions, ILogger } from '../../types'
 import { forceNumber, safeParse } from './config'
 
 /** Rejects absent or empty settings and nonpositive numbers before enabling processing operations. */
@@ -14,33 +14,23 @@ const validParam = (...params: any[]): boolean => {
   })
 }
 
-/** Format names accepted by conversion settings before dispatching to Sharp. */
-const availableConvertFormatList = [
+/** Standalone encoded images, excluding input-only formats, tile archives, and raw pixel buffers. */
+const imageOutputFormatList: availableConvertFormat[] = [
   'avif',
-  'dz',
-  'fits',
   'gif',
   'heif',
-  'input',
   'jpeg',
   'jpg',
   'jp2',
   'jxl',
-  'magick',
-  'openslide',
-  'pdf',
   'png',
-  'ppm',
-  'raw',
-  'svg',
   'tiff',
   'tif',
-  'v',
   'webp',
 ]
 
 /** Recognized image extensions eligible for processing, subject to operation-specific exclusions. */
-const imageFormatList = [
+const imageInputFormatList = [
   'jpg',
   'jpeg',
   'png',
@@ -124,7 +114,16 @@ interface HeifMetaRemovalPlan {
   buildMeta: (shiftPosition: (position: number) => number) => Buffer | undefined
 }
 
-const validOutputFormat = (format: string): boolean => availableConvertFormatList.includes(format)
+/** Returns encoders that can produce image buffers in the installed Sharp build, including aliases. */
+export const getAvailableConvertFormats = (): availableConvertFormat[] =>
+  imageOutputFormatList.filter(format =>
+    Object.values(sharp.format).some(
+      ({ id, output }) => output.buffer && (id === format || output.alias?.includes(format)),
+    ),
+  )
+
+const validOutputFormat = (format: string): format is availableConvertFormat =>
+  getAvailableConvertFormats().some(outputFormat => outputFormat === format)
 
 /** Coerces numeric processing settings and supplies defaults, parsing JSON conversion maps if needed. */
 function formatOptions(options: IBuildInCompressOptions): IBuildInCompressOptions {
@@ -254,7 +253,7 @@ function applyTransformOptions(image: sharp.Sharp, options: IBuildInCompressOpti
   return image
 }
 
-/** Selects conversion output or re-encodes the original supported format, falling back to JPEG. */
+/** Selects a validated conversion output or preserves the original encodable image format. */
 async function applyOutputFormat(
   image: sharp.Sharp,
   options: IBuildInCompressOptions,
@@ -262,25 +261,22 @@ async function applyOutputFormat(
   quality: number,
 ): Promise<sharp.Sharp> {
   if (options.isConvert) {
-    const newFormat = getConvertedFormat(options, rawFormat) as any
+    const newFormat = getConvertedFormat(options, rawFormat)
     return image.toFormat(newFormat, getSharpFormatOptions(newFormat, quality))
   }
 
   if (rawFormat === 'heic' || rawFormat === 'heif') {
     const { compression } = await image.metadata()
     if (!compression) throw new Error('Cannot preserve HEIF format: unknown source codec')
-    // Preserve the source codec; encoding failures leave the original input intact in the lifecycle.
+    // Preserve the source codec; unavailable encoders must report a processing failure.
     return image.heif({ quality, compression })
   }
 
   if (rawFormat && validOutputFormat(rawFormat)) {
-    return image.toFormat(rawFormat as any, getSharpFormatOptions(rawFormat, quality))
+    return image.toFormat(rawFormat, getSharpFormatOptions(rawFormat, quality))
   }
 
-  return image.toFormat('jpg', {
-    quality,
-    mozjpeg: true,
-  })
+  throw new Error(`Cannot preserve image format "${rawFormat}". Enable conversion to a supported output format.`)
 }
 
 /**
@@ -290,7 +286,7 @@ async function applyOutputFormat(
  * @param options - Compression, resizing, rotation, and format-conversion settings.
  * @param rawFormat - Source extension, with or without a leading dot.
  * @param logger - Receives processing errors before they are rethrown.
- * @returns Processed bytes, or the original buffer for GIF and unsupported extensions.
+ * @returns Processed bytes, or the original buffer for GIF, unsupported extensions, and SVG quality-only requests.
  */
 export async function imageCompress(
   img: Buffer,
@@ -301,7 +297,8 @@ export async function imageCompress(
   options = formatOptions(options)
   try {
     rawFormat = normalizeImageExt(rawFormat)
-    if (!imageFormatList.includes(rawFormat) || rawFormat === 'gif') return img
+    if (!imageInputFormatList.includes(rawFormat) || rawFormat === 'gif') return img
+    if (rawFormat === 'svg' && !options.isConvert && !isNeedCompress(options, rawFormat)) return img
     let image: sharp.Sharp = sharp(img, { animated: true })
     const quality = getOutputQuality(options.quality)
     image = await applyResizeOptions(image, options)
@@ -310,14 +307,14 @@ export async function imageCompress(
     return await image.toBuffer()
   } catch (error: any) {
     logger.error(`Image process error: ${error}`)
-    // Let the lifecycle retain the original input instead of saving it with the requested output extension.
+    // Surface processing failures without returning the original bytes as successful output.
     throw error
   }
 }
 
 /** Lowercases an image extension and removes its dot for format comparisons. */
 const normalizeImageExt = (ext: string): string => {
-  return ext.toLowerCase().replace('.', '')
+  return ext.toLowerCase().replace(/^\./, '')
 }
 
 /** Recognizes JPEG markers that carry no length-prefixed segment payload. */
@@ -1096,7 +1093,10 @@ function stripHeifExif(img: Buffer): Buffer {
 /**
  * Resolves per-extension conversion rules, preserving GIF and substituting JPEG for Imgur WebP output.
  */
-export function getConvertedFormat(options: IBuildInCompressOptions | undefined, rawFormat: string): string {
+export function getConvertedFormat(
+  options: IBuildInCompressOptions | undefined,
+  rawFormat: string,
+): availableConvertFormat {
   options = formatOptions(options || {})
   rawFormat = normalizeImageExt(rawFormat)
   if (rawFormat === 'gif') return 'gif'
@@ -1106,15 +1106,19 @@ export function getConvertedFormat(options: IBuildInCompressOptions | undefined,
     const formatConvertObjKeys = Object.keys(formatConvertObj)
     if (formatConvertObjKeys.includes(rawFormat)) {
       newFormat = formatConvertObj[rawFormat]
-      if (!validOutputFormat(newFormat)) {
-        newFormat = 'jpg'
-      }
     }
   }
-  if (options?.picBed === 'imgur' && newFormat === 'webp') {
-    newFormat = 'jpg'
+  if (typeof newFormat !== 'string') throw new Error('Image output format must be a supported format name')
+  const normalizedFormat = normalizeImageExt(newFormat)
+  if (!validOutputFormat(normalizedFormat)) {
+    throw new Error(
+      `Unsupported image output format "${normalizedFormat}". Supported formats: ${getAvailableConvertFormats().join(', ')}`,
+    )
   }
-  return newFormat
+  if (options?.picBed === 'imgur' && normalizedFormat === 'webp') {
+    return 'jpg'
+  }
+  return normalizedFormat
 }
 
 /** Checks whether watermarking is enabled for a recognized non-SVG image extension. */
@@ -1124,7 +1128,10 @@ export const isNeedAddWatermark = (
 ): boolean => {
   fileExt = normalizeImageExt(fileExt)
   return (
-    !!watermarkOptions && !!watermarkOptions.isAddWatermark && imageFormatList.includes(fileExt) && fileExt !== 'svg'
+    !!watermarkOptions &&
+    !!watermarkOptions.isAddWatermark &&
+    imageInputFormatList.includes(fileExt) &&
+    fileExt !== 'svg'
   )
 }
 
@@ -1133,8 +1140,14 @@ export const isNeedAddWatermark = (
  * Omitting the extension checks whether any supported image format could require compression.
  */
 export const isNeedCompress = (compressOptions: IBuildInCompressOptions | undefined, fileExt?: string): boolean => {
-  if (fileExt === undefined) return imageFormatList.some(extension => isNeedCompress(compressOptions, extension))
-  if (!imageFormatList.includes(normalizeImageExt(fileExt)) || !compressOptions) return false
+  if (fileExt === undefined) {
+    // Validate conversion targets against actual inputs, rather than hypothetical source extensions.
+    return (
+      !!compressOptions?.isConvert || imageInputFormatList.some(extension => isNeedCompress(compressOptions, extension))
+    )
+  }
+  fileExt = normalizeImageExt(fileExt)
+  if (!imageInputFormatList.includes(fileExt) || !compressOptions) return false
 
   const {
     quality,
@@ -1150,7 +1163,7 @@ export const isNeedCompress = (compressOptions: IBuildInCompressOptions | undefi
     isFlop,
   } = formatOptions(compressOptions)
 
-  if (validParam(quality) && quality! < 100) return true
+  if (validParam(quality) && quality! < 100 && (fileExt !== 'svg' || isConvert)) return true
   if (isReSizeByPercent && validParam(reSizePercent)) return true
   if (
     isReSize &&
@@ -1177,7 +1190,7 @@ export const isNeedCompress = (compressOptions: IBuildInCompressOptions | undefi
  */
 export const removeExif = async (img: Buffer, fileExt: string): Promise<Buffer> => {
   fileExt = normalizeImageExt(fileExt)
-  if (!imageFormatList.includes(fileExt) || fileExt === 'svg') return img
+  if (!imageInputFormatList.includes(fileExt) || fileExt === 'svg') return img
 
   if (fileExt === 'jpg' || fileExt === 'jpeg') return stripJpegExif(img)
   if (fileExt === 'png') return stripPngExif(img)
