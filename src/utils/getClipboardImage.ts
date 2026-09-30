@@ -338,8 +338,10 @@ const getClipboardImage = async (ctx: IPicGo): Promise<IClipboardImage> => {
   const helperPlatforms: Platform[] = platform === 'wsl' ? ['wsl', 'win10'] : [platform]
   for (const helperPlatform of helperPlatforms) {
     const helperPath = path.join(ctx.baseDir, platform2ScriptFilename[helperPlatform])
-    if (!fs.existsSync(helperPath)) {
-      fs.writeFileSync(helperPath, platform2ScriptContent[helperPlatform], 'utf8')
+    const helperContent = platform2ScriptContent[helperPlatform]
+    // Refresh installed helpers when their bundled scripts change after an upgrade.
+    if (!fs.existsSync(helperPath) || fs.readFileSync(helperPath, 'utf8') !== helperContent) {
+      fs.writeFileSync(helperPath, helperContent, 'utf8')
     }
   }
   let result: ClipboardHelperResult
