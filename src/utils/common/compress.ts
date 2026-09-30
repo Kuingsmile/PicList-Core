@@ -543,12 +543,13 @@ function parseBmffBoxes(buffer: Buffer, start: number, end: number): BmffBox[] |
   return offset === end ? boxes : undefined
 }
 
-/** Wraps a payload in a standard eight-byte box header with a 32-bit size. */
-function buildBmffBox(type: string, payload: Buffer): Buffer {
-  const output = Buffer.alloc(8 + payload.length)
-  output.writeUInt32BE(output.length, 0)
+/** Wraps a payload in a box header, preserving an extended header when requested. */
+function buildBmffBox(type: string, payload: Buffer, headerSize = 8): Buffer {
+  const output = Buffer.alloc(headerSize + payload.length)
+  output.writeUInt32BE(headerSize === 16 ? 1 : output.length, 0)
   output.write(type, 4, 4, 'ascii')
-  payload.copy(output, 8)
+  if (headerSize === 16) output.writeBigUInt64BE(BigInt(output.length), 8)
+  payload.copy(output, headerSize)
   return output
 }
 
@@ -1038,7 +1039,7 @@ function isIntervalInsideMdat(interval: BmffInterval, mdatBoxes: BmffBox[]): boo
   return mdatBoxes.some(mdatBox => interval.start >= mdatBox.dataStart && interval.end <= mdatBox.end)
 }
 
-/** Rebuilds a media-data box after removing its sorted, nonoverlapping EXIF ranges. */
+/** Rebuilds a media-data box without EXIF ranges, retaining header width to keep offset shifts accurate. */
 function stripIntervalsFromMdat(img: Buffer, mdatBox: BmffBox, intervals: BmffInterval[]): Buffer {
   const mdatIntervals = intervals.filter(interval => interval.start >= mdatBox.dataStart && interval.end <= mdatBox.end)
   if (mdatIntervals.length === 0) return Buffer.from(img.subarray(mdatBox.start, mdatBox.end))
@@ -1051,7 +1052,7 @@ function stripIntervalsFromMdat(img: Buffer, mdatBox: BmffBox, intervals: BmffIn
   }
   if (offset < mdatBox.end) payloadChunks.push(img.subarray(offset, mdatBox.end))
 
-  return buildBmffBox('mdat', Buffer.concat(payloadChunks))
+  return buildBmffBox('mdat', Buffer.concat(payloadChunks), mdatBox.headerSize)
 }
 
 /**
