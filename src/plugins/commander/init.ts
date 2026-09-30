@@ -1,6 +1,6 @@
 import type { IConfigItem, IPicGo, IPlugin } from '../../types'
 import { findUploaderConfigByName } from '../../utils/configManager'
-import { invalidFields, isEmptyValue, isSecretQuestion } from '../../utils/configPrompts'
+import { assertValidConfig, isEmptyValue, isSecretQuestion } from '../../utils/configPrompts'
 import { uploaderTranslators } from './utils'
 
 /**
@@ -83,7 +83,7 @@ const setupUploader = async (ctx: IPicGo): Promise<void> => {
   })
   const answers = await ctx.cmd.inquirer.prompt(questions)
   // Filters may change answers after prompt validation.
-  if ((await invalidFields(questions, answers)).length) throw new Error('Invalid configuration')
+  await assertValidConfig(questions, answers)
 
   const saved = ctx.configManager.getConfigByName(uploader, configName)
   if (saved) {

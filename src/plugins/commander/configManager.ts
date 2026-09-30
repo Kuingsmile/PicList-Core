@@ -1,6 +1,7 @@
 import type { Command } from 'commander'
 
 import { IConfigItem, IPicGo, IStringKeyMap } from '../../types'
+import { assertValidConfig } from '../../utils/configPrompts'
 import { handleSetting } from './setting'
 
 /** Logs profile metadata and non-metadata configuration fields for the config show command. */
@@ -191,7 +192,9 @@ const configCmd = {
             default: question.name in saved ? saved[question.name] : question.default,
           }))
           const answer = await ctx.cmd.inquirer.prompt(prompts)
-          const success = ctx.configManager.updateUploaderConfig(uploader, saved._id, { ...saved, ...answer })
+          const config = { ...saved, ...answer }
+          await assertValidConfig(prompts, config)
+          const success = ctx.configManager.updateUploaderConfig(uploader, saved._id, config)
           success
             ? ctx.log.success(`Updated config "${saved._configName}" for ${uploader}`)
             : ctx.log.error(`Failed to update config "${saved._configName}"`)

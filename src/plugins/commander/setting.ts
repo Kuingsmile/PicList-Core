@@ -1,4 +1,5 @@
 import { IPicGo, IPluginConfig, IStringKeyMap } from '../../types'
+import { assertValidConfig } from '../../utils/configPrompts'
 import compress from '../beforetransformer/compress'
 import skipProcess from '../beforetransformer/skipProcess'
 import watermark from '../beforetransformer/watermark'
@@ -47,10 +48,12 @@ const handleConfig = async (
     }
   }
   const answer = await ctx.cmd.inquirer.prompt(prompts)
+  const config = existingConfig ? { ...existingConfig, ...answer } : answer
+  await assertValidConfig(prompts, config)
   const configKey = getConfigName(module, name)
   if (module === 'uploader') {
     if (existingConfig) {
-      ctx.configManager.updateUploaderConfig(name, existingConfig._id, { ...existingConfig, ...answer })
+      ctx.configManager.updateUploaderConfig(name, existingConfig._id, config)
       ctx.log.success(`Updated config "${actualConfigName}" for ${name}`)
     } else {
       const newConfig = ctx.configManager.addUploaderConfig(name, actualConfigName, answer)

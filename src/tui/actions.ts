@@ -8,9 +8,10 @@ import { handleSecondUploader } from '../plugins/commander/secondUploader'
 import { handleBuildinModule, handlePlugin } from '../plugins/commander/setting'
 import { uploaderTranslators } from '../plugins/commander/utils'
 import type { IPicGo } from '../types'
+import { assertValidConfig } from '../utils/configPrompts'
 import type { IInquirerQuestion } from '../utils/inquirerShim'
 import { translator } from './i18n'
-import { invalidFields, uploaderReady } from './readiness'
+import { uploaderReady } from './readiness'
 import { TuiError } from './session'
 
 /** Executable terminal action with a stable ID, localized labels, and optional displayable results. */
@@ -149,13 +150,11 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     }))
     const answer = await ctx.cmd.inquirer.prompt(questions)
     // Validate again after filters have run, before persisting any part of the form.
-    let valid = false
     try {
-      valid = (await invalidFields(questions, answer)).length === 0
+      await assertValidConfig(questions, answer)
     } catch {
-      /* Provider validation errors are not safe to display. */
+      throw new TuiError(t('Check the required fields and validation rules before saving this destination.'))
     }
-    if (!valid) throw new TuiError(t('Check the required fields and validation rules before saving this destination.'))
     if (existing) ctx.configManager.updateUploaderConfig(uploader, existing._id, answer)
     else {
       const created = ctx.configManager.addUploaderConfig(uploader, name, answer)
@@ -340,7 +339,9 @@ export function createActions(ctx: IPicGo): TuiAction[] {
           ctx.getConfig('picBed.transformer'),
         )
         const plugin = ctx.helper.transformer.get(name)
-        const answer = plugin?.config ? await ctx.cmd.inquirer.prompt(plugin.config(ctx)) : undefined
+        const questions = plugin?.config?.(ctx)
+        const answer = questions ? await ctx.cmd.inquirer.prompt(questions) : undefined
+        if (questions && answer) await assertValidConfig(questions, answer)
         ctx.saveConfig({ 'picBed.transformer': name, ...(answer ? { [`transformer.${name}`]: answer } : {}) })
       },
     },

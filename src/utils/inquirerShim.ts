@@ -1,5 +1,7 @@
 import { checkbox, confirm, input, password, select } from '@inquirer/prompts'
 
+import { validateQuestion } from './configPrompts'
+
 /** Legacy-style question contract shared by CLI prompts and terminal UI adapters. */
 export interface IInquirerQuestion {
   type: string
@@ -7,6 +9,7 @@ export interface IInquirerQuestion {
   message?: string
   choices?: ({ name: string; value: any } | string)[]
   default?: any
+  required?: boolean
   validate?: (val: any) => boolean | string | Promise<boolean | string>
   /** Controls visibility using answers collected from earlier questions. */
   when?: boolean | ((answers: Record<string, any>) => boolean | Promise<boolean>)
@@ -42,6 +45,7 @@ async function runQuestion(question: IInquirerQuestion, answers: Record<string, 
   const message = question.message ?? question.name
   const theme = question.prefix ? { prefix: question.prefix } : undefined
   const context = {} // use @inquirer/prompts defaults
+  const validate = (value: unknown) => validateQuestion(question, value)
 
   switch (question.type) {
     case 'input': {
@@ -49,7 +53,7 @@ async function runQuestion(question: IInquirerQuestion, answers: Record<string, 
         {
           message,
           default: question.default !== undefined ? String(question.default) : undefined,
-          validate: question.validate,
+          validate,
           transformer: question.transformer,
           theme,
         },
@@ -62,7 +66,7 @@ async function runQuestion(question: IInquirerQuestion, answers: Record<string, 
         {
           message,
           mask: false,
-          validate: question.validate,
+          validate,
           theme,
         },
         context,
@@ -104,7 +108,7 @@ async function runQuestion(question: IInquirerQuestion, answers: Record<string, 
             value: c.value,
             checked: defaultValues.includes(c.value),
           })),
-          validate: question.validate,
+          validate: choices => validate(choices.map(choice => choice.value)),
           theme,
         },
         context,
@@ -117,6 +121,7 @@ async function runQuestion(question: IInquirerQuestion, answers: Record<string, 
         {
           message,
           default: question.default !== undefined ? String(question.default) : undefined,
+          validate,
           theme,
         },
         context,
@@ -140,7 +145,7 @@ export function createInquirerAdapter(): IInquirerAdapter {
       for (const q of questions) {
         let value = await runQuestion(q, answers)
         if (q.filter && value !== undefined) {
-          value = q.filter(value)
+          value = await q.filter(value)
         }
         if (value !== undefined) {
           answers[q.name] = value
