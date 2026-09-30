@@ -58,6 +58,7 @@ const MESSAGES = {
 /** Archive extensions excluded from image processing unless a configured list overrides them. */
 const DEFAULT_SKIP_EXTENSIONS = ['zip', 'rar', '7z', 'tar', 'gz', 'tar.gz', 'tar.bz2', 'tar.xz']
 const TTF_FILE_URL = 'https://release.piclist.cn/simhei.ttf'
+const TTF_DOWNLOAD_TIMEOUT_MS = 10000
 const DEFAULT_UPLOADER = 'smms'
 
 /** Processed bytes paired with the extension selected by the encoding step. */
@@ -121,7 +122,11 @@ export class Lifecycle extends EventEmitter {
       if (fs.existsSync(this.ttfPath) && fs.statSync(this.ttfPath).size > 0) return true
 
       this.ctx.log.info(MESSAGES.DOWNLOAD_TTF)
-      const res = await axios.get(TTF_FILE_URL, { responseType: 'arraybuffer' })
+      const res = await axios.get(TTF_FILE_URL, {
+        responseType: 'arraybuffer',
+        timeout: TTF_DOWNLOAD_TIMEOUT_MS,
+        signal: AbortSignal.timeout(TTF_DOWNLOAD_TIMEOUT_MS),
+      })
       fs.writeFileSync(this.ttfPath, res.data)
       this.ctx.log.info(MESSAGES.DOWNLOAD_TTF_SUCCESS)
       return true
@@ -451,7 +456,8 @@ export class Lifecycle extends EventEmitter {
 
     // Apply watermark
     if (isNeedAddWatermark(watermarkOptions, extension) && !shouldSkipExtension) {
-      transformedBuffer = await this.addWatermark(transformedBuffer ?? fileBuffer, watermarkOptions!, ctx)
+      transformedBuffer =
+        (await this.addWatermark(transformedBuffer ?? fileBuffer, watermarkOptions!, ctx)) ?? transformedBuffer
     }
 
     // Remove EXIF if needed
