@@ -38,7 +38,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
     const postConfig = postOptions(img.fileName, imageBuffer, smmsConfig.token)
     const res: string = await ctx.request({ ...postConfig, onUploadProgress: createUploadProgressCallback(ctx, img) })
     const body = JSON.parse(res)
-    if (body.code !== 200 && body.message !== 'success') {
+    if (body.code !== 200 || typeof body.data?.url !== 'string' || !body.data.url.trim()) {
       const errorMsg = body.message || 'Upload failed'
       ctx.emit(IBuildInEvent.NOTIFICATION, {
         title: ctx.i18n.t('UPLOAD_FAILED'),

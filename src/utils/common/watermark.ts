@@ -74,7 +74,8 @@ export async function AddWatermark(
   watermarkScaleRatio =
     !watermarkScaleRatio || watermarkScaleRatio < 0 || watermarkScaleRatio > 1 ? 0.15 : watermarkScaleRatio
   const image = sharp(img, { animated: true })
-  const { width: imgWidth = 200 } = await image.metadata()
+  const { width: imgWidth = 200, height = 200, pageHeight } = await image.metadata()
+  const imgHeight = pageHeight || height
   const watermark = await createWatermark(
     watermarkType,
     defaultWatermarkFontPath,
@@ -86,6 +87,7 @@ export async function AddWatermark(
     imgWidth,
     watermarkDegree,
     watermarkImageOpacity,
+    imgHeight,
   )
   return await image
     .composite([
@@ -110,15 +112,16 @@ async function createWatermark(
   imgWidth: number = 200,
   watermarkDegree: number = 0,
   watermarkImageOpacity: number = 255,
+  imgHeight: number = 200,
 ): Promise<Buffer> {
   let watermark: any
   if (watermarkType === 'image') {
-    watermarkImageOpacity = forceNumber(watermarkImageOpacity)
+    watermarkImageOpacity = Math.max(0, Math.min(255, Math.round(forceNumber(watermarkImageOpacity))))
     watermarkImagePath = watermarkImagePath || defaultWatermarkImagePath
     watermark = await sharp(watermarkImagePath)
       .composite([
         {
-          input: Buffer.from([255, 255, 255, watermarkImageOpacity > 255 ? 255 : watermarkImageOpacity]),
+          input: Buffer.from([255, 255, 255, watermarkImageOpacity]),
           raw: {
             width: 1,
             height: 1,
@@ -138,15 +141,21 @@ async function createWatermark(
     )
   }
   const { width: watermarkWidth, height: watermarkHeight } = await getSize(watermark)
-  const watermarkResizeWidth = Math.floor(imgWidth * forceNumber(watermarkScaleRatio))
-  const watermarkResizeHeight = Math.floor((watermarkResizeWidth * watermarkHeight) / watermarkWidth)
-  return await sharp(watermark)
+  const watermarkResizeWidth = Math.max(1, Math.floor(imgWidth * forceNumber(watermarkScaleRatio)))
+  const watermarkResizeHeight = Math.max(1, Math.floor((watermarkResizeWidth * watermarkHeight) / watermarkWidth))
+  const rotatedWatermark = await sharp(watermark)
     .resize(watermarkResizeWidth, watermarkResizeHeight, {
       fit: 'inside',
     })
     .rotate(watermarkDegree, {
       background: { r: 255, g: 255, b: 255, alpha: 0 },
     })
+    .toBuffer()
+  // Rotation and tall logos may exceed the source frame; keep the composite inside its bounds.
+  const rotatedSize = await getSize(rotatedWatermark)
+  if (rotatedSize.width <= imgWidth && rotatedSize.height <= imgHeight) return rotatedWatermark
+  return await sharp(rotatedWatermark)
+    .resize(imgWidth, imgHeight, { fit: 'inside', withoutEnlargement: true })
     .toBuffer()
 }
 
@@ -164,25 +173,20 @@ export async function imageAddWaterMark(
   logger: ILogger,
 ): Promise<Buffer> {
   try {
-    let image: sharp.Sharp = sharp(img, { animated: true })
-    image = sharp(
-      await AddWatermark(
-        img,
-        options.watermarkType || 'text',
-        defaultWatermarkFontPath,
-        options.isFullScreenWatermark,
-        forceNumber(options.watermarkDegree),
-        options.watermarkText,
-        options.watermarkFontPath,
-        forceNumber(options.watermarkScaleRatio),
-        options.watermarkColor,
-        options.watermarkImagePath,
-        options.watermarkPosition,
-        forceNumber(options.watermarkImageOpacity),
-      ),
-      { animated: true },
+    return await AddWatermark(
+      img,
+      options.watermarkType || 'text',
+      defaultWatermarkFontPath,
+      options.isFullScreenWatermark,
+      forceNumber(options.watermarkDegree),
+      options.watermarkText,
+      options.watermarkFontPath,
+      forceNumber(options.watermarkScaleRatio),
+      options.watermarkColor,
+      options.watermarkImagePath,
+      options.watermarkPosition,
+      options.watermarkImageOpacity === undefined ? undefined : forceNumber(options.watermarkImageOpacity),
     )
-    return await image.toBuffer()
   } catch (error: any) {
     logger.error(`Image add watermark error: ${error}`)
     return img

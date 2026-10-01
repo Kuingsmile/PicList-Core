@@ -94,66 +94,51 @@ export function getImageTypeByMagicNumber(buffer: Buffer | Uint8Array): string {
  *
  * @returns A transformer record; request failures and the 30-second timeout return success: false.
  * @remarks
- * The timeout resolves the result but does not cancel the underlying request.
+ * The deadline also aborts the underlying request, releasing its socket and buffered data.
  */
 export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransformedImgInfo> => {
-  url = handleUrlEncode(url)
-  let timeoutId: NodeJS.Timeout
-  const requestFn = new Promise<IPathTransformedImgInfo>((resolve, reject) => {
-    ;(async () => {
-      try {
-        const { res, headers } = await ctx
-          .request({
-            method: 'get',
-            url,
-            resolveWithFullResponse: true,
-            responseType: 'arraybuffer',
-          })
-          .then(resp => {
-            return { res: resp.data as Buffer, headers: resp.headers }
-          })
-        clearTimeout(timeoutId)
-        const urlPath = new URL(url).pathname
-        let extname = ''
-        try {
-          const urlParams = new URL(url).searchParams
-          extname = urlParams.get('wx_fmt') || path.extname(urlPath) || ''
-        } catch (_e) {
-          extname = path.extname(urlPath) || ''
-        }
-        const contentType = headers['content-type'] || headers['Content-Type'] || ''
-        if (!extname && contentType) {
-          extname = getImageExtensionFromMime(String(contentType))
-        }
-        if (!extname) {
-          extname = getImageTypeByMagicNumber(res)
-        }
-        if (!extname.startsWith('.') && extname) {
-          extname = `.${extname}`
-        }
-        resolve({
-          buffer: res,
-          fileName: path.basename(urlPath),
-          extname,
-          success: true,
-        })
-      } catch (error: any) {
-        clearTimeout(timeoutId)
-        resolve({
-          success: false,
-          reason: `request ${url} error, ${error?.message ?? ''}`,
-        })
-      }
-    })().catch(reject)
-  })
-  /** Bounds the caller's wait without aborting the in-flight download. */
-  const timeoutPromise = new Promise<IPathTransformedImgInfo>((resolve): void => {
-    timeoutId = setTimeout(() => {
-      resolve({
-        success: false,
-        reason: `request ${url} timeout`,
-      })
-    }, 30000)
-  })
-  return Promise.race([requestFn, timeoutPromise])
+  const controller = new AbortController()
+  let timeoutId: NodeJS.Timeout | undefined
+  try {
+    url = handleUrlEncode(url)
+    const parsedUrl = new URL(url)
+    // Keep a deadline even for custom request adapters that do not observe cancellation.
+    const deadline = new Promise<never>((_resolve, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error('timeout'))
+        controller.abort()
+      }, 30000)
+    })
+    const response = await Promise.race([
+      ctx.request({
+        method: 'get',
+        url,
+        resolveWithFullResponse: true,
+        responseType: 'arraybuffer',
+        timeout: 30000,
+        signal: controller.signal,
+      }),
+      deadline,
+    ])
+    const buffer = Buffer.isBuffer(response.data) ? response.data : Buffer.from(response.data as ArrayBuffer)
+    const urlPath = parsedUrl.pathname
+    let extname = parsedUrl.searchParams.get('wx_fmt') || path.extname(urlPath) || ''
+    const contentType = response.headers['content-type'] || response.headers['Content-Type'] || ''
+    if (!extname && contentType) extname = getImageExtensionFromMime(String(contentType))
+    if (!extname) extname = getImageTypeByMagicNumber(buffer)
+    if (extname && !extname.startsWith('.')) extname = `.${extname}`
+    return {
+      buffer,
+      fileName: path.basename(urlPath),
+      extname,
+      success: true,
+    }
+  } catch (error: any) {
+    return {
+      success: false,
+      reason: controller.signal.aborted ? `request ${url} timeout` : `request ${url} error, ${error?.message ?? ''}`,
+    }
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }

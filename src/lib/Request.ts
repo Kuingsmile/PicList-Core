@@ -1,7 +1,7 @@
 import https from 'node:https'
 import { URL } from 'node:url'
 
-import type { AxiosProxyConfig, AxiosRequestConfig, AxiosResponse } from 'axios'
+import type { AxiosProxyConfig, AxiosRequestConfig, AxiosResponse, RawAxiosHeaders } from 'axios'
 import axios from 'axios'
 import FormData from 'form-data'
 import { httpsOverHttp, httpsOverHttps } from 'tunnel'
@@ -42,10 +42,13 @@ function normalizeProxy(proxy: string | URL | AxiosProxyConfig | false | undefin
 // thanks for https://github.dev/request/request/blob/master/index.js
 /** Appends a multipart value, unpacking legacy value/options descriptors when supplied. */
 function appendFormData(form: FormData, key: string, data: any): void {
-  if (typeof data === 'object' && 'value' in data && 'options' in data) {
-    form.append(key, data.value, data.options)
+  if (data === undefined || data === null) return
+  if (Array.isArray(data)) {
+    for (const value of data) appendFormData(form, key, value)
+  } else if (typeof data === 'object' && 'value' in data && 'options' in data) {
+    if (data.value !== undefined && data.value !== null) form.append(key, data.value, data.options)
   } else {
-    form.append(key, data)
+    form.append(key, typeof data === 'boolean' ? String(data) : data)
   }
 }
 
@@ -67,9 +70,9 @@ function requestInterceptor(
     ...options,
     proxy,
     url: (options.url as string) || '',
-    headers: options.headers || {},
+    headers: axios.AxiosHeaders.from(options.headers as RawAxiosHeaders | undefined).toJSON(),
   }
-  if (proxy && options.url?.startsWith('https://')) {
+  if (proxy && /^https:\/\//i.test(options.url || '')) {
     const createTunnel = proxy.protocol === 'https' || proxy.protocol === 'https:' ? httpsOverHttps : httpsOverHttp
     opt.proxy = false
     opt.httpsAgent = createTunnel({
@@ -171,14 +174,13 @@ export class Request implements IRequest {
   >(options: U): Promise<IResponse<T, U>> {
     const opt = requestInterceptor(options, this.handleProxy())
     // Resolve proxy overrides before Axios can merge credentials from different proxy servers.
-    this.options.proxy = opt.proxy
-    this.options.headers = options.headers || {}
-    this.options.maxBodyLength = Infinity
-    this.options.maxContentLength = Infinity
-    this.options.httpsAgent = httpsAgent
-    // !NOTICE this.options !== options
-    // this.options is the default options
-    const instance = axios.create(this.options)
+    const instance = axios.create({
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
+      httpsAgent,
+      ...this.options,
+      proxy: opt.proxy,
+    })
     instance.interceptors.response.use(responseInterceptor, responseErrorHandler)
 
     instance.interceptors.request.use(function (obj) {

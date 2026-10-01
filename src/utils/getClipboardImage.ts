@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -331,7 +332,11 @@ const isLinuxClipboardToolMissing = (platform: Platform, imgPath: string): boole
 const getClipboardImage = async (ctx: IPicGo): Promise<IClipboardImage> => {
   createImageFolder(ctx)
   // add an clipboard image folder to control the image cache file
-  const imagePath = path.join(ctx.baseDir, CLIPBOARD_IMAGE_FOLDER, `${dayjs().format('YYYYMMDDHHmmssSSS')}.png`)
+  const imagePath = path.join(
+    ctx.baseDir,
+    CLIPBOARD_IMAGE_FOLDER,
+    `${dayjs().format('YYYYMMDDHHmmssSSS')}-${randomUUID()}.png`,
+  )
   const platform = getCurrentPlatform()
   const scriptPath = path.join(ctx.baseDir, platform2ScriptFilename[platform])
   // The WSL launcher also needs the Windows extraction helper beside it.
@@ -389,7 +394,7 @@ const getClipboardImage = async (ctx: IPicGo): Promise<IClipboardImage> => {
   }
 
   // Keep existing user files instead of removing them after uploading.
-  const shouldKeepAfterUploading = path.basename(imgPath) !== path.basename(imagePath) && fs.existsSync(imgPath)
+  const shouldKeepAfterUploading = path.resolve(imgPath) !== path.resolve(imagePath) && fs.existsSync(imgPath)
   if (imgPath !== 'no image' && !fs.existsSync(imgPath)) {
     throw new Error('Clipboard image file does not exist')
   }

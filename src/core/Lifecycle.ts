@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import axios from 'axios'
 import fs from 'fs-extra'
-import { emptyDirSync, ensureDirSync } from 'fs-extra/esm'
+import { ensureDirSync } from 'fs-extra/esm'
 import heicConvert from 'heic-convert'
 import { cloneDeep } from 'lodash-es'
 import sharp from 'sharp'
@@ -60,6 +60,7 @@ const DEFAULT_SKIP_EXTENSIONS = ['zip', 'rar', '7z', 'tar', 'gz', 'tar.gz', 'tar
 const TTF_FILE_URL = 'https://release.piclist.cn/simhei.ttf'
 const TTF_DOWNLOAD_TIMEOUT_MS = 10000
 const DEFAULT_UPLOADER = 'smms'
+const PROCESSING_CONCURRENCY = 4
 
 /** Processed bytes paired with the extension selected by the encoding step. */
 interface ProcessedImage {
@@ -96,6 +97,7 @@ const getLocalFileExtension = (filePath: string, fileBuffer: Buffer): string => 
 /** Coordinates preprocessing, plugin stages, upload events, and temporary-file ownership. */
 export class Lifecycle extends EventEmitter {
   private readonly ctx: IPicGo
+  private fontDownload?: Promise<boolean>
   ttfPath: string
 
   /** Binds the lifecycle to its client and prepares image-processing directories. */
@@ -106,20 +108,26 @@ export class Lifecycle extends EventEmitter {
     this.initializeDirs()
   }
 
-  /** Creates image staging directories and clears processed files when secondary uploads are disabled. */
+  /** Creates staging directories without removing files owned by another active client. */
   private initializeDirs(): void {
     ensureDirSync(path.join(this.ctx.baseDir, 'imgTemp'))
-    const enableSecondUploader = this.ctx.getConfig<Undefinable<boolean>>('settings.enableSecondUploader') || false
-    if (!enableSecondUploader) {
-      emptyDirSync(path.join(this.ctx.baseDir, 'piclistTemp'))
-    }
+    ensureDirSync(path.join(this.ctx.baseDir, 'piclistTemp'))
   }
 
   /** Ensures the default watermark font exists, returning false and logging when download fails. */
   private async downloadTTF(): Promise<boolean> {
+    this.fontDownload ??= this.fetchTTF().finally(() => {
+      this.fontDownload = undefined
+    })
+    return this.fontDownload
+  }
+
+  /** Publishes the font only after its download is complete, sharing in-flight work across images. */
+  private async fetchTTF(): Promise<boolean> {
+    let stagingDirectory: string | undefined
     try {
-      ensureDirSync(path.dirname(this.ttfPath))
-      if (fs.existsSync(this.ttfPath) && fs.statSync(this.ttfPath).size > 0) return true
+      await fs.ensureDir(path.dirname(this.ttfPath))
+      if ((await fs.stat(this.ttfPath).catch(() => undefined))?.size) return true
 
       this.ctx.log.info(MESSAGES.DOWNLOAD_TTF)
       const res = await axios.get(TTF_FILE_URL, {
@@ -127,12 +135,18 @@ export class Lifecycle extends EventEmitter {
         timeout: TTF_DOWNLOAD_TIMEOUT_MS,
         signal: AbortSignal.timeout(TTF_DOWNLOAD_TIMEOUT_MS),
       })
-      fs.writeFileSync(this.ttfPath, res.data)
+      if (!res.data?.byteLength) throw new Error('Downloaded font is empty')
+      stagingDirectory = await fs.mkdtemp(path.join(path.dirname(this.ttfPath), 'font-'))
+      const stagedFont = path.join(stagingDirectory, 'simhei.ttf')
+      await fs.writeFile(stagedFont, res.data)
+      await fs.rename(stagedFont, this.ttfPath)
       this.ctx.log.info(MESSAGES.DOWNLOAD_TTF_SUCCESS)
       return true
     } catch (_e: any) {
       this.ctx.log.error(MESSAGES.DOWNLOAD_TTF_FAILED)
       return false
+    } finally {
+      if (stagingDirectory) await fs.remove(stagingDirectory).catch(() => {})
     }
   }
 
@@ -372,19 +386,34 @@ export class Lifecycle extends EventEmitter {
     await fs.ensureDir(tempFilePath)
     const uploadTempPath = await fs.mkdtemp(path.join(tempFilePath, 'upload-'))
     tempDirs.push(uploadTempPath)
-    const res = await Promise.allSettled(
-      ctx.input.map(async (item: string, index: number) => {
-        // Isolate each input while preserving its basename for transformers and uploaders.
-        const inputTempPath = path.join(uploadTempPath, index.toString())
-        await fs.ensureDir(inputTempPath)
-        await this.processImage(item, index, ctx, inputTempPath, compressOptions, watermarkOptions, skipExtensions)
+    const inputs = [...ctx.input]
+    let nextIndex = 0
+    let firstFailure: { index: number; reason: unknown } | undefined
+    await Promise.all(
+      Array.from({ length: Math.min(PROCESSING_CONCURRENCY, inputs.length) }, async () => {
+        // Bound decoded images and remote downloads in memory while retaining input order.
+        while (nextIndex < inputs.length) {
+          const index = nextIndex++
+          try {
+            const inputTempPath = path.join(uploadTempPath, index.toString())
+            await fs.ensureDir(inputTempPath)
+            await this.processImage(
+              inputs[index],
+              index,
+              ctx,
+              inputTempPath,
+              compressOptions,
+              watermarkOptions,
+              skipExtensions,
+            )
+          } catch (reason) {
+            // A failed input must not prevent this worker from visiting the rest of the batch.
+            if (!firstFailure || index < firstFailure.index) firstFailure = { index, reason }
+          }
+        }
       }),
     )
-    for (const item of res) {
-      if (item.status === 'rejected') {
-        throw item.reason
-      }
-    }
+    if (firstFailure) throw firstFailure.reason
   }
 
   /**
@@ -525,7 +554,7 @@ export class Lifecycle extends EventEmitter {
   ): Promise<ProcessedImage> {
     const convertedBuffer = await this.convertHeicToJpegBuffer(fileBuffer)
     const tempHeicConvertFile = path.join(tempFilePath, `${path.basename(item, extension)}.jpg`)
-    fs.writeFileSync(tempHeicConvertFile, convertedBuffer)
+    await fs.writeFile(tempHeicConvertFile, convertedBuffer)
     const outputFormat = getConvertedFormat(compressOptions, extension)
     // Resolve source-specific rules before the JPEG intermediate can select a different conversion.
     const outputOptions = { ...compressOptions, formatConvertObj: { jpg: outputFormat } }
@@ -572,7 +601,7 @@ export class Lifecycle extends EventEmitter {
 
     ctx.rawInputPath[index] = path.join(path.dirname(item), fileName)
 
-    fs.writeFileSync(tempFile, processedImage.buffer)
+    await fs.writeFile(tempFile, processedImage.buffer)
     ctx.input[index] = tempFile
   }
 
@@ -598,8 +627,16 @@ export class Lifecycle extends EventEmitter {
     ctx.output = ctx.output.map((item: IImgInfo, index: number) => {
       let fileName = item.fileName
       if (format) {
+        const originalInput = ctx.rawInputPath[item.inputIndex ?? index]
+        // Buffers have no source path, and URL query strings must never become filename extensions.
+        const sourcePath =
+          typeof originalInput !== 'string'
+            ? item.fileName || ''
+            : isUrl(originalInput)
+              ? path.join(path.dirname(new URL(originalInput).pathname), item.fileName || '')
+              : originalInput
         fileName = renameFileNameWithCustomString(
-          ctx.rawInputPath[item.inputIndex ?? index],
+          sourcePath,
           format,
           undefined,
           item.base64Image ? item.base64Image : item.buffer,
@@ -648,6 +685,7 @@ export class Lifecycle extends EventEmitter {
 
   /** Runs the selected uploader or SM.MS fallback and records its type on each output image. */
   private async doUpload(ctx: IPicGo, progress: UploadProgress): Promise<IPicGo> {
+    if (ctx.output.length === 0) throw new Error('No files could be prepared for upload')
     const uploaderType = this.getUploaderType(ctx)
     let uploader = ctx.helper.uploader.get(uploaderType.picBed)
     let currentUploader = uploaderType.picBed

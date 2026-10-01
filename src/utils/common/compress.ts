@@ -181,10 +181,11 @@ async function applyPercentResize(image: sharp.Sharp, options: IBuildInCompressO
   if (!width || !height) return image
 
   return image.resize(
-    Math.round((width * options.reSizePercent!) / 100),
-    Math.round((height * options.reSizePercent!) / 100),
+    Math.max(1, Math.round((width * options.reSizePercent!) / 100)),
+    Math.max(1, Math.round((height * options.reSizePercent!) / 100)),
     {
       fit: 'inside',
+      withoutEnlargement: !!options.skipReSizeOfSmallImg,
     },
   )
 }
@@ -197,8 +198,9 @@ async function applyDimensionResize(image: sharp.Sharp, options: IBuildInCompres
   const hasWidth = typeof options.reSizeWidth === 'number' && options.reSizeWidth > 0
 
   if (hasHeight && hasWidth) {
-    return image.resize(options.reSizeWidth, options.reSizeHeight, {
+    return image.resize(Math.max(1, Math.round(options.reSizeWidth!)), Math.max(1, Math.round(options.reSizeHeight!)), {
       fit: 'fill',
+      withoutEnlargement: !!options.skipReSizeOfSmallImg,
     })
   }
 
@@ -213,7 +215,7 @@ async function applyDimensionResize(image: sharp.Sharp, options: IBuildInCompres
     const targetEdge = options.longEdgeAsHeight && width > height ? width : height
     if (!options.skipReSizeOfSmallImg || (options.skipReSizeOfSmallImg && options.reSizeHeight! < targetEdge)) {
       const scaleRatio = options.reSizeHeight! / targetEdge
-      return image.resize(Math.round(width * scaleRatio), Math.round(height * scaleRatio), {
+      return image.resize(Math.max(1, Math.round(width * scaleRatio)), Math.max(1, Math.round(height * scaleRatio)), {
         fit: 'inside',
       })
     }
@@ -224,7 +226,7 @@ async function applyDimensionResize(image: sharp.Sharp, options: IBuildInCompres
     (!options.skipReSizeOfSmallImg || (options.skipReSizeOfSmallImg && options.reSizeWidth! < width))
   ) {
     const scaleRatio = options.reSizeWidth! / width
-    return image.resize(options.reSizeWidth, Math.round(height * scaleRatio), {
+    return image.resize(Math.max(1, Math.round(options.reSizeWidth!)), Math.max(1, Math.round(height * scaleRatio)), {
       fit: 'inside',
     })
   }

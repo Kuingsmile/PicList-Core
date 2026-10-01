@@ -1,4 +1,4 @@
-export const isUrl = (url: string): boolean => /^https?:\/\//.test(url)
+export const isUrl = (url: string): boolean => /^https?:\/\//i.test(url)
 
 /** Detects an existing percent-encoded byte; the rest of the URL may still contain raw text. */
 export const isUrlEncode = (url: string): boolean => /%[\dA-Fa-f]{2}/.test(url || '')

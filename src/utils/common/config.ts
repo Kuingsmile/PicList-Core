@@ -6,9 +6,9 @@ export const isConfigKeyInBlackList = (key: string): boolean => {
   return configBlackList.some(blackItem => key.startsWith(blackItem))
 }
 
-/** Checks for a nonempty object map rather than an array; callers must not pass null. */
+/** Checks for a nonempty object map rather than null or an array. */
 export const isInputConfigValid = (config: any): boolean => {
-  if (typeof config === 'object' && !Array.isArray(config) && Object.keys(config).length > 0) {
+  if (config !== null && typeof config === 'object' && !Array.isArray(config) && Object.keys(config).length > 0) {
     return true
   }
   return false
@@ -23,9 +23,10 @@ export function safeParse<T>(str: string): T | string {
   }
 }
 
-/** Coerces a value to a number, replacing NaN with zero. */
+/** Coerces a value to a finite number, replacing invalid values with zero. */
 export const forceNumber = (num: string | number = 0): number => {
-  return isNaN(Number(num)) ? 0 : Number(num)
+  const value = Number(num)
+  return Number.isFinite(value) ? value : 0
 }
 
 export const isDev = (): boolean => process.env.NODE_ENV === 'development'

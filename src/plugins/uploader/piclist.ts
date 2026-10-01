@@ -8,6 +8,14 @@ import { completeUploadFile, createUploadProgressCallback } from '../../utils/up
 import { getAndCheckConfig, getImageBuffer } from './helper'
 import { buildInUploaderNames } from './utils'
 
+interface PicListUploadResponse {
+  success?: boolean
+  result?: string[]
+  fullResult?: unknown[]
+  message?: string
+  msg?: string
+}
+
 /** Resolves a server base address and encodes the configured upload destination and key. */
 const getUploadUrl = (options: IPicListConfig): string => {
   const { host = '127.0.0.1', port = '', picbed = '', configName = 'Default', serverKey = '' } = options
@@ -75,25 +83,18 @@ const handle = async (ctx: IPicGo): Promise<IPicGo | boolean> => {
       if (!image) continue
       const options = postOptions(piclistOptions, img.fileName, image)
 
-      const res = await ctx
-        .request({ ...options, onUploadProgress: createUploadProgressCallback(ctx, img) })
-        .then((res: any) => res)
-        .catch((err: Error) => {
-          return {
-            statusCode: 400,
-            body: {
-              msg: ctx.i18n.t('AUTH_FAILED'),
-              err,
-            },
-          }
-        })
-      if (res.statusCode === 200 && res.body?.success) {
+      const res = await ctx.request<PicListUploadResponse, IOldReqOptionsWithFullResponse>({
+        ...options,
+        onUploadProgress: createUploadProgressCallback(ctx, img),
+      })
+      const imageUrl = res.body?.result?.[0]
+      if (res.statusCode === 200 && res.body?.success && typeof imageUrl === 'string' && imageUrl.trim()) {
         delete img.base64Image
         delete img.buffer
-        img.imgUrl = res.body.result[0]
+        img.imgUrl = imageUrl
         img.fullResult = res.body.fullResult ? res.body.fullResult[0] : ''
       } else {
-        throw new Error(res.body.message)
+        throw new Error(res.body?.message || res.body?.msg || 'PicList server did not return an uploaded image URL')
       }
 
       if (img.imgUrl) completeUploadFile(ctx, img)

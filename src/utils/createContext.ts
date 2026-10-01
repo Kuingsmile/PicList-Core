@@ -27,7 +27,7 @@ export const createContext = (ctx: IPicGo): IPicGo => {
     helper: ctx.helper,
     VERSION: ctx.VERSION,
     GUI_VERSION: ctx.GUI_VERSION,
-    request: ctx.request,
+    request: AsyncLocalStorage.bind(ctx.request),
     i18n: ctx.i18n,
     configManager: ctx.configManager,
     // Retain this upload's configuration even when the returned context is used later.

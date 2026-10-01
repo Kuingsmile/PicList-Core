@@ -237,13 +237,17 @@ export class PicGo extends EventEmitter implements IPicGo {
       this.log.warn('the format of config is invalid, please provide object')
       return
     }
-    this.setConfig(config)
+    this.removeProtectedConfigKeys(config)
     this.db.saveConfig(config)
+    // Publish changes only after persistence succeeds; failed writes retain effective settings.
+    const uploadConfig = this.uploadConfig.getStore()
     Object.keys(config).forEach(name => {
       // Explicit saves also update defaults when called from an upload snapshot.
       set(this._config, name, cloneDeep(config[name]))
+      if (uploadConfig) set(uploadConfig, name, cloneDeep(config[name]))
       this.clearRuntimeConfigPaths(toPath(name))
     })
+    this.notifyConfigChanges(config)
   }
 
   /**
@@ -258,8 +262,8 @@ export class PicGo extends EventEmitter implements IPicGo {
       this.log.warn(`the config.${key} can't be removed`)
       return
     }
-    this.unsetConfig(key, propName)
     this.db.unset(key, propName)
+    this.unsetConfig(key, propName)
     unset(get(this._config, key), propName)
     this.clearRuntimeConfigPaths([...toPath(key), ...toPath(propName)])
   }
@@ -279,21 +283,37 @@ export class PicGo extends EventEmitter implements IPicGo {
       this.log.warn('the format of config is invalid, please provide object')
       return
     }
+    this.removeProtectedConfigKeys(config)
+    const uploadConfig = this.uploadConfig.getStore()
     Object.keys(config).forEach((name: string) => {
-      if (isConfigKeyInBlackList(name)) {
-        this.log.warn(`the config.${name} can't be modified`)
-
-        delete config[name]
-        return
-      }
-      const uploadConfig = this.uploadConfig.getStore()
       set(uploadConfig || this._config, name, cloneDeep(config[name]))
       if (!uploadConfig) this.trackRuntimeConfigPath(toPath(name))
-      eventBus.emit(IBusEvent.CONFIG_CHANGE, {
-        configName: name,
-        value: config[name],
-      })
     })
+    this.notifyConfigChanges(config)
+  }
+
+  /** Observer failures cannot interrupt a completed configuration update or other observers. */
+  private notifyConfigChanges(config: IStringKeyMap<any>): void {
+    for (const name of Object.keys(config)) {
+      const change = { configName: name, value: config[name] }
+      for (const listener of eventBus.rawListeners(IBusEvent.CONFIG_CHANGE)) {
+        try {
+          listener.call(eventBus, change)
+        } catch {
+          this.log.warn('A configuration change observer failed')
+        }
+      }
+    }
+  }
+
+  /** Filters protected paths before persistence or in-memory updates. */
+  private removeProtectedConfigKeys(config: IStringKeyMap<any>): void {
+    for (const name of Object.keys(config)) {
+      if (isConfigKeyInBlackList(name)) {
+        this.log.warn(`the config.${name} can't be modified`)
+        delete config[name]
+      }
+    }
   }
 
   /**
