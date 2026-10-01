@@ -1,3 +1,20 @@
+# :tada: 3.0.0-alpha.5 (2026-10-01)
+
+### :sparkles: Features
+
+* various improvements and error handling across multiple modules ([b4df52f](https://github.com/Kuingsmile/PicList-Core/commit/b4df52f))
+
+### :bug: Bug Fixes
+
+* duplicate profile names silently select an earlier profile ([d7b735e](https://github.com/Kuingsmile/PicList-Core/commit/d7b735e))
+* existing clipboard helpers never receive script fixes ([42f6124](https://github.com/Kuingsmile/PicList-Core/commit/42f6124))
+* failed registration leaves active handlers behind ([f2c6afa](https://github.com/Kuingsmile/PicList-Core/commit/f2c6afa))
+* failed watermark setup discards successful compression ([fc82313](https://github.com/Kuingsmile/PicList-Core/commit/fc82313))
+* heif removal mishandles extended media-box header ([b4feee7](https://github.com/Kuingsmile/PicList-Core/commit/b4feee7))
+* linux clipboard paths are unquoted ([8a9c63e](https://github.com/Kuingsmile/PicList-Core/commit/8a9c63e))
+* output choices include unsupported encoders ([d51efaf](https://github.com/Kuingsmile/PicList-Core/commit/d51efaf))
+* some configuration commands save missing required fields ([93afeb0](https://github.com/Kuingsmile/PicList-Core/commit/93afeb0))
+* valid saved values are replaced by defaults ([fc4d798](https://github.com/Kuingsmile/PicList-Core/commit/fc4d798))
 # :tada: 3.0.0-alpha.4 (2026-09-29)
 
 ### :sparkles: Features
