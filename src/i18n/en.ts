@@ -286,6 +286,7 @@ export const EN: ILocales = {
   PICBED_AWSS3PLIST_PATHSTYLEACCESS: 'Set PathStyleAccess',
   PICBED_AWSS3PLIST_REJECTUNAUTHORIZED: 'Set RejectUnauthorized',
   PICBED_AWSS3PLIST_ACL: 'Set ACL',
+  PICBED_AWSS3PLIST_ACL_AUTO: 'Auto (omit ACL)',
   PICBED_AWSS3PLIST_DISABLEBUCKETPREFIXTOURL:
     'when `pathStyleAccess` is enabled, whether to disable adding bucket prefix to url',
   PICBED_AWSS3PLIST_MESSAGE_ACCESSKEYID: 'Ex. xxx',

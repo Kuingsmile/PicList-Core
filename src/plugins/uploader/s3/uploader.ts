@@ -56,7 +56,7 @@ interface ICreateUploadTaskOpts {
   bucketName: string
   path: string
   item: IImgInfo
-  acl?: ObjectCannedACL
+  acl?: ObjectCannedACL | 'auto'
   urlPrefix?: string
   options: string
   onProgress?: (progress: { loaded?: number; total?: number }) => void
@@ -75,7 +75,7 @@ async function createUploadTask(opts: ICreateUploadTaskOpts): Promise<IUploadRes
       params: {
         Bucket: opts.bucketName,
         Key: opts.path,
-        ACL: opts.acl,
+        ...(opts.acl && opts.acl !== 'auto' ? { ACL: opts.acl } : {}),
         Body: body,
         ContentType: contentType,
       },

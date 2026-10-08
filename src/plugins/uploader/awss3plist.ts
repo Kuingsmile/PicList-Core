@@ -39,7 +39,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         bucketName: awsS3Options.bucketName,
         path: `${awsS3Options.uploadPath}${img.fileName}`,
         item: img,
-        acl: (awsS3Options.acl || 'public-read') as ObjectCannedACL,
+        acl: awsS3Options.acl as ObjectCannedACL | 'auto' | undefined,
         urlPrefix,
         options: awsS3Options.options || '',
         onProgress: createUploadProgressCallback(ctx, img),
@@ -71,7 +71,7 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     uploadPath: '',
     pathStyleAccess: false,
     rejectUnauthorized: false,
-    acl: 'public-read',
+    acl: 'auto',
   }
   let userConfig = ctx.getConfig<IAwsS3PListUserConfig>('picBed.aws-s3-plist') || {}
   userConfig = { ...defaultConfig, ...userConfig }
@@ -244,8 +244,14 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     {
       name: 'acl',
       type: 'list',
-      default: userConfig.acl || 'public-read',
+      default: userConfig.acl || 'auto',
       choices: [
+        {
+          get name() {
+            return ctx.i18n.t('PICBED_AWSS3PLIST_ACL_AUTO')
+          },
+          value: 'auto',
+        },
         'private',
         'public-read',
         'public-read-write',
