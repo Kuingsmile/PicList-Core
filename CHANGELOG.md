@@ -1,3 +1,13 @@
+# :tada: 3.0.0-alpha.6 (2026-10-09)
+
+### :sparkles: Features
+
+* add new acl option(auto) to s3 uploader ([25574e7](https://github.com/Kuingsmile/PicList-Core/commit/25574e7))
+
+### :bug: Bug Fixes
+
+* omitting optional image-watermark opacity makes the watermark invisible ([31fbc37](https://github.com/Kuingsmile/PicList-Core/commit/31fbc37))
+* versioned plugin names containing dots resolve to another package ([910d95f](https://github.com/Kuingsmile/PicList-Core/commit/910d95f))
 # :tada: 3.0.0-alpha.5 (2026-10-01)
 
 ### :sparkles: Features
