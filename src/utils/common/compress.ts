@@ -288,7 +288,7 @@ async function applyOutputFormat(
  * @param options - Compression, resizing, rotation, and format-conversion settings.
  * @param rawFormat - Source extension, with or without a leading dot.
  * @param logger - Receives processing errors before they are rethrown.
- * @returns Processed bytes, or the original buffer for GIF, unsupported extensions, and SVG quality-only requests.
+ * @returns Processed bytes, or the original buffer for GIF, unsupported extensions, and SVG without raster conversion.
  */
 export async function imageCompress(
   img: Buffer,
@@ -300,7 +300,7 @@ export async function imageCompress(
   try {
     rawFormat = normalizeImageExt(rawFormat)
     if (!imageInputFormatList.includes(rawFormat) || rawFormat === 'gif') return img
-    if (rawFormat === 'svg' && !options.isConvert && !isNeedCompress(options, rawFormat)) return img
+    if (rawFormat === 'svg' && !isNeedCompress(options, rawFormat)) return img
     let image: sharp.Sharp = sharp(img, { animated: true })
     const quality = getOutputQuality(options.quality)
     image = await applyResizeOptions(image, options)
@@ -1093,12 +1093,13 @@ function stripHeifExif(img: Buffer): Buffer {
 }
 
 /**
- * Resolves per-extension conversion rules, preserving GIF and substituting JPEG for Imgur WebP output.
+ * Resolves per-extension conversion rules, preserving GIF and SVG identity rules and substituting JPEG
+ * for Imgur WebP output. SVG is a passthrough target only for SVG input, never an encoder format.
  */
 export function getConvertedFormat(
   options: IBuildInCompressOptions | undefined,
   rawFormat: string,
-): availableConvertFormat {
+): availableConvertFormat | 'svg' {
   options = formatOptions(options || {})
   rawFormat = normalizeImageExt(rawFormat)
   if (rawFormat === 'gif') return 'gif'
@@ -1112,6 +1113,7 @@ export function getConvertedFormat(
   }
   if (typeof newFormat !== 'string') throw new Error('Image output format must be a supported format name')
   const normalizedFormat = normalizeImageExt(newFormat)
+  if (rawFormat === 'svg' && normalizedFormat === 'svg') return 'svg'
   if (!validOutputFormat(normalizedFormat)) {
     throw new Error(
       `Unsupported image output format "${normalizedFormat}". Supported formats: ${getAvailableConvertFormats().join(', ')}`,
@@ -1140,6 +1142,7 @@ export const isNeedAddWatermark = (
 /**
  * Checks whether normalized settings request a transform, resize, quality reduction, or format change.
  * Omitting the extension checks whether any supported image format could require compression.
+ * SVG inputs require an explicit raster conversion before any processing can be applied.
  */
 export const isNeedCompress = (compressOptions: IBuildInCompressOptions | undefined, fileExt?: string): boolean => {
   if (fileExt === undefined) {
@@ -1150,6 +1153,9 @@ export const isNeedCompress = (compressOptions: IBuildInCompressOptions | undefi
   }
   fileExt = normalizeImageExt(fileExt)
   if (!imageInputFormatList.includes(fileExt) || !compressOptions) return false
+  if (fileExt === 'svg' && (!compressOptions.isConvert || getConvertedFormat(compressOptions, fileExt) === 'svg')) {
+    return false
+  }
 
   const {
     quality,

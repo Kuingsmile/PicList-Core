@@ -473,24 +473,26 @@ export class Lifecycle extends EventEmitter {
     tempFilePath: string,
     ctx: IPicGo,
   ): Promise<ProcessedImage | undefined> {
+    if (shouldSkipExtension) return undefined
+
     let transformedBuffer: Buffer | undefined
     let outputExtension = extension
 
     // Apply compression
-    if (isNeedCompress(compressOptions, extension) && !shouldSkipExtension) {
+    if (isNeedCompress(compressOptions, extension)) {
       const compressedImage = await this.compressImage(fileBuffer, extension, compressOptions!, item, tempFilePath, ctx)
       transformedBuffer = compressedImage.buffer
       outputExtension = compressedImage.extension
     }
 
     // Apply watermark
-    if (isNeedAddWatermark(watermarkOptions, extension) && !shouldSkipExtension) {
+    if (isNeedAddWatermark(watermarkOptions, extension)) {
       transformedBuffer =
         (await this.addWatermark(transformedBuffer ?? fileBuffer, watermarkOptions!, ctx)) ?? transformedBuffer
     }
 
     // Remove EXIF if needed
-    if (!transformedBuffer && compressOptions?.isRemoveExif && !shouldSkipExtension) {
+    if (!transformedBuffer && compressOptions?.isRemoveExif) {
       ctx.log.info(MESSAGES.REMOVE_EXIF)
       transformedBuffer = await removeExif(fileBuffer, extension)
       outputExtension = extension
