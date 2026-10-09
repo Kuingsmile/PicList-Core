@@ -1,3 +1,8 @@
+# :tada: 3.0.0-alpha.7 (2026-10-09)
+
+### :bug: Bug Fixes
+
+* svg pass through the conversion ([27944ce](https://github.com/Kuingsmile/PicList-Core/commit/27944ce))
 # :tada: 3.0.0-alpha.6 (2026-10-09)
 
 ### :sparkles: Features
