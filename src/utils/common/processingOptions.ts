@@ -100,7 +100,7 @@ export function getTreatedWaterMarkOptions(
       idSpecificConfig.watermarkImageOpacity,
       global.watermarkImageOpacityMap,
       picBed,
-      global.watermarkImageOpacity,
+      global.watermarkImageOpacity ?? 255,
     ),
     picBed,
     id,
