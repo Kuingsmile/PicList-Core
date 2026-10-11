@@ -6,8 +6,11 @@ thumbs.db
 /dist/
 /coverage/
 
-yarn-error.log
+pnpm-debug.log*
+.pnpm-store/
+*.tgz
 package-lock.json
+yarn.lock
 
 temp.js
 pending.md

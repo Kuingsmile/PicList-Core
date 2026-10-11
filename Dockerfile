@@ -4,15 +4,15 @@ ARG NODE_IMAGE=node:22.21.1-alpine3.22@sha256:b2358485e3e33bc3a33114d2b1bdb18cdb
 FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS build
 WORKDIR /build
 ENV HUSKY=0
+RUN corepack enable pnpm
 
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile --non-interactive --network-timeout 300000
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY . .
-# Invoke TypeScript directly: older release tags do not have a typecheck script.
-RUN yarn tsc --noEmit \
-    && yarn build \
+RUN pnpm run typecheck \
+    && pnpm run build \
     && mkdir /package \
-    && npm pack --ignore-scripts --pack-destination /package \
+    && pnpm pack --config.ignore-scripts=true --pack-destination /package \
     && mv /package/piclist-*.tgz /package/piclist.tgz
 
 FROM ${NODE_IMAGE} AS runtime-base
@@ -23,11 +23,12 @@ RUN apk add --no-cache tzdata \
 
 FROM runtime-base AS production-dependencies
 WORKDIR /dependencies
-COPY package.json yarn.lock ./
+RUN corepack enable pnpm
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # Omit the dev-only Husky hook, but retain dependency install scripts so native
 # modules are installed for the target architecture using the same lockfile.
-RUN npm pkg delete scripts.prepare \
-    && yarn install --production --frozen-lockfile --non-interactive --network-timeout 300000
+RUN node -e "const fs = require('node:fs'); const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')); delete pkg.scripts.prepare; fs.writeFileSync('package.json', JSON.stringify(pkg))" \
+    && pnpm install --prod --frozen-lockfile
 
 FROM runtime-base AS runtime
 COPY --from=production-dependencies /dependencies/node_modules /usr/local/lib/node_modules/piclist/node_modules

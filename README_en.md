@@ -44,8 +44,8 @@ picgo upload ./image.png
 `picgo init` guides you through choosing an uploader, naming its configuration, and entering connection details. The
 saved configuration becomes your default upload destination. Run setup in an interactive terminal.
 
-You can also install with `yarn global add piclist`. Image-processing dependencies, including `sharp`, are included in
-the package installation.
+You can also install with `pnpm add -g piclist`. Image-processing dependencies, including `sharp`, are included in the
+package installation.
 
 The npm package is named `piclist`; its commands are **`picgo`** and **`picgo-server`**.
 
@@ -292,6 +292,23 @@ uploadImage().catch(console.error)
 ```
 
 </details>
+
+## Development
+
+Use Node.js 22.13.0 or later in the 22.x release line and the pnpm version pinned in `package.json`:
+
+```bash
+corepack enable pnpm
+pnpm install --frozen-lockfile
+pnpm run typecheck
+pnpm run lint:check
+pnpm run lint:dpdm
+pnpm run build
+```
+
+Run `pnpm run dev` to rebuild on changes, `pnpm run start --help` for the CLI, or `pnpm run server --help` for the
+server. `pnpm run lint` applies lint fixes. Commit dependency updates with `pnpm-lock.yaml`; dependency overrides and
+allowed install scripts are configured in `pnpm-workspace.yaml`.
 
 ## Resources
 

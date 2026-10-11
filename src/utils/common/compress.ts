@@ -1,4 +1,4 @@
-import sharp from 'sharp'
+import sharp, { type Sharp } from 'sharp'
 
 import type { availableConvertFormat, IBuildInCompressOptions, IBuildInWaterMarkOptions, ILogger } from '../../types'
 import { forceNumber, safeParse } from './config'
@@ -149,7 +149,11 @@ function formatOptions(options: IBuildInCompressOptions): IBuildInCompressOption
   }
 }
 
-type SharpFormatOptions = NonNullable<Parameters<sharp.Sharp['toFormat']>[1]>
+type SharpFormatOptions = NonNullable<Parameters<Sharp['toFormat']>[1]>
+
+/** Resolves filename aliases to the encoder names accepted by Sharp's public types. */
+const getSharpFormat = (format: availableConvertFormat | 'svg'): Parameters<Sharp['toFormat']>[0] =>
+  format === 'jpg' ? 'jpeg' : format === 'tif' ? 'tiff' : format
 
 /** Builds encoder settings, selecting AV1 compression for HEIF output. */
 function getSharpFormatOptions(format: string, quality: number): SharpFormatOptions {
@@ -174,7 +178,7 @@ function getOutputQuality(qualityOption: number | undefined): number {
 }
 
 /** Scales both dimensions by the configured percentage when dimensions and percentage are available. */
-async function applyPercentResize(image: sharp.Sharp, options: IBuildInCompressOptions): Promise<sharp.Sharp> {
+async function applyPercentResize(image: Sharp, options: IBuildInCompressOptions): Promise<Sharp> {
   if (!options.isReSizeByPercent || !validParam(options.reSizePercent)) return image
 
   const { width, height } = await image.metadata()
@@ -191,7 +195,7 @@ async function applyPercentResize(image: sharp.Sharp, options: IBuildInCompressO
 }
 
 /** Applies exact dimensions or proportional single-edge resizing with optional enlargement avoidance. */
-async function applyDimensionResize(image: sharp.Sharp, options: IBuildInCompressOptions): Promise<sharp.Sharp> {
+async function applyDimensionResize(image: Sharp, options: IBuildInCompressOptions): Promise<Sharp> {
   if (options.isReSizeByPercent || !options.isReSize) return image
 
   const hasHeight = typeof options.reSizeHeight === 'number' && options.reSizeHeight > 0
@@ -235,12 +239,12 @@ async function applyDimensionResize(image: sharp.Sharp, options: IBuildInCompres
 }
 
 /** Chooses percentage resizing before explicit-dimension resizing. */
-async function applyResizeOptions(image: sharp.Sharp, options: IBuildInCompressOptions): Promise<sharp.Sharp> {
+async function applyResizeOptions(image: Sharp, options: IBuildInCompressOptions): Promise<Sharp> {
   return options.isReSizeByPercent ? applyPercentResize(image, options) : applyDimensionResize(image, options)
 }
 
 /** Adds configured rotation, vertical flip, and horizontal flip operations to the Sharp pipeline. */
-function applyTransformOptions(image: sharp.Sharp, options: IBuildInCompressOptions): sharp.Sharp {
+function applyTransformOptions(image: Sharp, options: IBuildInCompressOptions): Sharp {
   if (options.isRotate && options.rotateDegree) {
     image = image.rotate(options.rotateDegree, {
       background: { r: 255, g: 255, b: 255, alpha: 0 },
@@ -257,14 +261,14 @@ function applyTransformOptions(image: sharp.Sharp, options: IBuildInCompressOpti
 
 /** Selects a validated conversion output or preserves the original encodable image format. */
 async function applyOutputFormat(
-  image: sharp.Sharp,
+  image: Sharp,
   options: IBuildInCompressOptions,
   rawFormat: string,
   quality: number,
-): Promise<sharp.Sharp> {
+): Promise<Sharp> {
   if (options.isConvert) {
     const newFormat = getConvertedFormat(options, rawFormat)
-    return image.toFormat(newFormat, getSharpFormatOptions(newFormat, quality))
+    return image.toFormat(getSharpFormat(newFormat), getSharpFormatOptions(newFormat, quality))
   }
 
   if (rawFormat === 'heic' || rawFormat === 'heif') {
@@ -275,7 +279,7 @@ async function applyOutputFormat(
   }
 
   if (rawFormat && validOutputFormat(rawFormat)) {
-    return image.toFormat(rawFormat, getSharpFormatOptions(rawFormat, quality))
+    return image.toFormat(getSharpFormat(rawFormat), getSharpFormatOptions(rawFormat, quality))
   }
 
   throw new Error(`Cannot preserve image format "${rawFormat}". Enable conversion to a supported output format.`)
@@ -301,7 +305,7 @@ export async function imageCompress(
     rawFormat = normalizeImageExt(rawFormat)
     if (!imageInputFormatList.includes(rawFormat) || rawFormat === 'gif') return img
     if (rawFormat === 'svg' && !isNeedCompress(options, rawFormat)) return img
-    let image: sharp.Sharp = sharp(img, { animated: true })
+    let image: Sharp = sharp(img, { animated: true })
     const quality = getOutputQuality(options.quality)
     image = await applyResizeOptions(image, options)
     image = applyTransformOptions(image, options)

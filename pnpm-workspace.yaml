@@ -1,0 +1,8 @@
+overrides:
+  baseline-browser-mapping: ^2.11.24
+  # external-editor still requests a vulnerable pre-0.2 release of tmp.
+  external-editor>tmp: ^0.2.7
+
+allowBuilds:
+  sharp: true
+  ssh2-no-cpu-features: true

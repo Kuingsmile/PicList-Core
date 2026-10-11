@@ -1,3 +1,15 @@
+# :tada: 3.0.1 (2026-10-10)
+
+### :arrow_up: Upgrades
+
+* Migrate development and Docker builds to pnpm with a frozen lockfile.
+* Upgrade Sharp to 0.35.5 and update image format handling for its public types.
+
+### :bug: Bug Fixes
+
+* Read image watermark assets through Node so Electron can load them from app.asar.
+* Declare SSH types for isolated pnpm builds.
+
 # :tada: 3.0.0 (2026-10-10)
 # :tada: 3.0.0-alpha.7 (2026-10-09)
 
