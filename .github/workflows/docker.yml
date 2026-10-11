@@ -100,11 +100,20 @@ jobs:
           sparse-checkout: |
             Dockerfile
             .dockerignore
+            .github/docker/Dockerfile.legacy
           sparse-checkout-cone-mode: false
           persist-credentials: false
 
-      - name: Apply build context exclusions
-        run: cp build-recipe/.dockerignore source/.dockerignore
+      - name: Select build recipe and apply context exclusions
+        id: recipe
+        run: |
+          cp build-recipe/.dockerignore source/.dockerignore
+          # Historical tags still need the recipe for their committed Yarn lockfile.
+          recipe=build-recipe/Dockerfile
+          if [[ ! -f source/pnpm-lock.yaml ]]; then
+            recipe=build-recipe/.github/docker/Dockerfile.legacy
+          fi
+          echo "file=$recipe" >> "$GITHUB_OUTPUT"
 
       # Each platform builds and runs on its own native runner; no QEMU needed.
       - name: Set up Docker Buildx
@@ -114,7 +123,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: ./source
-          file: ./build-recipe/Dockerfile
+          file: ${{ steps.recipe.outputs.file }}
           platforms: linux/${{ matrix.arch }}
           load: true
           push: false
@@ -135,6 +144,16 @@ jobs:
           test "$installed_version" = "$expected_version"
           test "$(docker run --rm "$image" picgo --version)" = "$expected_version"
           docker run --rm "$image" node /usr/local/bin/picgo-server --help
+          docker run --rm "$image" node -e '
+            const sharp = require("/usr/local/lib/node_modules/piclist/node_modules/sharp")
+            sharp({ create: { width: 32, height: 20, channels: 4, background: "#487abd" } })
+              .resize(16, 10).webp().toBuffer({ resolveWithObject: true })
+              .then(({ info }) => {
+                require("node:assert/strict").equal(info.width, 16)
+                require("node:assert/strict").equal(info.height, 10)
+                console.log(JSON.stringify({ arch: process.arch, sharp: sharp.versions.sharp, vips: sharp.versions.vips }))
+              }).catch(() => { console.error("Sharp image processing failed"); process.exitCode = 1 })
+          '
 
       - name: Compress image and report size
         run: |

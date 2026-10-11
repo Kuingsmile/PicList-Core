@@ -9,7 +9,7 @@
       "args": ["upload"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
-      "preLaunchTask": "yarn: build",
+      "preLaunchTask": "pnpm: build",
       "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
     },
@@ -21,7 +21,7 @@
       "args": ["--help"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
-      "preLaunchTask": "yarn: build",
+      "preLaunchTask": "pnpm: build",
       "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
     },
@@ -33,7 +33,7 @@
       "args": ["--host", "127.0.0.1"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
-      "preLaunchTask": "yarn: build",
+      "preLaunchTask": "pnpm: build",
       "skipFiles": ["<node_internals>/**"],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
     }

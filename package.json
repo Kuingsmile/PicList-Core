@@ -31,28 +31,22 @@
   },
   "scripts": {
     "build": "rimraf ./dist && cross-env NODE_ENV=production rolldown -c rolldown.config.js",
-    "cz": "git-cz",
+    "cz": "cz-customizable",
     "dev": "cross-env NODE_ENV=development rolldown -c rolldown.config.js -w",
     "lint": "eslint --fix",
     "lint:check": "eslint",
     "lint:dpdm": "dpdm -T --tsconfig ./tsconfig.json --no-tree --no-warning --exit-code circular:1 src/index.ts",
     "prepare": "husky",
-    "publish:npm": "npm run build && npm publish",
+    "publish:npm": "pnpm run build && pnpm publish",
     "release": "bump-version",
     "server": "node ./bin/picgo-server",
     "start": "node ./bin/picgo",
     "typecheck": "tsc --noEmit"
   },
   "config": {
-    "commitizen": {
-      "path": "cz-customizable"
-    },
     "cz-customizable": {
       "config": ".cz-config.cjs"
     }
-  },
-  "resolutions": {
-    "baseline-browser-mapping": "^2.11.24"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1142.0",
@@ -85,7 +79,7 @@
     "qiniu": "^7.15.2",
     "react": "^19.2.0",
     "resolve": "^1.22.12",
-    "sharp": "0.34.4",
+    "sharp": "0.35.5",
     "string-width": "^8.2.0",
     "text-to-svg": "^3.1.5",
     "tunnel": "^0.0.6",
@@ -107,7 +101,6 @@
     "@types/resolve": "^1.20.6",
     "@types/text-to-svg": "^3.1.4",
     "@types/tunnel": "^0.0.7",
-    "commitizen": "^4.3.2",
     "cross-env": "^10.1.0",
     "cz-customizable": "^7.5.4",
     "dpdm": "^4.3.0",
@@ -126,7 +119,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.1"
   },
-  "packageManager": "yarn@1.22.22",
+  "packageManager": "pnpm@10.34.6",
   "engines": {
     "node": "^22.13.0"
   },

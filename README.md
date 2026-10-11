@@ -42,7 +42,7 @@ picgo upload ./image.png
 
 `picgo init` 会引导你选择图床、命名配置并填写连接信息。保存后，该配置将成为默认上传目标。请在交互式终端中运行此命令。
 
-也可以通过 `yarn global add piclist` 安装。`sharp` 等图片处理依赖会随安装包一起安装。
+也可以通过 `pnpm add -g piclist` 安装。`sharp` 等图片处理依赖会随安装包一起安装。
 
 npm 包名为 `piclist`，安装后使用的命令为 **`picgo`** 和 **`picgo-server`**。
 
@@ -281,6 +281,23 @@ uploadImage().catch(console.error)
 ```
 
 </details>
+
+## 开发
+
+使用 Node.js 22.13.0 或更高的 22.x 版本，以及 `package.json` 中固定的 pnpm 版本：
+
+```bash
+corepack enable pnpm
+pnpm install --frozen-lockfile
+pnpm run typecheck
+pnpm run lint:check
+pnpm run lint:dpdm
+pnpm run build
+```
+
+使用 `pnpm run dev` 监听变更并重新构建，`pnpm run start --help` 查看 CLI 帮助， `pnpm run server --help`
+查看服务器帮助。`pnpm run lint` 自动修复代码检查问题。更新依赖后请提交
+`pnpm-lock.yaml`；依赖版本覆盖和允许执行的安装脚本配置位于 `pnpm-workspace.yaml`。
 
 ## 相关资源
 

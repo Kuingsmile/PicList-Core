@@ -12,11 +12,14 @@ rolldown.config.js
 scripts/
 eslint.config.js
 .prettierrc
+.prettierignore
 
 Dockerfile
 docker-compose.yaml
 
-yarn-error.log
+pnpm-debug.log*
+.pnpm-store/
+*.tgz
 temp.js
 package-lock.json
 tsconfig.json
@@ -24,4 +27,6 @@ logo.png
 
 CHANGELOG.md
 
+pnpm-lock.yaml
+pnpm-workspace.yaml
 yarn.lock

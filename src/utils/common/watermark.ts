@@ -1,7 +1,8 @@
+import { readFile } from 'node:fs/promises'
 import path, { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import sharp from 'sharp'
+import sharp, { type Gravity } from 'sharp'
 import TextToSVG from 'text-to-svg'
 
 import type { IBuildInWaterMarkOptions, ILogger } from '../../types'
@@ -68,7 +69,7 @@ export async function AddWatermark(
   watermarkScaleRatio?: number,
   watermarkColor?: string,
   watermarkImagePath?: string,
-  position?: sharp.Gravity,
+  position?: Gravity,
   watermarkImageOpacity?: number,
 ): Promise<Buffer> {
   watermarkScaleRatio =
@@ -118,7 +119,9 @@ async function createWatermark(
   if (watermarkType === 'image') {
     watermarkImageOpacity = Math.max(0, Math.min(255, Math.round(forceNumber(watermarkImageOpacity))))
     watermarkImagePath = watermarkImagePath || defaultWatermarkImagePath
-    watermark = await sharp(watermarkImagePath)
+    // Read via Node so Electron can resolve assets stored inside app.asar.
+    // libvips opens filename inputs directly and cannot read ASAR virtual paths.
+    watermark = await sharp(await readFile(watermarkImagePath))
       .composite([
         {
           input: Buffer.from([255, 255, 255, watermarkImageOpacity]),

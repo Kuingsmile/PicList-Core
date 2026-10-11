@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "yarn: build",
+      "label": "pnpm: build",
       "type": "shell",
-      "command": "yarn",
+      "command": "pnpm",
       "args": ["build"],
       "group": {
         "kind": "build",
@@ -17,9 +17,9 @@
       }
     },
     {
-      "label": "yarn: dev",
+      "label": "pnpm: dev",
       "type": "shell",
-      "command": "yarn",
+      "command": "pnpm",
       "args": ["dev"],
       "isBackground": true,
       "problemMatcher": [],
@@ -29,9 +29,20 @@
       }
     },
     {
-      "label": "yarn: lint",
+      "label": "pnpm: lint:check",
       "type": "shell",
-      "command": "yarn",
+      "command": "pnpm",
+      "args": ["lint:check"],
+      "problemMatcher": ["$eslint-stylish"],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "pnpm: lint",
+      "type": "shell",
+      "command": "pnpm",
       "args": ["lint"],
       "problemMatcher": ["$eslint-stylish"],
       "presentation": {
@@ -40,20 +51,9 @@
       }
     },
     {
-      "label": "yarn: lint:fix",
+      "label": "pnpm: lint:dpdm",
       "type": "shell",
-      "command": "yarn",
-      "args": ["lint:fix"],
-      "problemMatcher": ["$eslint-stylish"],
-      "presentation": {
-        "panel": "dedicated",
-        "reveal": "always"
-      }
-    },
-    {
-      "label": "yarn: lint:dpdm",
-      "type": "shell",
-      "command": "yarn",
+      "command": "pnpm",
       "args": ["lint:dpdm"],
       "problemMatcher": [],
       "presentation": {
@@ -62,9 +62,9 @@
       }
     },
     {
-      "label": "yarn: start",
+      "label": "pnpm: start",
       "type": "shell",
-      "command": "yarn",
+      "command": "pnpm",
       "args": ["start"],
       "problemMatcher": [],
       "presentation": {
@@ -73,9 +73,9 @@
       }
     },
     {
-      "label": "yarn: server",
+      "label": "pnpm: server",
       "type": "shell",
-      "command": "yarn",
+      "command": "pnpm",
       "args": ["server"],
       "problemMatcher": [],
       "presentation": {

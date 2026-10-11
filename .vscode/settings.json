@@ -38,7 +38,7 @@
   "js/ts.tsdk.path": "node_modules/typescript/lib",
   "js/ts.tsdk.promptToUseWorkspaceVersion": true,
   "js/ts.updateImportsOnFileMove.enabled": "always",
-  "npm.packageManager": "yarn",
+  "npm.packageManager": "pnpm",
   "prettier.requireConfig": true,
   "search.exclude": {
     "**/dist": true,
