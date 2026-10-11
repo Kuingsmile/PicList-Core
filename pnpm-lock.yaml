@@ -157,6 +157,9 @@ importers:
       '@types/resolve':
         specifier: ^1.20.6
         version: 1.20.6
+      '@types/ssh2':
+        specifier: ^1.15.6
+        version: 1.15.6
       '@types/text-to-svg':
         specifier: ^3.1.4
         version: 3.1.4

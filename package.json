@@ -99,6 +99,7 @@
     "@types/node": "^26.6.1",
     "@types/react": "^19.2.0",
     "@types/resolve": "^1.20.6",
+    "@types/ssh2": "^1.15.6",
     "@types/text-to-svg": "^3.1.4",
     "@types/tunnel": "^0.0.7",
     "cross-env": "^10.1.0",
