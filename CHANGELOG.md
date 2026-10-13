@@ -1,3 +1,8 @@
+## :tada: 3.0.2 (2026-10-13)
+
+### :bug: Bug Fixes
+
+* tolerate proxy:null in s3 ([649afd2](https://github.com/Kuingsmile/PicList-Core/commit/649afd2)), closes [kuingsmile/piclist#598](https://github.com/kuingsmile/piclist/issues/598)
 # :tada: 3.0.1 (2026-10-10)
 
 ### :arrow_up: Upgrades
