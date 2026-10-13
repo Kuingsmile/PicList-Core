@@ -42,7 +42,9 @@ export async function extractInfo(info: IImgInfo): Promise<{
 }
 
 /** Parses HTTP(S) proxy URLs, retaining credentials and accepting bare hosts with an HTTP default. */
-function normalizeHttpProxyURL(url = ''): URL | undefined {
+function normalizeHttpProxyURL(url?: string | null): URL | undefined {
+  // Desktop configuration forms can persist an unset optional proxy as null.
+  if (typeof url !== 'string') return undefined
   url = url.trim()
   if (!url) return undefined
 
@@ -65,7 +67,7 @@ function normalizeHttpProxyURL(url = ''): URL | undefined {
  * configured.
  */
 export function getProxyAgent(
-  proxy: string | undefined,
+  proxy: string | null | undefined,
   sslEnabled: boolean,
   rejectUnauthorized: boolean,
 ): HttpProxyAgent | HttpsProxyAgent | undefined {

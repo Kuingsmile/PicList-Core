@@ -499,7 +499,7 @@ export interface IAwsS3PListUserConfig {
   uploadPath: string
   region?: string
   endpoint?: string
-  proxy?: string
+  proxy?: string | null
   urlPrefix?: string
   pathStyleAccess?: boolean
   rejectUnauthorized?: boolean
