@@ -35,7 +35,7 @@ defaults:
 jobs:
   prepare:
     name: Resolve build source
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     outputs:
       commit: ${{ steps.source.outputs.commit }}
@@ -203,7 +203,7 @@ jobs:
     name: Publish verified images
     needs: [prepare, build]
     if: ${{ inputs.enable_push }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     env:
       IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
