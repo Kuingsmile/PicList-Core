@@ -1,4 +1,4 @@
-ARG NODE_IMAGE=node:22.21.1-alpine3.22@sha256:b2358485e3e33bc3a33114d2b1bdb18cdbe4df01bd2b257198eb51beb1f026c5
+ARG NODE_IMAGE=node:24.22.3-alpine3.24@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
 
 # Compile once natively; the packed JavaScript is platform independent.
 FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS build
@@ -34,8 +34,8 @@ FROM runtime-base AS runtime
 COPY --from=production-dependencies /dependencies/node_modules /usr/local/lib/node_modules/piclist/node_modules
 COPY --from=build /package/piclist.tgz /tmp/piclist.tgz
 COPY --from=build /build/package.json /tmp/piclist-package.json
-# Install only the packed checkout and retain the existing global command paths.
-RUN tar -xzf /tmp/piclist.tgz -C /usr/local/lib/node_modules/piclist --strip-components=1 \
+# The frozen production install already contains the platform's full dependency tree, including WebDAV.
+RUN tar --exclude=package/node_modules -xzf /tmp/piclist.tgz -C /usr/local/lib/node_modules/piclist --strip-components=1 \
     && ln -s /usr/local/lib/node_modules/piclist/bin/picgo /usr/local/bin/picgo \
     && ln -s /usr/local/lib/node_modules/piclist/bin/picgo-server /usr/local/bin/picgo-server \
     && node -e "require('node:assert/strict').equal(require('/usr/local/lib/node_modules/piclist/package.json').version, require('/tmp/piclist-package.json').version)" \

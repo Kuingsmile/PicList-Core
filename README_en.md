@@ -7,7 +7,7 @@
 **Upload and process images from your terminal, apps, and server.**
 
 [![npm version](https://img.shields.io/npm/v/piclist?style=flat-square)](https://www.npmjs.com/package/piclist)
-[![Node.js](https://img.shields.io/badge/Node.js-22.13%2B%20%2822.x%29-5FA04E?style=flat-square)](./package.json)
+[![Node.js](https://img.shields.io/badge/Node.js-24.15%2B-5FA04E?style=flat-square)](./package.json)
 [![MIT License](https://img.shields.io/github/license/Kuingsmile/PicList-Core?style=flat-square)](./License)
 
 **English** | [简体中文](./README.md)
@@ -33,7 +33,7 @@ secondary uploads, while supporting the PicGo plugin ecosystem and configuration
 
 ## Quick start
 
-Requires **Node.js 22.13.0 or later in the 22.x release line**.
+Requires **Node.js 24.15+ (24.x) or 26 and later**.
 
 ```bash
 npm install -g piclist
@@ -44,8 +44,8 @@ picgo upload ./image.png
 `picgo init` guides you through choosing an uploader, naming its configuration, and entering connection details. The
 saved configuration becomes your default upload destination. Run setup in an interactive terminal.
 
-You can also install with `pnpm add -g piclist`. Image-processing dependencies, including `sharp`, are included in the
-package installation.
+With pnpm 12, use `pnpm add -g --allow-build=ssh2-no-cpu-features piclist` to allow the SSH install script.
+Image-processing dependencies, including `sharp`, are included in the package installation.
 
 The npm package is named `piclist`; its commands are **`picgo`** and **`picgo-server`**.
 
@@ -295,10 +295,10 @@ uploadImage().catch(console.error)
 
 ## Development
 
-Use Node.js 22.13.0 or later in the 22.x release line and the pnpm version pinned in `package.json`:
+Use the Node.js version in `.nvmrc` and the pnpm version pinned in `package.json`.
 
 ```bash
-corepack enable pnpm
+npm install --global pnpm@12.21.0
 pnpm install --frozen-lockfile
 pnpm run typecheck
 pnpm run lint:check
@@ -307,8 +307,9 @@ pnpm run build
 ```
 
 Run `pnpm run dev` to rebuild on changes, `pnpm run start --help` for the CLI, or `pnpm run server --help` for the
-server. `pnpm run lint` applies lint fixes. Commit dependency updates with `pnpm-lock.yaml`; dependency overrides and
-allowed install scripts are configured in `pnpm-workspace.yaml`.
+server. `pnpm run lint` applies lint fixes. Commit dependency updates with `pnpm-lock.yaml`.
+The npm package bundles WebDAV so consumer installs use the same native fetch transport selected in
+`pnpm-workspace.yaml`.
 
 ## Resources
 

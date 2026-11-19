@@ -24,8 +24,7 @@ export default defineConfig({
   preserveEntrySignatures: 'strict',
   // Type checking intentionally accounts for most of the build time.
   checks: { pluginTimings: false },
-  // Rolldown 1.2's native watcher matches exact paths. Poll directory changes as well
-  // so newly added declaration-only files trigger a rebuild.
+  // Poll directories so newly added declaration-only files also trigger a rebuild.
   watch: { watcher: { usePolling: true, compareContentsForPolling: true } },
   // Match package boundaries so e.g. `react-dom` is not mistaken for `react`.
   external: id => isBuiltin(id) || externalPackages.some(name => id === name || id.startsWith(`${name}/`)),
@@ -35,7 +34,7 @@ export default defineConfig({
     warn(warning)
   },
   transform: {
-    target: 'es2022',
+    target: 'node24',
     define: { 'process.env.PICGO_VERSION': JSON.stringify(version) },
   },
   plugins: [

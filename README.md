@@ -7,7 +7,7 @@
 **在终端、应用和服务中上传与处理图片。**
 
 [![npm version](https://img.shields.io/npm/v/piclist?style=flat-square)](https://www.npmjs.com/package/piclist)
-[![Node.js](https://img.shields.io/badge/Node.js-22.13%2B%20%2822.x%29-5FA04E?style=flat-square)](./package.json)
+[![Node.js](https://img.shields.io/badge/Node.js-24.15%2B-5FA04E?style=flat-square)](./package.json)
 [![MIT License](https://img.shields.io/github/license/Kuingsmile/PicList-Core?style=flat-square)](./License)
 
 [English](./README_en.md) | **简体中文**
@@ -32,7 +32,7 @@ API 和 HTTP 服务。它扩展了图片处理、图床多配置和第二图床�
 
 ## 快速开始
 
-需要 **Node.js 22.13.0 或更高的 22.x 版本**。
+需要 **Node.js 24.15 及以上的 24.x 版本，或 Node.js 26 及以上版本**。
 
 ```bash
 npm install -g piclist
@@ -42,7 +42,8 @@ picgo upload ./image.png
 
 `picgo init` 会引导你选择图床、命名配置并填写连接信息。保存后，该配置将成为默认上传目标。请在交互式终端中运行此命令。
 
-也可以通过 `pnpm add -g piclist` 安装。`sharp` 等图片处理依赖会随安装包一起安装。
+使用 pnpm 12 时，运行 `pnpm add -g --allow-build=ssh2-no-cpu-features piclist` 以允许执行 SSH 依赖的安装脚本。
+`sharp` 等图片处理依赖会随安装包一起安装。
 
 npm 包名为 `piclist`，安装后使用的命令为 **`picgo`** 和 **`picgo-server`**。
 
@@ -284,10 +285,10 @@ uploadImage().catch(console.error)
 
 ## 开发
 
-使用 Node.js 22.13.0 或更高的 22.x 版本，以及 `package.json` 中固定的 pnpm 版本：
+开发时使用 `.nvmrc` 指定的 Node.js 版本和 `package.json` 中固定的 pnpm 版本。
 
 ```bash
-corepack enable pnpm
+npm install --global pnpm@12.21.0
 pnpm install --frozen-lockfile
 pnpm run typecheck
 pnpm run lint:check
@@ -297,7 +298,7 @@ pnpm run build
 
 使用 `pnpm run dev` 监听变更并重新构建，`pnpm run start --help` 查看 CLI 帮助， `pnpm run server --help`
 查看服务器帮助。`pnpm run lint` 自动修复代码检查问题。更新依赖后请提交
-`pnpm-lock.yaml`；依赖版本覆盖和允许执行的安装脚本配置位于 `pnpm-workspace.yaml`。
+`pnpm-lock.yaml`。发布的 npm 包内置 WebDAV，确保用户安装后也能使用 `pnpm-workspace.yaml` 中指定的原生 fetch 实现。
 
 ## 相关资源
 
