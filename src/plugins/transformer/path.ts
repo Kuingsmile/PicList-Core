@@ -5,6 +5,25 @@ import { IImgInfo, IImgSize, IPathTransformedImgInfo, IPicGo } from '../../types
 import { getFSFile, getImageSize, getURLFile, isUrl } from '../../utils/common'
 import { takePreprocessedInput } from '../../utils/preprocessedInput'
 
+const TIMESTAMP_FORMAT = 'YYYYMMDDHHmmssSSS'
+// Share millisecond reservations across overlapping uploads in this process.
+let nextGeneratedTime = 0
+
+const getGeneratedFileName = (extname: string, usedNames: Set<string>): string => {
+  let fileName: string
+  do {
+    if (Date.now() >= nextGeneratedTime) {
+      fileName = `${dayjs().format(TIMESTAMP_FORMAT)}${extname}`
+      nextGeneratedTime = Date.now() + 1
+    } else {
+      fileName = `${dayjs(nextGeneratedTime).format(TIMESTAMP_FORMAT)}${extname}`
+      nextGeneratedTime++
+    }
+  } while (usedNames.has(fileName.toLowerCase()))
+  usedNames.add(fileName.toLowerCase())
+  return fileName
+}
+
 /**
  * Loads files, URLs, or buffers into image records concurrently and drops failed inputs.
  *
@@ -13,6 +32,7 @@ import { takePreprocessedInput } from '../../utils/preprocessedInput'
  */
 const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   const results: IImgInfo[] = ctx.output
+  const unnamed: { image: IImgInfo; extname: string }[] = []
   await Promise.all(
     ctx.input.map(async (item: string | Buffer, index: number) => {
       let info: IPathTransformedImgInfo
@@ -37,13 +57,14 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         results[index] = {
           inputIndex: index,
           buffer: info.buffer,
-          fileName: info.fileName || `${dayjs().format('YYYYMMDDHHmmssSSS')}${extname}`,
+          fileName: info.fileName,
           width: imgSize.width,
           height: imgSize.height,
           filePath: info.filePath,
           extname: info.extname,
           mimeType: mime.getType(extname) || 'application/octet-stream',
         }
+        if (!info.fileName) unnamed.push({ image: results[index], extname })
       } else {
         ctx.log.error(info.reason)
       }
@@ -51,6 +72,11 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
   )
   // remove empty item
   ctx.output = results.filter(item => item)
+  if (unnamed.length) {
+    // A later input may already own a timestamp filename, including on case-insensitive filesystems.
+    const usedNames = new Set(ctx.output.map(image => image.fileName?.toLowerCase() || ''))
+    for (const { image, extname } of unnamed) image.fileName = getGeneratedFileName(extname, usedNames)
+  }
   return ctx
 }
 
