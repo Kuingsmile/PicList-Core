@@ -121,15 +121,18 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
       deadline,
     ])
     const buffer = Buffer.isBuffer(response.data) ? response.data : Buffer.from(response.data as ArrayBuffer)
-    const urlPath = parsedUrl.pathname
-    let extname = parsedUrl.searchParams.get('wx_fmt') || path.extname(urlPath) || ''
-    const contentType = response.headers['content-type'] || response.headers['Content-Type'] || ''
-    if (!extname && contentType) extname = getImageExtensionFromMime(String(contentType))
-    if (!extname) extname = getImageTypeByMagicNumber(buffer)
-    if (extname && !extname.startsWith('.')) extname = `.${extname}`
+    const { name, ext } = path.posix.parse(parsedUrl.pathname)
+    const formatHint = parsedUrl.searchParams.get('wx_fmt')?.replace(/^\./, '')
+    let extname = ext
+    if (formatHint && /^[a-z0-9]+$/i.test(formatHint) && mime.getType(formatHint)?.startsWith('image/')) {
+      extname = `.${formatHint}`
+    } else if (!mime.getType(ext)?.startsWith('image/')) {
+      const contentType = response.headers?.['content-type'] || response.headers?.['Content-Type'] || ''
+      extname = getImageExtensionFromMime(String(contentType)) || getImageTypeByMagicNumber(buffer) || ext
+    }
     return {
       buffer,
-      fileName: path.basename(urlPath),
+      fileName: name ? name + extname : '',
       extname,
       success: true,
     }
