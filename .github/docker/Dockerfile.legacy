@@ -1,6 +1,6 @@
 # Compatibility recipe for release tags from before the pnpm migration.
 # Keep their Yarn lockfiles intact when rebuilding historical source.
-ARG NODE_IMAGE=node:22.21.1-alpine3.22@sha256:b2358485e3e33bc3a33114d2b1bdb18cdbe4df01bd2b257198eb51beb1f026c5
+ARG NODE_IMAGE=node:26.3.0-alpine3.22@sha256:c7932b9e5e337b0e733d6e16abc1b0e104759e8b05e59ed56586cce967d26dfe
 
 # Compile once natively; the packed JavaScript is platform independent.
 FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS build
