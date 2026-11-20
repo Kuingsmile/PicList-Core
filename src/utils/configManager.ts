@@ -2,10 +2,13 @@ import { v4 as uuid } from 'uuid'
 
 import type { IConfig, IConfigItem, IPicGo, IStringKeyMap, IUploaderConfigList } from '../types'
 
+/** A profile selection error that can be reported to the caller of an upload. */
+export class UploaderProfileError extends Error {}
+
 /** Normalizes profile names before validation, persistence, or lookup. */
 const normalizeConfigName = (configName: string): string => {
   if (typeof configName !== 'string' || !configName.trim()) {
-    throw new Error('Uploader profile name must be a nonempty string')
+    throw new UploaderProfileError('Uploader profile name must be a nonempty string')
   }
   return configName.trim()
 }
@@ -17,7 +20,7 @@ export const findUploaderConfigByName = (configList: IConfigItem[], configName: 
   for (const item of configList) {
     if (typeof item._configName !== 'string' || item._configName.trim() !== name) continue
     if (selected) {
-      throw new Error('Uploader profile name is ambiguous; rename profiles by ID to make names unique')
+      throw new UploaderProfileError('Uploader profile name is ambiguous; rename profiles by ID to make names unique')
     }
     selected = item
   }

@@ -9,7 +9,7 @@ import { ensureDirSync } from 'fs-extra/esm'
 import minimist from 'minimist'
 import multer from 'multer'
 
-import { PicGo } from '../dist/index.js'
+import { PicGo, UploaderProfileError } from '../dist/index.js'
 
 /** Root directory for per-request multipart staging, kept separate from user-supplied upload paths. */
 const tempDir = path.join(os.homedir(), '.piclist', 'serverTemp')
@@ -301,7 +301,7 @@ router.post('/upload', async ({ response, list = [], urlparams }) => {
       response,
       body: {
         success: false,
-        message: errorMessage,
+        message: err instanceof UploaderProfileError ? err.message : errorMessage,
       },
     })
   }

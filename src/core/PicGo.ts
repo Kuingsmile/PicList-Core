@@ -30,7 +30,7 @@ import {
   IUploadResultWithBackup,
 } from '../types'
 import { isConfigKeyInBlackList, isInputConfigValid } from '../utils/common'
-import { ConfigManager, findUploaderConfigByName } from '../utils/configManager'
+import { ConfigManager, findUploaderConfigByName, UploaderProfileError } from '../utils/configManager'
 import DB from '../utils/db'
 import { IBuildInEvent, IBusEvent } from '../utils/enum'
 import { eventBus } from '../utils/eventBus'
@@ -360,16 +360,16 @@ export class PicGo extends EventEmitter implements IPicGo {
    */
   private getUploadConfig(options: IUploadOptions = {}): IConfig {
     const config = cloneDeep(this.getConfig<IConfig>())
-    const type = options.picBed
-    if (!type) return config
+    if (!options.picBed && options.configName === undefined) return config
 
     const picBed = config.picBed || {}
     const currentType = picBed.uploader || picBed.current || 'smms'
+    const type = options.picBed || currentType
     const configName = options.configName ?? picBed[type]?._configName
     const configList = config.uploader?.[type]?.configList
     if (options.configName !== undefined || (type !== currentType && configName && configList)) {
       const selected = findUploaderConfigByName(configList || [], configName)
-      if (!selected) throw new Error('Uploader configuration not found')
+      if (!selected) throw new UploaderProfileError(`Profile "${configName}" not found for uploader "${type}"`)
       set(config, `picBed.${type}`, cloneDeep(selected))
       if (selected._id) set(config, `uploader.${type}.defaultId`, selected._id)
     }

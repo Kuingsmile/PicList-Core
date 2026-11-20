@@ -875,7 +875,7 @@ export interface IBuildInListItem {
 export interface IUploadOptions {
   /** Select an uploader for this upload only, without changing saved defaults. */
   picBed?: string
-  /** Select a saved configuration by name (requires picBed). */
+  /** Select a saved profile of the specified uploader, or of the current uploader when picBed is omitted. */
   configName?: string
 }
 
