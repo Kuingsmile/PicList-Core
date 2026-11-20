@@ -1,5 +1,12 @@
 import type { IInquirerQuestion } from './inquirerShim'
 
+/** Builds a single saveConfig batch for submitted fields, treating each question name as a literal key. */
+export function configFieldUpdates(section: string, answers: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(answers).map(([name, value]) => [`${section}["${name.replace(/["\\]/g, '\\$&')}"]`, value]),
+  )
+}
+
 /** Identifies password fields and credential-like question names for validation-message redaction. */
 export const isSecretQuestion = (question: IInquirerQuestion): boolean =>
   question.type === 'password' ||

@@ -87,7 +87,7 @@ const setupUploader = async (ctx: IPicGo): Promise<void> => {
 
   const saved = ctx.configManager.getConfigByName(uploader, configName)
   if (saved) {
-    ctx.configManager.updateUploaderConfig(uploader, saved._id, { ...saved, ...answers })
+    ctx.configManager.updateUploaderConfig(uploader, saved._id, answers, 'merge')
   }
   const config = saved || ctx.configManager.addUploaderConfig(uploader, configName, answers)
   ctx.configManager.setDefaultConfig(uploader, config._id)

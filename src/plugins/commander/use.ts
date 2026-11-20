@@ -1,6 +1,6 @@
-import { IConfigItem, IPicGo, IPlugin, IStringKeyMap, Undefinable } from '../../types'
+import { IConfigItem, IPicGo, IPlugin, Undefinable } from '../../types'
 import type { IInquirerQuestion } from '../../utils/inquirerShim'
-import { uploaderTranslators } from './utils'
+import { savePluginSelection, uploaderTranslators } from './utils'
 
 /** Resolves the uploader and prompts for its saved profile when available. */
 const selectUploaderConfig = async (
@@ -135,13 +135,7 @@ const use: IPlugin = {
 
           if (answer.uploader !== undefined && !useUploader(ctx, answer.uploader, selectedConfig)) return
 
-          if (answer.plugins) {
-            const plugins = ctx.getConfig<IStringKeyMap<boolean>>('picgoPlugins')
-            for (const item of Object.keys(plugins)) {
-              plugins[item] = answer.plugins.includes(item)
-            }
-            ctx.saveConfig({ picgoPlugins: plugins })
-          }
+          if (answer.plugins) savePluginSelection(ctx, installedPlugins, answer.plugins)
           if (answer.transformer) {
             ctx.saveConfig({ 'picBed.transformer': answer.transformer })
           }

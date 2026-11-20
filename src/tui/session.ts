@@ -42,7 +42,8 @@ export function createPromptAdapter(
           default: typeof question.default === 'function' ? await question.default(answers) : question.default,
         }
         const value = await ask(resolved, { current: index + 1, total: questions.length })
-        answers[question.name] = question.filter ? await question.filter(value) : value
+        const answer = question.filter && value !== undefined ? await question.filter(value) : value
+        if (answer !== undefined) answers[question.name] = answer
       }
       return answers as T
     },

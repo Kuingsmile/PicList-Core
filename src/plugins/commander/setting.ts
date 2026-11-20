@@ -1,5 +1,6 @@
-import { IPicGo, IPluginConfig, IStringKeyMap } from '../../types'
-import { assertValidConfig } from '../../utils/configPrompts'
+import { IBuildInListItem, IPicGo, IPluginConfig, IStringKeyMap } from '../../types'
+import { getTreatedCompressOptions, getTreatedWaterMarkOptions } from '../../utils/common/processingOptions'
+import { assertValidConfig, configFieldUpdates } from '../../utils/configPrompts'
 import compress from '../beforetransformer/compress'
 import skipProcess from '../beforetransformer/skipProcess'
 import watermark from '../beforetransformer/watermark'
@@ -10,25 +11,71 @@ import { uploaderTranslators } from './utils'
 // Built-in modules configuration mapping
 /** Built-in processing form factories paired with their localization keys. */
 const BUILDIN_MODULES = {
-  compress: { config: compress.config, key: 'BUILDIN_COMPRESS' },
-  watermark: { config: watermark.config, key: 'BUILDIN_WATERMARK' },
+  compress: { config: compress.config, key: 'BUILDIN_COMPRESS', resolve: getTreatedCompressOptions },
+  watermark: { config: watermark.config, key: 'BUILDIN_WATERMARK', resolve: getTreatedWaterMarkOptions },
   rename: { config: rename.config, key: 'BUILDIN_RENAME' },
   skipProcess: { config: skipProcess.config, key: 'BUILDIN_SKIPPROCESS' },
 } as const
 
 type BuildinModuleName = keyof typeof BUILDIN_MODULES
 
-/**
- * Collects a module form and saves it to an uploader profile, global settings, or profile-linked
- * processing settings.
- */
+/** Edits one profile's processing settings while retaining rules inherited from its uploader. */
+const configureBuildinProfile = async (
+  ctx: IPicGo,
+  module: BuildinModuleName,
+  prompts: IPluginConfig[],
+  uploader: string,
+  configName: string,
+): Promise<void> => {
+  const profile = ctx.configManager.getConfigByName(uploader, configName)
+  if (!profile) {
+    ctx.log.error(`No config named "${configName}" found for uploader ${uploader}`)
+    return
+  }
+  const getList = () => ctx.getConfig<IBuildInListItem[]>('buildIn.list') || []
+  const linked: Record<string, any> = getList().find(item => item.id === profile._id)?.[module] || {}
+  const global = ctx.getConfig<Record<string, any>>(`buildIn.${module}`)
+  const form = BUILDIN_MODULES[module]
+  const inherited = 'resolve' in form ? form.resolve(global, {}, uploader, profile._id) : undefined
+  const mappedQuestions: IPluginConfig[] = []
+  const questions = prompts.map(question => {
+    const key = question.name
+    if (linked[key] !== undefined && linked[key] !== null) return { ...question, default: linked[key] }
+    const mappedValue = global?.[`${key}Map`]?.[uploader]
+    if (!inherited || mappedValue === undefined || mappedValue === null) return question
+    const mapped = { ...question, default: inherited[key] }
+    mappedQuestions.push(mapped)
+    return mapped
+  })
+  const answers = await ctx.cmd.inquirer.prompt(questions)
+  await assertValidConfig(questions, answers)
+  // Accepting a mapped default must keep following that map on future uploads.
+  for (const question of mappedQuestions) {
+    const value = answers[question.name]
+    if (value === question.default || (question.type === 'input' && value === String(question.default))) {
+      delete answers[question.name]
+    }
+  }
+  if (!ctx.configManager.getAllUploaderConfigs(uploader).some(item => item._id === profile._id)) {
+    ctx.log.error(`No config named "${configName}" found for uploader ${uploader}`)
+    return
+  }
+  const list = getList()
+  const index = list.findIndex(item => item.id === profile._id)
+  if (index === -1) {
+    ctx.saveConfig({ [`buildIn.list[${list.length}]`]: { id: profile._id, [module]: answers } })
+  } else if (Object.keys(answers).length) {
+    ctx.saveConfig(configFieldUpdates(`buildIn.list[${index}].${module}`, answers))
+  }
+}
+
+/** Collects a module form and saves its answers to an uploader profile or global settings. */
 const handleConfig = async (
   ctx: IPicGo,
   prompts: IPluginConfig[],
   module: string,
   name: string,
   configName?: string,
-  uploaderName?: string,
 ): Promise<void> => {
   const actualConfigName = configName ?? 'Default'
   const existingConfig = module === 'uploader' ? ctx.configManager.getConfigByName(name, actualConfigName) : null
@@ -37,15 +84,6 @@ const handleConfig = async (
       ...question,
       default: question.name in existingConfig ? existingConfig[question.name] : question.default,
     }))
-  } else if (module === 'buildin' && uploaderName) {
-    const config = ctx.configManager.getConfigByName(uploaderName, actualConfigName)
-    const linked = (ctx.getConfig<any[]>('buildIn.list') || []).find(item => item.id === config?._id)?.[name]
-    if (linked) {
-      prompts = prompts.map(question => ({
-        ...question,
-        default: question.name in linked ? linked[question.name] : question.default,
-      }))
-    }
   }
   const answer = await ctx.cmd.inquirer.prompt(prompts)
   const config = existingConfig ? { ...existingConfig, ...answer } : answer
@@ -53,7 +91,7 @@ const handleConfig = async (
   const configKey = getConfigName(module, name)
   if (module === 'uploader') {
     if (existingConfig) {
-      ctx.configManager.updateUploaderConfig(name, existingConfig._id, config)
+      ctx.configManager.updateUploaderConfig(name, existingConfig._id, answer, 'merge')
       ctx.log.success(`Updated config "${actualConfigName}" for ${name}`)
     } else {
       const newConfig = ctx.configManager.addUploaderConfig(name, actualConfigName, answer)
@@ -65,45 +103,10 @@ const handleConfig = async (
       'picBed.current': name,
       'picBed.uploader': name,
     })
-  } else if (module === 'buildin') {
-    if (uploaderName) {
-      const uploader = ctx.getConfig<any>(`uploader.${uploaderName}`) || {}
-      if (!uploader.configList || uploader.configList.length === 0) {
-        ctx.log.error(`No config found for uploader ${uploaderName}`)
-        return
-      }
-      const idOfConfigName = ctx.configManager.getConfigByName(uploaderName, actualConfigName)?._id
-      if (!idOfConfigName) {
-        ctx.log.error(`No config named "${actualConfigName}" found for uploader ${uploaderName}`)
-        return
-      }
-      const buildInList = ctx.getConfig<any[]>('buildIn.list') || []
-      const existingEntryIndex = buildInList.findIndex(item => item.id === idOfConfigName)
-      if (existingEntryIndex !== -1) {
-        buildInList[existingEntryIndex] = {
-          ...buildInList[existingEntryIndex],
-          [name]: answer,
-        }
-      } else {
-        buildInList.push({
-          id: idOfConfigName,
-          [name]: answer,
-        })
-      }
-      ctx.saveConfig({
-        'buildIn.list': buildInList,
-      })
-    } else {
-      ctx.saveConfig({ [configKey]: answer })
-    }
   } else {
-    ctx.saveConfig({ [configKey]: answer })
-
-    if (module === 'transformer') {
-      ctx.saveConfig({
-        'picBed.transformer': name,
-      })
-    }
+    const updates = configFieldUpdates(configKey, answer)
+    if (module === 'transformer') updates['picBed.transformer'] = name
+    if (Object.keys(updates).length) ctx.saveConfig(updates)
   }
 }
 
@@ -124,36 +127,26 @@ export const handleBuildinModule = async (
   configName?: string,
   uploaderName?: string,
 ): Promise<void> => {
-  if (name && name in BUILDIN_MODULES) {
-    const module = BUILDIN_MODULES[name as BuildinModuleName]
-    await handleConfig(ctx, module.config(ctx), 'buildin', name, configName, uploaderName)
-    return
+  if (!name) {
+    const choices = Object.entries(BUILDIN_MODULES).map(([value, { key }]) => ({
+      name: ctx.i18n.t(key),
+      value,
+    }))
+    const answer = await ctx.cmd.inquirer.prompt<{ buildin: string }>([
+      { type: 'list', name: 'buildin', choices, message: 'Choose a buildin module' },
+    ])
+    name = answer.buildin
   }
-
-  if (name && !(name in BUILDIN_MODULES)) {
+  if (!Object.hasOwn(BUILDIN_MODULES, name)) {
     ctx.log.error(`No buildin module named ${name}`)
     ctx.log.warn('Available buildin modules are: compress|watermark|rename|skipProcess')
     return
   }
 
-  // Show selection prompt
-  const choices = Object.entries(BUILDIN_MODULES).map(([value, { key }]) => ({
-    name: ctx.i18n.t(key),
-    value,
-  }))
-
-  const prompts = [
-    {
-      type: 'list',
-      name: 'buildin',
-      choices,
-      message: 'Choose a buildin module',
-    },
-  ]
-
-  const answer = await ctx.cmd.inquirer.prompt<IStringKeyMap<string>>(prompts)
-  const selectedModule = BUILDIN_MODULES[answer.buildin as BuildinModuleName]
-  await handleConfig(ctx, selectedModule.config(ctx), 'buildin', answer.buildin, configName, uploaderName)
+  const module = name as BuildinModuleName
+  const prompts = BUILDIN_MODULES[module].config(ctx)
+  if (uploaderName) await configureBuildinProfile(ctx, module, prompts, uploaderName, configName ?? 'Default')
+  else await handleConfig(ctx, prompts, 'buildin', module)
 }
 
 /** Resolves or prompts for a registered uploader/transformer and opens its configuration form. */

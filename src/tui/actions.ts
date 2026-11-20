@@ -6,9 +6,9 @@ import fs from 'fs-extra'
 
 import { handleSecondUploader } from '../plugins/commander/secondUploader'
 import { handleBuildinModule, handlePlugin } from '../plugins/commander/setting'
-import { uploaderTranslators } from '../plugins/commander/utils'
+import { savePluginSelection, uploaderTranslators } from '../plugins/commander/utils'
 import type { IPicGo } from '../types'
-import { assertValidConfig } from '../utils/configPrompts'
+import { assertValidConfig, configFieldUpdates } from '../utils/configPrompts'
 import type { IInquirerQuestion } from '../utils/inquirerShim'
 import { translator } from './i18n'
 import { uploaderReady } from './readiness'
@@ -149,13 +149,14 @@ export function createActions(ctx: IPicGo): TuiAction[] {
       default: existing && question.name in existing ? existing[question.name] : question.default,
     }))
     const answer = await ctx.cmd.inquirer.prompt(questions)
+    const config = { ...existing, ...answer }
     // Validate again after filters have run, before persisting any part of the form.
     try {
-      await assertValidConfig(questions, answer)
+      await assertValidConfig(questions, config)
     } catch {
       throw new TuiError(t('Check the required fields and validation rules before saving this destination.'))
     }
-    if (existing) ctx.configManager.updateUploaderConfig(uploader, existing._id, answer)
+    if (existing) ctx.configManager.updateUploaderConfig(uploader, existing._id, answer, 'merge')
     else {
       const created = ctx.configManager.addUploaderConfig(uploader, name, answer)
       ctx.configManager.setDefaultConfig(uploader, created._id)
@@ -342,7 +343,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
         const questions = plugin?.config?.(ctx)
         const answer = questions ? await ctx.cmd.inquirer.prompt(questions) : undefined
         if (questions && answer) await assertValidConfig(questions, answer)
-        ctx.saveConfig({ 'picBed.transformer': name, ...(answer ? { [`transformer.${name}`]: answer } : {}) })
+        ctx.saveConfig({ 'picBed.transformer': name, ...configFieldUpdates(`transformer.${name}`, answer || {}) })
       },
     },
     {
@@ -372,7 +373,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
             choices: installed,
             default: installed.filter(name => enabled[name]),
           })
-          ctx.saveConfig({ picgoPlugins: Object.fromEntries(installed.map(name => [name, selected.includes(name)])) })
+          savePluginSelection(ctx, installed, selected)
         } else {
           const name = await choose(
             'Choose an installed plugin',

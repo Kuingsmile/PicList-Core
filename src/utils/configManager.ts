@@ -84,13 +84,18 @@ export class ConfigManager {
   }
 
   /**
-   * Replaces a profile's settings while preserving identity and creation time, then synchronizes
-   * active copies.
+   * Updates a profile while preserving identity and creation time, then synchronizes active copies.
+   * Form edits merge submitted fields into the latest profile so hidden fields survive an edit.
    *
    * @returns False if the profile ID does not exist.
    * @throws If the resulting name is empty, invalid, or used by another profile of this uploader.
    */
-  updateUploaderConfig(uploaderName: string, configId: string, configData: any): boolean {
+  updateUploaderConfig(
+    uploaderName: string,
+    configId: string,
+    configData: any,
+    mode: 'replace' | 'merge' = 'replace',
+  ): boolean {
     const config = this.ctx.getConfig<IConfig>()
     const uploaderData = this.getUploaderData(uploaderName, config)
     const configIndex = uploaderData.configList.findIndex(item => item._id === configId)
@@ -101,6 +106,7 @@ export class ConfigManager {
 
     const existingConfig = uploaderData.configList[configIndex]
     const updatedConfig: IConfigItem = {
+      ...(mode === 'merge' ? existingConfig : {}),
       ...configData,
       _id: existingConfig._id,
       _configName: this.validateConfigName(

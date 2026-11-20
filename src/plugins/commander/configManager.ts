@@ -194,7 +194,7 @@ const configCmd = {
           const answer = await ctx.cmd.inquirer.prompt(prompts)
           const config = { ...saved, ...answer }
           await assertValidConfig(prompts, config)
-          const success = ctx.configManager.updateUploaderConfig(uploader, saved._id, config)
+          const success = ctx.configManager.updateUploaderConfig(uploader, saved._id, answer, 'merge')
           success
             ? ctx.log.success(`Updated config "${saved._configName}" for ${uploader}`)
             : ctx.log.error(`Failed to update config "${saved._configName}"`)

@@ -1,4 +1,13 @@
 import { IPicGo, IStringKeyMap } from '../../types'
+import { configFieldUpdates } from '../../utils/configPrompts'
+
+/** Updates enablement only for plugins offered in the selection prompt. */
+export function savePluginSelection(ctx: IPicGo, installed: string[], selected: string[]): void {
+  if (installed.length) {
+    const flags = Object.fromEntries(installed.map(name => [name, selected.includes(name)]))
+    ctx.saveConfig(configFieldUpdates('picgoPlugins', flags))
+  }
+}
 
 /** Maps stable built-in uploader IDs to their current localized display names. */
 export const uploaderTranslators = (ctx: IPicGo) => {
