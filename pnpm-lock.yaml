@@ -177,6 +177,9 @@ overrides:
   dpdm>glob: ^14.0.6
   webdav>minimatch: ^11.0.9
 
+patchedDependencies:
+  busboy@1.6.0: 709eca2e700694ec840b6e1c9416e6c6025b50d4b40641709cbd9e1ffb61fe92
+
 importers:
 
   .:
@@ -4100,7 +4103,7 @@ snapshots:
 
   builtin-modules@5.5.0: {}
 
-  busboy@1.6.0:
+  busboy@1.6.0(patch_hash=709eca2e700694ec840b6e1c9416e6c6025b50d4b40641709cbd9e1ffb61fe92):
     dependencies:
       streamsearch: 1.1.0
 
@@ -4917,7 +4920,7 @@ snapshots:
   multer@2.5.0:
     dependencies:
       append-field: 1.0.0
-      busboy: 1.6.0
+      busboy: 1.6.0(patch_hash=709eca2e700694ec840b6e1c9416e6c6025b50d4b40641709cbd9e1ffb61fe92)
       type-is: 1.6.18
 
   mute-stream@2.0.0: {}

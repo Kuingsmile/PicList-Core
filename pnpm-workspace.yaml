@@ -1,3 +1,7 @@
+patchedDependencies:
+  # Allow the upload server to supply a decoder for ordinary multipart parameters.
+  busboy@1.6.0: patches/busboy@1.6.0.patch
+
 overrides:
   # WebDAV imports fetch and its standard constructors. Use Node 24's native implementations.
   'webdav>node-fetch': npm:node-fetch-native@^1.6.7

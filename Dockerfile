@@ -7,6 +7,7 @@ ENV HUSKY=0
 RUN corepack enable pnpm
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY patches ./patches
 RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm run typecheck \
@@ -25,6 +26,7 @@ FROM runtime-base AS production-dependencies
 WORKDIR /dependencies
 RUN corepack enable pnpm
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY patches ./patches
 # Omit the dev-only Husky hook, but retain dependency install scripts so native
 # modules are installed for the target architecture using the same lockfile.
 RUN node -e "const fs = require('node:fs'); const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')); delete pkg.scripts.prepare; fs.writeFileSync('package.json', JSON.stringify(pkg))" \

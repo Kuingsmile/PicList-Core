@@ -114,7 +114,8 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.73.0"
   },
-  "bundledDependencies": [
+  "bundleDependencies": [
+    "multer",
     "webdav"
   ],
   "packageManager": "pnpm@12.21.0",

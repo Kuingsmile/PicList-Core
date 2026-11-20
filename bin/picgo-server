@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { isUtf8 } from 'node:buffer'
 import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
@@ -182,17 +183,18 @@ const multerStorage = multer.diskStorage({
       cb(err)
     }
   },
-  /** Repairs Latin-1-decoded UTF-8 multipart filenames when they contain only single-byte characters. */
   filename(_req, file, cb) {
-    if (!/[^\u0000-\u00ff]/.test(file.originalname)) {
-      file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8')
-    }
     cb(null, file.originalname)
   },
 })
 
 const uploadMulter = multer({
   storage: multerStorage,
+  // Busboy passes ordinary parameter bytes as a Latin-1 string. Extended parameters declare their own charset.
+  defParamCharset(value) {
+    const bytes = Buffer.from(value, 'latin1')
+    return isUtf8(bytes) ? bytes.toString('utf8') : value
+  },
 })
 
 /**
@@ -451,6 +453,7 @@ class Server {
       } else {
         let body = ''
         let postObj
+        request.setEncoding('utf8')
         request.on('data', chunk => {
           body += chunk
         })
