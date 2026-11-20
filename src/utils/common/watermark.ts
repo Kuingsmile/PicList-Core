@@ -42,7 +42,7 @@ const getDefaultWatermarkImagePath = (): string => {
 const defaultWatermarkImagePath = getDefaultWatermarkImagePath()
 
 /**
- * Composites a scaled text or image watermark, optionally tiled across every frame.
+ * Places a scaled text or image watermark on every frame, optionally tiling it.
  *
  * @param img - Encoded source image bytes.
  * @param watermarkType - Selects generated text or an image file.
@@ -90,15 +90,18 @@ export async function AddWatermark(
     watermarkImageOpacity,
     imgHeight,
   )
-  return await image
-    .composite([
-      {
-        input: watermark,
-        gravity: position || 'southeast',
-        tile: isFullScreenWatermark,
-      },
-    ])
-    .toBuffer()
+  const gravity = position || 'southeast'
+  if (!isFullScreenWatermark && imgHeight < height) {
+    // Sharp stacks animation frames vertically. Anchor the mark within one frame and repeat it down the stack.
+    const { data, info } = await sharp({
+      create: { width: imgWidth, height: imgHeight, channels: 4, background: 'transparent' },
+    })
+      .composite([{ input: watermark, gravity }])
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+    return await image.composite([{ input: data, raw: info, tile: true, gravity: 'northwest' }]).toBuffer()
+  }
+  return await image.composite([{ input: watermark, gravity, tile: isFullScreenWatermark }]).toBuffer()
 }
 
 /** Builds text or image watermark bytes, applies image opacity, and scales and rotates the result. */
