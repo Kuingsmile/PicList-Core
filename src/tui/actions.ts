@@ -211,10 +211,8 @@ export function createActions(ctx: IPicGo): TuiAction[] {
           const file = path.join(directory, `piclist-connection-${randomUUID()}.png`)
           await fs.writeFile(
             file,
-            Buffer.from(
-              'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=',
-              'base64',
-            ),
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADElEQVQImWP4//8/AAX+Av5Y8msOAAAAAElFTkSuQmCC',
+            'base64',
           )
           return await upload([file])
         } finally {
