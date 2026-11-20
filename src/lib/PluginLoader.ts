@@ -1,3 +1,4 @@
+import { findPackageJSON, registerHooks } from 'node:module'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -14,39 +15,64 @@ import { getCurrentPluginName, setCurrentPluginName } from './LifecyclePlugins'
  */
 export class PluginLoader implements IPluginLoader {
   private readonly ctx: IPicGo
+  private readonly profileManifest: string
   /** Names of enabled plugins registered with the current client. */
   private list: string[] = []
-  /** Discovered plugin names, including plugins disabled in configuration. */
+  /** Discovered plugin names, including disabled packages and packages that failed to load. */
   private readonly fullList = new Set<string>()
   /** Instantiated plugin interfaces cached by package or registration name. */
   private readonly pluginMap = new Map<string, IPicGoPluginInterface>()
   /** Initializes plugin state and ensures the user plugin package manifest exists. */
   constructor(ctx: IPicGo) {
     this.ctx = ctx
+    this.profileManifest = path.resolve(ctx.baseDir, 'package.json')
     this.init()
   }
 
   /** Creates a package manifest in the client base directory for local npm plugin management. */
   private init(): void {
-    const packagePath = path.join(this.ctx.baseDir, 'package.json')
-    if (!fs.existsSync(packagePath)) {
+    if (!fs.existsSync(this.profileManifest)) {
       const pkg = {
         name: 'picgo-plugins',
         description: 'picgo-plugins',
         repository: 'https://github.com/Kuingsmile/PicList-Core',
         license: 'MIT',
       }
-      fs.writeFileSync(packagePath, JSON.stringify(pkg), 'utf8')
+      fs.writeFileSync(this.profileManifest, JSON.stringify(pkg), 'utf8')
     }
   }
 
-  // get plugin entry
-  /** Resolves a plugin relative to the user directory, falling back to its node_modules path. */
-  private resolvePlugin(ctx: IPicGo, name: string): string {
+  /** Locates the package independently of whether its root export or legacy entry can be loaded. */
+  private findPluginManifest(name: string): string | undefined {
     try {
-      return resolve.sync(name, { basedir: ctx.baseDir })
-    } catch (_e) {
-      return path.join(ctx.baseDir, 'node_modules', name)
+      return findPackageJSON(name, this.profileManifest)
+    } catch {
+      return undefined
+    }
+  }
+
+  private resolvePlugin(name: string): string {
+    const manifest = this.findPluginManifest(name)
+    const exports = manifest && fs.existsSync(manifest) ? readJSONSync(manifest).exports : undefined
+    if (exports === undefined || exports === null) {
+      return pathToFileURL(resolve.sync(name, { basedir: this.ctx.baseDir })).href
+    }
+
+    // Node 24 gates import.meta.resolve's parent URL argument behind a flag. Supply the
+    // profile as the parent for this synchronous lookup, keeping Node's active import conditions.
+    const parentURL = pathToFileURL(this.profileManifest).href
+    const hook = registerHooks({
+      resolve(specifier, context, nextResolve) {
+        if (specifier === name && context.parentURL === import.meta.url) {
+          return nextResolve(specifier, { ...context, parentURL })
+        }
+        return nextResolve(specifier, context)
+      },
+    })
+    try {
+      return import.meta.resolve(name)
+    } finally {
+      hook.deregister()
     }
   }
 
@@ -62,17 +88,13 @@ export class PluginLoader implements IPluginLoader {
     if (!fs.existsSync(pluginDir)) {
       return false
     }
-    const packagePath = path.join(this.ctx.baseDir, 'package.json')
-    const json = readJSONSync(packagePath)
+    const json = readJSONSync(this.profileManifest)
     const deps = Object.keys(json.dependencies || {})
     const devDeps = Object.keys(json.devDependencies || {})
-    const modules = deps.concat(devDeps).filter((name: string) => {
-      if (!/^picgo-plugin-|^@[^/]+\/picgo-plugin-/.test(name)) return false
-      const path = this.resolvePlugin(this.ctx, name)
-      return fs.existsSync(path)
-    })
-    for (const module of modules) {
-      await this.registerPlugin(module)
+    for (const name of new Set([...deps, ...devDeps])) {
+      if (/^picgo-plugin-|^@[^/]+\/picgo-plugin-/.test(name) && this.findPluginManifest(name)) {
+        await this.registerPlugin(name)
+      }
     }
     return true
   }
@@ -94,6 +116,7 @@ export class PluginLoader implements IPluginLoader {
       return
     }
     if (this.list.includes(name)) return
+    const wasDiscovered = this.fullList.has(name)
     this.fullList.add(name)
     try {
       if (!plugin) {
@@ -124,10 +147,11 @@ export class PluginLoader implements IPluginLoader {
       this.unregisterPluginHandlers(name)
       this.pluginMap.delete(name)
       this.list = this.list.filter((item: string) => item !== name)
-      this.fullList.delete(name)
-      this.ctx.log.error(e as Error)
+      if (!wasDiscovered && (plugin || !this.findPluginManifest(name))) this.fullList.delete(name)
+      const title = `Plugin ${name} Load Error`
+      this.ctx.log.error(title, e as Error)
       this.ctx.emit(IBuildInEvent.NOTIFICATION, {
-        title: `Plugin ${name} Load Error`,
+        title,
         body: e,
       })
     }
@@ -163,43 +187,7 @@ export class PluginLoader implements IPluginLoader {
       return this.pluginMap.get(name)
     }
 
-    // Resolve the actual plugin entry point
-    let pluginPath: string
-    try {
-      // First try to resolve using the resolve library
-      pluginPath = this.resolvePlugin(this.ctx, name)
-    } catch (e) {
-      // Fallback: try to find the entry point manually
-      const pluginDir = path.join(this.ctx.baseDir, 'node_modules', name)
-      const packageJsonPath = path.join(pluginDir, 'package.json')
-
-      if (fs.existsSync(packageJsonPath)) {
-        try {
-          const packageJson = readJSONSync(packageJsonPath)
-          const main = packageJson.main || packageJson.module || 'index.js'
-          pluginPath = path.join(pluginDir, main)
-        } catch (error) {
-          // If package.json is malformed, try common entry points
-          const possibleEntries = ['index.js', 'src/index.js', 'dist/index.js', 'lib/index.js']
-          pluginPath = ''
-          for (const entry of possibleEntries) {
-            const entryPath = path.join(pluginDir, entry)
-            if (fs.existsSync(entryPath)) {
-              pluginPath = entryPath
-              break
-            }
-          }
-          if (!pluginPath) {
-            throw new Error(`Cannot find entry point for plugin: ${name}`, { cause: error })
-          }
-        }
-      } else {
-        throw new Error(`Plugin package.json not found: ${name}`, { cause: e })
-      }
-    }
-
-    const pluginUrl = pathToFileURL(pluginPath).href
-    const mod = await import(pluginUrl)
+    const mod = await import(this.resolvePlugin(name))
     const previousPluginName = getCurrentPluginName()
     setCurrentPluginName(name)
     try {
