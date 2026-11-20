@@ -38,6 +38,7 @@ const messages = {
   'Configuration name': ['配置名称', '設定名稱'],
   'Enter a name.': ['请输入名称。', '請輸入名稱。'],
   'This name already exists.': ['此名称已存在。', '此名稱已存在。'],
+  'The selected configuration no longer exists.': ['所选配置已不存在。', '所選設定已不存在。'],
   'File paths or URLs': ['文件路径或网址', '檔案路徑或網址'],
   'Separate files with spaces. Put quotes around paths containing spaces.': [
     '用空格分隔文件，含空格的路径请加引号。',

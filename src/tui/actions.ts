@@ -7,7 +7,7 @@ import fs from 'fs-extra'
 import { handleSecondUploader } from '../plugins/commander/secondUploader'
 import { handleBuildinModule, handlePlugin } from '../plugins/commander/setting'
 import { savePluginSelection, uploaderTranslators } from '../plugins/commander/utils'
-import type { IPicGo } from '../types'
+import type { IConfigItem, IPicGo } from '../types'
 import { assertValidConfig, configFieldUpdates } from '../utils/configPrompts'
 import type { IInquirerQuestion } from '../utils/inquirerShim'
 import { translator } from './i18n'
@@ -137,13 +137,10 @@ export function createActions(ctx: IPicGo): TuiAction[] {
             : true,
       filter: (value: string) => value.trim(),
     })
-  /**
-   * Collects and validates a complete uploader form before persisting the profile and active uploader.
-   */
-  const configureUploader = async (uploader: string, name: string, editing: boolean) => {
+  /** Collects validated uploader settings, prefilling the form from the selected profile on edit. */
+  const promptUploaderConfig = async (uploader: string, existing?: IConfigItem) => {
     const plugin = ctx.helper.uploader.get(uploader)
     if (!plugin?.config) throw new TuiError('This uploader has no configuration form.')
-    const existing = editing ? ctx.configManager.getConfigByName(uploader, name) : undefined
     const questions = plugin.config(ctx).map(question => ({
       ...question,
       default: existing && question.name in existing ? existing[question.name] : question.default,
@@ -156,11 +153,13 @@ export function createActions(ctx: IPicGo): TuiAction[] {
     } catch {
       throw new TuiError(t('Check the required fields and validation rules before saving this destination.'))
     }
-    if (existing) ctx.configManager.updateUploaderConfig(uploader, existing._id, answer, 'merge')
-    else {
-      const created = ctx.configManager.addUploaderConfig(uploader, name, answer)
-      ctx.configManager.setDefaultConfig(uploader, created._id)
-    }
+    return answer
+  }
+  /** Creates a named profile and selects it for future uploads. */
+  const createAndActivateProfile = async (uploader: string, name: string) => {
+    const answer = await promptUploaderConfig(uploader)
+    const created = ctx.configManager.addUploaderConfig(uploader, name, answer)
+    ctx.configManager.setDefaultConfig(uploader, created._id)
     ctx.saveConfig({ 'picBed.uploader': uploader, 'picBed.current': uploader })
   }
   /** Checks destination readiness, uploads inputs, and returns primary and backup links for display. */
@@ -188,7 +187,7 @@ export function createActions(ctx: IPicGo): TuiAction[] {
       run: async () => {
         const uploader = await chooseUploader()
         const name = await configName(uploader, ctx.configManager.getConfigByName(uploader, 'Default') ? '' : 'Default')
-        await configureUploader(uploader, name, false)
+        await createAndActivateProfile(uploader, name)
       },
     },
     {
@@ -273,14 +272,18 @@ export function createActions(ctx: IPicGo): TuiAction[] {
           ['Create', 'Edit', 'Set default', 'Rename', 'Delete'].map(value => ({ name: t(value), value })),
         )
         if (operation === 'Create') {
-          await configureUploader(uploader, await configName(uploader, 'Default'), false)
+          await createAndActivateProfile(uploader, await configName(uploader, 'Default'))
           return
         }
         const config = await chooseConfig(uploader)
         switch (operation) {
-          case 'Edit':
-            await configureUploader(uploader, config._configName, true)
+          case 'Edit': {
+            const answer = await promptUploaderConfig(uploader, config)
+            if (!ctx.configManager.updateUploaderConfig(uploader, config._id, answer, 'merge')) {
+              throw new TuiError(t('The selected configuration no longer exists.'))
+            }
             break
+          }
           case 'Set default':
             ctx.configManager.setDefaultConfig(uploader, config._id)
             break
