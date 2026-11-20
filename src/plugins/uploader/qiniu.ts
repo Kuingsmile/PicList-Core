@@ -6,7 +6,7 @@ import { IOldReqOptions, IPicGo, IPluginConfig, IQiniuConfig } from '../../types
 import { IBuildInEvent } from '../../utils/enum'
 import { completeUploadFile, createUploadProgressCallback } from '../../utils/uploadProgress'
 import { getAndCheckConfig } from './helper'
-import { buildInUploaderNames, createField } from './utils'
+import { buildInUploaderNames, createField, encodePath } from './utils'
 
 /** Creates a lazy message getter so configuration help follows the current language. */
 const messageGetter = (ctx: IPicGo, key: Extract<ILocalesKey, `PICBED_QINIU_MESSAGE_${string}`>) => ({
@@ -67,7 +67,8 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
         delete img.buffer
         const baseUrl = qiniuOptions.url
         const urlOptions = qiniuOptions.options || ''
-        img.imgUrl = `${baseUrl}/${body.key as string}${urlOptions}`
+        const encodedKey = (body.key as string).split('/').map(encodePath).join('/')
+        img.imgUrl = `${baseUrl}/${encodedKey}${urlOptions}`
       } else {
         ctx.emit(IBuildInEvent.NOTIFICATION, {
           title: ctx.i18n.t('UPLOAD_FAILED'),
