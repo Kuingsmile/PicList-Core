@@ -1,3 +1,31 @@
+# :tada: 3.1.0 (2026-11-21)
+
+### :sparkles: Features
+
+* invalid server startup exits with a  status 1 ([953a5af](https://github.com/Kuingsmile/PicList-Core/commit/953a5af))
+* optimize file type check for dynamic urls ([afd740a](https://github.com/Kuingsmile/PicList-Core/commit/afd740a))
+
+### :bug: Bug Fixes
+
+* {localFolder} as the only rename token breaks local uploads ([785efc7](https://github.com/Kuingsmile/PicList-Core/commit/785efc7))
+* broken lifecycle script silently disables every sibling at that stage ([be74b8d](https://github.com/Kuingsmile/PicList-Core/commit/be74b8d))
+* connection check uses a PNG that Sharp cannot decode ([7666b50](https://github.com/Kuingsmile/PicList-Core/commit/7666b50))
+* editing an inactive uploader in the TUI switches future uploads to it ([6639843](https://github.com/Kuingsmile/PicList-Core/commit/6639843))
+* filename template changes literal dollar sequences ([6f0e762](https://github.com/Kuingsmile/PicList-Core/commit/6f0e762))
+* fix  UTF-8 character encoding issue ([feb41c8](https://github.com/Kuingsmile/PicList-Core/commit/feb41c8))
+* fix generated filenames overwrite other images in the same batch ([070d7d2](https://github.com/Kuingsmile/PicList-Core/commit/070d7d2))
+* fix legacy request issue ([e62a148](https://github.com/Kuingsmile/PicList-Core/commit/e62a148))
+* plugins with an exports-only entry point fail to load ([693c095](https://github.com/Kuingsmile/PicList-Core/commit/693c095))
+* qiniu download links lose the part of a key after a hash sign ([90da96f](https://github.com/Kuingsmile/PicList-Core/commit/90da96f))
+* saving the compression form deletes existing conversion and uploader rules ([30dd30a](https://github.com/Kuingsmile/PicList-Core/commit/30dd30a))
+* server silently uses the default destination for a named profile ([7f543e4](https://github.com/Kuingsmile/PicList-Core/commit/7f543e4))
+* watermark appears on only the last animation frame of gif ([ae2c9ab](https://github.com/Kuingsmile/PicList-Core/commit/ae2c9ab))
+
+### :package: Chore
+
+* add nvmrc file and update engine requirement ([633d3e6](https://github.com/Kuingsmile/PicList-Core/commit/633d3e6))
+* update node bump version ([f46e680](https://github.com/Kuingsmile/PicList-Core/commit/f46e680))
+* update to node 24, upgrade deps ([d0f4df5](https://github.com/Kuingsmile/PicList-Core/commit/d0f4df5))
 ## :tada: 3.0.2 (2026-10-13)
 
 ### :bug: Bug Fixes
