@@ -53,7 +53,7 @@ function formatHelper(num: number): string {
  * Expands filename, date, hash, identifier, random-string, and parent-folder placeholders.
  *
  * @param oldName - Source path supplying the original basename, extension, and parent folders.
- * @param customFormat - Placeholder template; unrecognized templates return oldName unchanged.
+ * @param customFormat - Placeholder template. Unrecognized templates use the original basename.
  * @param affixFileName - Optional alternate source for the filename placeholder.
  * @param fileBuffer - Content to hash; omitted to hash the original basename.
  * @returns The expanded name with the source extension appended.
@@ -66,7 +66,7 @@ export function renameFileNameWithCustomString(
 ): string {
   const now = new Date()
   const year = now.getFullYear().toString()
-  const filebasename = path.basename(oldName, path.extname(oldName))
+  const { base, name: filebasename, ext } = path.parse(oldName)
   /** Lazy replacements for fixed tokens, evaluated once per token before global substitution. */
   const conversionMap: Record<string, () => string> = {
     '{Y}': () => year,
@@ -87,25 +87,25 @@ export function renameFileNameWithCustomString(
     '{timestampS}': () => Math.floor(now.getTime() / 1000).toString(),
     '{timestamp}': () => now.getTime().toString(),
   }
-  if (
-    customFormat === undefined ||
-    (!Object.keys(conversionMap).some(item => customFormat.includes(item)) &&
-      !customFormat.includes('localFolder:') &&
-      !customFormat.includes('str-') &&
-      !/{sha256-\d+}/.test(customFormat) &&
-      !/{sha1-\d+}/.test(customFormat))
-  ) {
-    return oldName
-  }
-  const ext = path.extname(oldName)
-  let newName =
-    Object.keys(conversionMap).reduce((acc, cur) => {
-      const replacement = conversionMap[cur]()
-      return acc.replace(new RegExp(cur, 'g'), () => replacement)
-    }, customFormat) + ext
   const strRegex = /{str-(\d+)}/gi
   const sha256Regex = /{sha256-(\d+)}/gi
   const sha1Regex = /{sha1-(\d+)}/gi
+  const localFolderRegex = /{localFolder:?(\d+)?}/gi
+  const fixedTokens = Object.keys(conversionMap)
+  if (
+    !customFormat ||
+    (!fixedTokens.some(token => customFormat.includes(token)) &&
+      ![strRegex, sha256Regex, sha1Regex, localFolderRegex].some(pattern => customFormat.search(pattern) !== -1))
+  ) {
+    return base
+  }
+  let newName = customFormat
+  for (const token of fixedTokens) {
+    if (newName.includes(token)) {
+      const replacement = conversionMap[token]()
+      newName = newName.replaceAll(token, () => replacement)
+    }
+  }
   newName = newName.replace(strRegex, (_, group1) => {
     const length = parseInt(group1, 10)
     return randomStringGenerator(length)
@@ -118,11 +118,14 @@ export function renameFileNameWithCustomString(
     const length = parseInt(group1, 10)
     return getSha1(fileBuffer || filebasename).slice(0, length)
   })
-  newName = newName.replace(/{(localFolder:?(\d+)?)}/gi, (_result, key, count) => {
-    count = Math.max(1, count || 0)
-    const paths = path.dirname(oldName).split(path.sep)
-    key = paths.slice(0 - count).reduce((a, b) => `${a}/${b}`)
-    return key.replace(/:/g, '')
+  newName = newName.replace(localFolderRegex, (_, count) => {
+    const { dir, root } = path.parse(path.normalize(oldName))
+    const folders = dir
+      .slice(root.length)
+      .split(path.sep)
+      .filter(folder => folder && folder !== '..')
+    const depth = Math.max(1, Number(count) || 1)
+    return folders.slice(-depth).join('/').replace(/:/g, '') || '.'
   })
-  return newName
+  return newName === '.' ? base : newName + ext
 }
