@@ -100,7 +100,8 @@ export function renameFileNameWithCustomString(
   const ext = path.extname(oldName)
   let newName =
     Object.keys(conversionMap).reduce((acc, cur) => {
-      return acc.replace(new RegExp(cur, 'g'), conversionMap[cur]())
+      const replacement = conversionMap[cur]()
+      return acc.replace(new RegExp(cur, 'g'), () => replacement)
     }, customFormat) + ext
   const strRegex = /{str-(\d+)}/gi
   const sha256Regex = /{sha256-(\d+)}/gi
