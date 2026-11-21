@@ -9,7 +9,7 @@ interface UploadResult {
 /** Control surface for the HTTP server started by the executable module. */
 interface PicGoServer {
   httpServer: Server
-  /** Starts listening on the configured default port and host. */
+  /** Resolves on listen or a matching heartbeat, and rejects on startup failure. */
   startup: () => Promise<void>
   /**
    * Closes the listener; hasStarted suppresses the ordinary shutdown log when an existing server was

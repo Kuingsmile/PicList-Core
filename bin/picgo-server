@@ -16,11 +16,10 @@ import { PicGo, UploaderProfileError } from '../dist/index.js'
 const tempDir = path.join(os.homedir(), '.piclist', 'serverTemp')
 ensureDirSync(tempDir)
 
-const argv = minimist(process.argv.slice(2))
+const argv = minimist(process.argv.slice(2), { string: ['p', 'port'] })
 
 /** Optional server access key checked for remote POST uploads; loopback requests bypass key checks. */
 let key = ''
-let defaultPort = 36677
 let defaultHost = '0.0.0.0'
 
 function showHelp() {
@@ -57,10 +56,6 @@ if (argv.h || argv.help) {
 
 if (argv.k || argv.key) {
   key = String(argv.k || argv.key)
-}
-
-if (argv.p || argv.port) {
-  defaultPort = Number(argv.p || argv.port) || defaultPort
 }
 
 if (argv.host) {
@@ -500,11 +495,11 @@ class Server {
 
   /** Listens on the configured host, probing heartbeat on port conflicts before trying the next port. */
   listen = async generation => {
-    const firstPort = Number(defaultPort)
+    const firstPort = Number(argv.p ?? argv.port ?? 36677)
     if (!Number.isInteger(firstPort) || firstPort < 1 || firstPort > 65535) {
-      console.error('[PicList Server] invalid port; expected an integer from 1 to 65535')
-      return
+      throw new RangeError('invalid port; expected an integer from 1 to 65535')
     }
+    if (this.httpServer.listening) return
 
     const host = defaultHost
     for (let attempt = 0; attempt < 10 && firstPort + attempt <= 65535; attempt++) {
@@ -518,8 +513,7 @@ class Server {
         await closeServer(this.httpServer)
         if (generation !== this.generation) return
         if (error.code !== 'EADDRINUSE') {
-          console.error('[PicList Server]', error)
-          return
+          throw error
         }
         const probeHost = host === '0.0.0.0' ? '127.0.0.1' : host === '::' ? '::1' : host
         try {
@@ -535,16 +529,16 @@ class Server {
         } catch (_error) {
           // The occupied port belongs to another service or does not answer in time.
         }
+        if (generation !== this.generation) return
         console.warn(`[PicList Server] ${port} is busy`)
       }
     }
-    console.error(`[PicList Server] unable to start after bounded port retries from ${firstPort}`)
+    throw new Error(`unable to start after bounded port retries from ${firstPort}`)
   }
 
   enqueue(operation) {
-    this.operation = this.operation.then(operation).catch(error => {
-      console.error('[PicList Server]', error)
-    })
+    // Run the next operation in sequence even if the previous one failed.
+    this.operation = this.operation.then(operation, operation)
     return this.operation
   }
 
@@ -607,13 +601,14 @@ function closeServer(server) {
 
 /** Default server instance started when this executable module is imported or run. */
 const server = new Server()
-server.startup()
+server.startup().catch(error => {
+  console.error('[PicList Server]', error.message)
+  if (import.meta.main) process.exitCode = 1
+})
 
 const shutdown = async () => {
   await server.shutdown()
   await picgo.log.flush()
-  // Let pending request cleanup and output finish before Node exits naturally.
-  process.exitCode = 0
 }
 process.on('SIGINT', shutdown)
 process.on('SIGTERM', shutdown)
