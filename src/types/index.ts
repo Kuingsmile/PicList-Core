@@ -211,6 +211,8 @@ export type IResponse<T, U> = U extends IRequestOptionsWithFullResponse
  * the request options have the following properties
  */
 export interface IRequestLibOnlyOptions {
+  baseUrl?: string
+  json?: boolean
   proxy?: string
   body?: any
   formData?: Record<string, any> | undefined

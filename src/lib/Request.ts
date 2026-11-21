@@ -53,8 +53,7 @@ function appendFormData(form: FormData, key: string, data: any): void {
 }
 
 /**
- * Converts legacy proxy, multipart, body, and query options into Axios options and marks legacy
- * requests.
+ * Converts legacy request options into Axios options.
  */
 function requestInterceptor(
   options: IOldReqOptions | AxiosRequestConfig,
@@ -65,6 +64,7 @@ function requestInterceptor(
   let __isOldOptions = typeof options.proxy === 'string'
   const proxy = normalizeProxy(options.proxy === undefined ? defaultProxy : options.proxy)
   const opt: AxiosRequestConfig<any> & {
+    baseUrl?: string
     __isOldOptions?: boolean
   } = {
     ...options,
@@ -72,16 +72,14 @@ function requestInterceptor(
     url: (options.url as string) || '',
     headers: axios.AxiosHeaders.from(options.headers as RawAxiosHeaders | undefined).toJSON(),
   }
-  if (proxy && /^https:\/\//i.test(options.url || '')) {
-    const createTunnel = proxy.protocol === 'https' || proxy.protocol === 'https:' ? httpsOverHttps : httpsOverHttp
-    opt.proxy = false
-    opt.httpsAgent = createTunnel({
-      proxy: {
-        host: proxy.host,
-        port: proxy.port,
-        ...(proxy.auth ? { proxyAuth: `${proxy.auth.username}:${proxy.auth.password}` } : {}),
-      },
-    })
+  if ('baseUrl' in opt) {
+    opt.baseURL ??= opt.baseUrl
+    __isOldOptions ||= opt.baseUrl !== undefined
+    delete opt.baseUrl
+  }
+  if ('json' in options && typeof options.json === 'boolean') {
+    __isOldOptions = true
+    if (!options.json) opt.responseType = 'text'
   }
   if ('formData' in options) {
     const form = new FormData()
@@ -161,8 +159,8 @@ export class Request implements IRequest {
    * metadata.
    * @returns The response body or full response according to the supplied options.
    * @remarks
-   * Legacy requests return text unless json is true, stringifying non-string response bodies. Failures
-   * reject with normalized request metadata rather than the original Axios error.
+   * An explicit json: false preserves the original response text. Failures reject with normalized
+   * request metadata.
    */
   request<
     T,
@@ -184,6 +182,22 @@ export class Request implements IRequest {
     instance.interceptors.response.use(responseInterceptor, responseErrorHandler)
 
     instance.interceptors.request.use(function (obj) {
+      const { proxy, baseURL, url, allowAbsoluteUrls } = obj
+      // Only the target protocol matters here. Leave query serialization to dispatch.
+      if (
+        proxy &&
+        URL.parse(instance.getUri({ baseURL, url, allowAbsoluteUrls, params: null }))?.protocol === 'https:'
+      ) {
+        const createTunnel = proxy.protocol === 'https' || proxy.protocol === 'https:' ? httpsOverHttps : httpsOverHttp
+        obj.proxy = false
+        obj.httpsAgent = createTunnel({
+          proxy: {
+            host: proxy.host,
+            port: proxy.port,
+            ...(proxy.auth ? { proxyAuth: `${proxy.auth.username}:${proxy.auth.password}` } : {}),
+          },
+        })
+      }
       // handle Content-Type
       let contentType = ''
       if (obj?.headers?.contentType) {
