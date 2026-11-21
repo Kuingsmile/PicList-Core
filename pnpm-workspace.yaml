@@ -1,3 +1,8 @@
+# npm pack and publish need a physical dependency tree to bundle Multer and WebDAV.
+nodeLinker: hoisted
+# npm 11.19.1's tar writer can stall on files hard-linked to the pnpm store.
+packageImportMethod: clone-or-copy
+
 patchedDependencies:
   # Allow the upload server to supply a decoder for ordinary multipart parameters.
   busboy@1.6.0: patches/busboy@1.6.0.patch

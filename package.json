@@ -26,8 +26,8 @@
   "module": "dist/index.js",
   "typings": "dist/index.d.ts",
   "bin": {
-    "picgo": "./bin/picgo",
-    "picgo-server": "./bin/picgo-server"
+    "picgo": "bin/picgo",
+    "picgo-server": "bin/picgo-server"
   },
   "scripts": {
     "build": "rimraf ./dist && cross-env NODE_ENV=production rolldown -c rolldown.config.js",
