@@ -47,10 +47,7 @@ export class ScriptHandler {
 
   constructor(private ctx: any) {}
 
-  /**
-   * Rebuilds the stage cache from enabled .js files; unreadable or invalid stages receive an empty
-   * list.
-   */
+  /** Caches enabled scripts in directory order and logs files that fail to load. */
   async refreshCache() {
     this.scriptCache.clear()
     const baseDir = path.join(this.ctx.baseDir, 'scripts')
@@ -59,24 +56,23 @@ export class ScriptHandler {
 
     await Promise.all(
       this.stages.map(async stage => {
-        const configKey = stage
         const scriptDir = path.join(baseDir, stage)
-        try {
-          const files = await fs.readdir(scriptDir)
-          const stageScripts: ScriptObject[] = []
+        const files = await fs.readdir(scriptDir).catch(() => [])
+        const stageScripts: ScriptObject[] = []
 
-          for (const file of files) {
-            if (file.endsWith('.js') && !disabledList.includes(`${configKey}/${file}`)) {
-              const filePath = path.join(scriptDir, file)
-              const content = await fs.readFile(filePath, 'utf-8')
-              const compiledScript = new vm.Script(content, { filename: filePath })
-              stageScripts.push({ path: filePath, compiledScript })
-            }
+        for (const file of files) {
+          if (!file.endsWith('.js') || disabledList.includes(`${stage}/${file}`)) continue
+
+          const filePath = path.join(scriptDir, file)
+          try {
+            const content = await fs.readFile(filePath, 'utf-8')
+            const compiledScript = new vm.Script(content, { filename: filePath })
+            stageScripts.push({ path: filePath, compiledScript })
+          } catch (e) {
+            this.ctx.log.error(`[Script] Failed to load ${filePath}: ${e}`)
           }
-          this.scriptCache.set(stage, stageScripts)
-        } catch (_e) {
-          this.scriptCache.set(stage, [])
         }
+        this.scriptCache.set(stage, stageScripts)
       }),
     )
   }
