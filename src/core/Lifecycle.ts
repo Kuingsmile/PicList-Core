@@ -38,6 +38,7 @@ import {
   renameFileNameWithCustomString,
   safeParse,
 } from '../utils/common'
+import { selectWatermark } from '../utils/common/watermark'
 import { createContext } from '../utils/createContext'
 import { IBuildInEvent } from '../utils/enum'
 import { cachePreprocessedInput, clearPreprocessedInputs } from '../utils/preprocessedInput'
@@ -447,6 +448,7 @@ export class Lifecycle extends EventEmitter {
         item,
         tempFilePath,
         ctx,
+        info.fileName,
       )
 
       if (processedImage) {
@@ -472,6 +474,7 @@ export class Lifecycle extends EventEmitter {
     item: string,
     tempFilePath: string,
     ctx: IPicGo,
+    fileName?: string,
   ): Promise<ProcessedImage | undefined> {
     if (shouldSkipExtension) return undefined
 
@@ -488,7 +491,8 @@ export class Lifecycle extends EventEmitter {
     // Apply watermark
     if (isNeedAddWatermark(watermarkOptions, extension)) {
       transformedBuffer =
-        (await this.addWatermark(transformedBuffer ?? fileBuffer, watermarkOptions!, ctx)) ?? transformedBuffer
+        (await this.addWatermark(transformedBuffer ?? fileBuffer, watermarkOptions!, ctx, fileName)) ??
+        transformedBuffer
     }
 
     // Remove EXIF if needed
@@ -504,10 +508,13 @@ export class Lifecycle extends EventEmitter {
   /** Ensures a font is available for text watermarks and returns undefined if font setup fails. */
   private async addWatermark(
     fileBuffer: Buffer,
-    watermarkOptions: IBuildInWaterMarkOptions,
+    options: IBuildInWaterMarkOptions,
     ctx: IPicGo,
+    fileName?: string,
   ): Promise<Buffer | undefined> {
-    if (!(watermarkOptions?.watermarkFontPath || watermarkOptions?.watermarkType === 'image')) {
+    const watermarkOptions = selectWatermark(options)
+    if (!watermarkOptions) return undefined
+    if (!(watermarkOptions.watermarkFontPath || watermarkOptions.watermarkType === 'image')) {
       const downloadTTFRet = await this.downloadTTF()
       if (!downloadTTFRet) {
         this.ctx.log.warn(MESSAGES.DOWNLOAD_TTF_SKIP)
@@ -516,7 +523,7 @@ export class Lifecycle extends EventEmitter {
     }
 
     ctx.log.info(MESSAGES.WATERMARK)
-    return await imageAddWaterMark(fileBuffer, watermarkOptions, this.ttfPath, ctx.log)
+    return await imageAddWaterMark(fileBuffer, watermarkOptions, this.ttfPath, ctx.log, fileName)
   }
 
   /** Uses JPEG intermediates only for explicitly requested local HEIC and HEIF conversions. */

@@ -49,6 +49,23 @@ function formatHelper(num: number): string {
   return num.toString().length === 1 ? `0${num}` : num.toString()
 }
 
+/** Date placeholders shared by naming patterns and watermark text. */
+export function timePlaceholders(now: Date): Record<string, () => string> {
+  const year = now.getFullYear().toString()
+  return {
+    '{Y}': () => year,
+    '{y}': () => year.slice(2),
+    '{m}': () => formatHelper(now.getMonth() + 1),
+    '{d}': () => formatHelper(now.getDate()),
+    '{h}': () => formatHelper(now.getHours()),
+    '{i}': () => formatHelper(now.getMinutes()),
+    '{s}': () => formatHelper(now.getSeconds()),
+    '{ms}': () => now.getMilliseconds().toString().padStart(3, '0'),
+    '{timestampS}': () => Math.floor(now.getTime() / 1000).toString(),
+    '{timestamp}': () => now.getTime().toString(),
+  }
+}
+
 /**
  * Expands filename, date, hash, identifier, random-string, and parent-folder placeholders.
  *
@@ -64,19 +81,11 @@ export function renameFileNameWithCustomString(
   affixFileName?: string,
   fileBuffer?: Parameters<typeof getMd5>[0],
 ): string {
-  const now = new Date()
-  const year = now.getFullYear().toString()
   const { base, name: filebasename, ext } = path.parse(oldName)
+  const { '{timestampS}': seconds, '{timestamp}': milliseconds, ...calendar } = timePlaceholders(new Date())
   /** Lazy replacements for fixed tokens, evaluated once per token before global substitution. */
   const conversionMap: Record<string, () => string> = {
-    '{Y}': () => year,
-    '{y}': () => year.slice(2),
-    '{m}': () => formatHelper(now.getMonth() + 1),
-    '{d}': () => formatHelper(now.getDate()),
-    '{h}': () => formatHelper(now.getHours()),
-    '{i}': () => formatHelper(now.getMinutes()),
-    '{s}': () => formatHelper(now.getSeconds()),
-    '{ms}': () => now.getMilliseconds().toString().padStart(3, '0'),
+    ...calendar,
     '{md5}': () => getMd5(fileBuffer || filebasename),
     '{sha1}': () => getSha1(fileBuffer || filebasename),
     '{sha256}': () => getSha256(fileBuffer || filebasename),
@@ -84,8 +93,8 @@ export function renameFileNameWithCustomString(
     '{filename}': () => (affixFileName ? path.basename(affixFileName, path.extname(affixFileName)) : filebasename),
     '{uuid}': () => uuidv4().replace(/-/g, ''),
     '{ulid}': () => ulid(),
-    '{timestampS}': () => Math.floor(now.getTime() / 1000).toString(),
-    '{timestamp}': () => now.getTime().toString(),
+    '{timestampS}': seconds,
+    '{timestamp}': milliseconds,
   }
   const strRegex = /{str-(\d+)}/gi
   const sha256Regex = /{sha256-(\d+)}/gi

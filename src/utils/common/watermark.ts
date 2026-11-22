@@ -7,29 +7,37 @@ import TextToSVG from 'text-to-svg'
 
 import type { IBuildInWaterMarkOptions, ILogger } from '../../types'
 import { forceNumber } from './config'
+import { timePlaceholders } from './rename'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-/** Renders watermark text as SVG bytes using the selected font file and fill color. */
-async function text2SVG(
-  defaultWatermarkFontPath: string,
-  text?: string,
-  color?: string,
-  fontFamily?: string,
-): Promise<Buffer> {
-  text = !text ? '测试' : text
-  fontFamily = !fontFamily ? defaultWatermarkFontPath : fontFamily
-  color = !color ? 'rgba(204, 204, 204, 0.45)' : color
-  const text2SVG = TextToSVG.loadSync(fontFamily)
+/** Expand known tokens once so braces and dollar signs in a filename remain literal. */
+function watermarkText(template: string, fileName: string): string {
+  const tokens = timePlaceholders(new Date())
+  if (fileName) tokens['{filename}'] = () => path.parse(fileName).name
+  return template.replace(/\{\w+\}/g, token => tokens[token]?.() ?? token)
+}
+
+function text2SVG(
+  fontPath: string,
+  text: string,
+  color: string,
+  fontSize: number,
+  width: number,
+  height: number,
+): Buffer {
+  const font = TextToSVG.loadSync(fontPath)
   const options: TextToSVG.GenerationOptions = {
     anchor: 'top',
-    attributes: {
-      fill: color,
-    },
+    attributes: { fill: color },
   }
-  const textSVG = text2SVG.getSVG(text, options)
-  return Buffer.from(textSVG)
+  if (fontSize > 0) {
+    // Fit long captions and large type before rasterizing the SVG.
+    const metrics = font.getMetrics(text, { fontSize: 1 })
+    options.fontSize = Math.min(fontSize, width / metrics.width, height / metrics.height)
+  }
+  return Buffer.from(font.getSVG(text, options))
 }
 
 /** Locates the bundled watermark image from either the source utility layout or built module layout. */
@@ -57,6 +65,8 @@ const defaultWatermarkImagePath = getDefaultWatermarkImagePath()
  * @param watermarkImagePath - Image watermark file; omitted to use the bundled logo.
  * @param position - Composite gravity, defaulting to southeast.
  * @param watermarkImageOpacity - Image watermark alpha on a 0–255 scale.
+ * @param watermarkFontSize - Text size in pixels. Zero uses proportional scaling.
+ * @param fileName - Original input name for the filename placeholder.
  */
 export async function AddWatermark(
   img: Buffer,
@@ -71,27 +81,42 @@ export async function AddWatermark(
   watermarkImagePath?: string,
   position?: Gravity,
   watermarkImageOpacity?: number,
+  watermarkFontSize?: number,
+  fileName = '',
 ): Promise<Buffer> {
-  watermarkScaleRatio =
-    !watermarkScaleRatio || watermarkScaleRatio < 0 || watermarkScaleRatio > 1 ? 0.15 : watermarkScaleRatio
+  return renderWatermark(
+    img,
+    {
+      watermarkType,
+      isFullScreenWatermark,
+      watermarkText: text,
+      watermarkFontPath,
+      watermarkScaleRatio,
+      watermarkColor,
+      watermarkImagePath,
+      watermarkDegree,
+      watermarkImageOpacity,
+      watermarkFontSize,
+    },
+    defaultWatermarkFontPath,
+    fileName,
+    position,
+  )
+}
+
+async function renderWatermark(
+  img: Buffer,
+  options: IBuildInWaterMarkOptions,
+  defaultFont: string,
+  fileName: string,
+  position: Gravity | undefined = options.watermarkPosition,
+): Promise<Buffer> {
   const image = sharp(img, { animated: true })
   const { width: imgWidth = 200, height = 200, pageHeight } = await image.metadata()
   const imgHeight = pageHeight || height
-  const watermark = await createWatermark(
-    watermarkType,
-    defaultWatermarkFontPath,
-    text,
-    watermarkFontPath,
-    watermarkScaleRatio,
-    watermarkColor,
-    watermarkImagePath,
-    imgWidth,
-    watermarkDegree,
-    watermarkImageOpacity,
-    imgHeight,
-  )
+  const watermark = await createWatermark(options, defaultFont, imgWidth, imgHeight, fileName)
   const gravity = position || 'southeast'
-  if (!isFullScreenWatermark && imgHeight < height) {
+  if (!options.isFullScreenWatermark && imgHeight < height) {
     // Sharp stacks animation frames vertically. Anchor the mark within one frame and repeat it down the stack.
     const { data, info } = await sharp({
       create: { width: imgWidth, height: imgHeight, channels: 4, background: 'transparent' },
@@ -101,33 +126,27 @@ export async function AddWatermark(
       .toBuffer({ resolveWithObject: true })
     return await image.composite([{ input: data, raw: info, tile: true, gravity: 'northwest' }]).toBuffer()
   }
-  return await image.composite([{ input: watermark, gravity, tile: isFullScreenWatermark }]).toBuffer()
+  return await image.composite([{ input: watermark, gravity, tile: options.isFullScreenWatermark }]).toBuffer()
 }
 
 /** Builds text or image watermark bytes, applies image opacity, and scales and rotates the result. */
 async function createWatermark(
-  watermarkType: 'text' | 'image',
+  options: IBuildInWaterMarkOptions,
   defaultWatermarkFontPath: string,
-  text?: string,
-  watermarkFontPath?: string,
-  watermarkScaleRatio?: number,
-  watermarkColor?: string,
-  watermarkImagePath?: string,
-  imgWidth: number = 200,
-  watermarkDegree: number = 0,
-  watermarkImageOpacity: number = 255,
-  imgHeight: number = 200,
+  imgWidth: number,
+  imgHeight: number,
+  fileName: string,
 ): Promise<Buffer> {
-  let watermark: any
-  if (watermarkType === 'image') {
-    watermarkImageOpacity = Math.max(0, Math.min(255, Math.round(forceNumber(watermarkImageOpacity))))
-    watermarkImagePath = watermarkImagePath || defaultWatermarkImagePath
+  let watermark: Buffer
+  const fontSize = options.watermarkType === 'image' ? 0 : forceNumber(options.watermarkFontSize)
+  if (options.watermarkType === 'image') {
+    const opacity = Math.max(0, Math.min(255, Math.round(forceNumber(options.watermarkImageOpacity ?? 255))))
     // Read via Node so Electron can resolve assets stored inside app.asar.
     // libvips opens filename inputs directly and cannot read ASAR virtual paths.
-    watermark = await sharp(await readFile(watermarkImagePath))
+    watermark = await sharp(await readFile(options.watermarkImagePath || defaultWatermarkImagePath))
       .composite([
         {
-          input: Buffer.from([255, 255, 255, watermarkImageOpacity]),
+          input: Buffer.from([255, 255, 255, opacity]),
           raw: {
             width: 1,
             height: 1,
@@ -139,21 +158,24 @@ async function createWatermark(
       ])
       .toBuffer()
   } else {
-    watermark = await text2SVG(
-      defaultWatermarkFontPath,
-      text,
-      watermarkColor,
-      watermarkFontPath || defaultWatermarkFontPath,
+    watermark = text2SVG(
+      options.watermarkFontPath || defaultWatermarkFontPath,
+      watermarkText(options.watermarkText || '测试', fileName),
+      options.watermarkColor || 'rgba(204, 204, 204, 0.45)',
+      fontSize,
+      imgWidth,
+      imgHeight,
     )
   }
-  const { width: watermarkWidth, height: watermarkHeight } = await getSize(watermark)
-  const watermarkResizeWidth = Math.max(1, Math.floor(imgWidth * forceNumber(watermarkScaleRatio)))
-  const watermarkResizeHeight = Math.max(1, Math.floor((watermarkResizeWidth * watermarkHeight) / watermarkWidth))
-  const rotatedWatermark = await sharp(watermark)
-    .resize(watermarkResizeWidth, watermarkResizeHeight, {
-      fit: 'inside',
-    })
-    .rotate(watermarkDegree, {
+  const overlay = sharp(watermark)
+  if (fontSize <= 0) {
+    const { width, height } = await getSize(watermark)
+    const ratio = forceNumber(options.watermarkScaleRatio)
+    const targetWidth = Math.max(1, Math.floor(imgWidth * (ratio > 0 && ratio <= 1 ? ratio : 0.15)))
+    overlay.resize(targetWidth, Math.max(1, Math.floor((targetWidth * height) / width)), { fit: 'inside' })
+  }
+  const rotatedWatermark = await overlay
+    .rotate(forceNumber(options.watermarkDegree), {
       background: { r: 255, g: 255, b: 255, alpha: 0 },
     })
     .toBuffer()
@@ -163,6 +185,16 @@ async function createWatermark(
   return await sharp(rotatedWatermark)
     .resize(imgWidth, imgHeight, { fit: 'inside', withoutEnlargement: true })
     .toBuffer()
+}
+
+/** Draw one checked preset per image. An empty pool skips watermarking. */
+export function selectWatermark(options: IBuildInWaterMarkOptions): IBuildInWaterMarkOptions | undefined {
+  if (!options.randomWatermark) return options
+  if (!Array.isArray(options.watermarkPresets)) return undefined
+  const pool = options.watermarkPresets.filter(
+    preset => preset?.enabled === true && (preset.watermarkType === 'text' || preset.watermarkType === 'image'),
+  )
+  return pool[Math.floor(Math.random() * pool.length)]
 }
 
 /** Reads watermark dimensions, using 200 pixels for each unavailable dimension. */
@@ -177,22 +209,12 @@ export async function imageAddWaterMark(
   options: IBuildInWaterMarkOptions,
   defaultWatermarkFontPath: string,
   logger: ILogger,
+  fileName = '',
 ): Promise<Buffer> {
   try {
-    return await AddWatermark(
-      img,
-      options.watermarkType || 'text',
-      defaultWatermarkFontPath,
-      options.isFullScreenWatermark,
-      forceNumber(options.watermarkDegree),
-      options.watermarkText,
-      options.watermarkFontPath,
-      forceNumber(options.watermarkScaleRatio),
-      options.watermarkColor,
-      options.watermarkImagePath,
-      options.watermarkPosition,
-      options.watermarkImageOpacity === undefined ? undefined : forceNumber(options.watermarkImageOpacity),
-    )
+    const selected = selectWatermark(options)
+    if (!selected) return img
+    return await renderWatermark(img, selected, defaultWatermarkFontPath, fileName)
   } catch (error: any) {
     logger.error(`Image add watermark error: ${error}`)
     return img

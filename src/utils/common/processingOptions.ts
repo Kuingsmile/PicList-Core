@@ -50,6 +50,21 @@ export function getTreatedWaterMarkOptions(
 ): IBuildInWaterMarkOptionsTreated {
   global = global || {}
   const options: IBuildInWaterMarkOptionsTreated = {
+    randomWatermark: resolveBooleanOption(
+      idSpecificConfig.randomWatermark,
+      global.randomWatermarkMap,
+      picBed,
+      global.randomWatermark,
+    ),
+    watermarkPresets:
+      resolveOption(idSpecificConfig.watermarkPresets, global.watermarkPresetsMap, picBed, global.watermarkPresets) ??
+      [],
+    watermarkFontSize: resolveNumberOption(
+      idSpecificConfig.watermarkFontSize,
+      global.watermarkFontSizeMap,
+      picBed,
+      global.watermarkFontSize,
+    ),
     isAddWatermark: resolveBooleanOption(
       idSpecificConfig.isAddWatermark,
       global.isAddWatermarkMap,

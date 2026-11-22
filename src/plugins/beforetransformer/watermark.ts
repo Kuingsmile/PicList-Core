@@ -21,6 +21,8 @@ const config = (ctx: IPicGo): IPluginConfig[] => {
     createField(ctx, 'watermark', 'watermarkDegree', 'input', userConfig.watermarkDegree ?? 0, false, 'BUILDIN'),
     createField(ctx, 'watermark', 'watermarkText', 'input', userConfig.watermarkText || '', false, 'BUILDIN'),
     createField(ctx, 'watermark', 'watermarkFontPath', 'input', userConfig.watermarkFontPath || '', false, 'BUILDIN'),
+    createField(ctx, 'watermark', 'watermarkFontSize', 'input', userConfig.watermarkFontSize ?? 0, false, 'BUILDIN'),
+    createField(ctx, 'watermark', 'randomWatermark', 'confirm', userConfig.randomWatermark ?? false, false, 'BUILDIN'),
     createField(
       ctx,
       'watermark',

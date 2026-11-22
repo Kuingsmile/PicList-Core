@@ -319,6 +319,8 @@ export const EN: ILocales = {
   BUILDIN_WATERMARK_WATERMARKDEGREE: 'Set watermark angle',
   BUILDIN_WATERMARK_MESSAGE_WATERMARKDEGREE: 'Please enter a number',
   BUILDIN_WATERMARK_WATERMARKTEXT: 'Set watermark text',
+  BUILDIN_WATERMARK_WATERMARKFONTSIZE: 'Watermark font size in pixels (0 uses proportional size)',
+  BUILDIN_WATERMARK_RANDOMWATERMARK: 'Choose a checked watermark preset at random for each image',
   BUILDIN_WATERMARK_MESSAGE_WATERMARKTEXT: 'Please enter watermark text',
   BUILDIN_WATERMARK_WATERMARKFONTPATH: 'Set watermark font',
   BUILDIN_WATERMARK_MESSAGE_WATERMARKFONTPATH: 'Please enter the watermark font file path',

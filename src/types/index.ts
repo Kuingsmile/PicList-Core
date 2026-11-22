@@ -781,14 +781,15 @@ type IUploaderOptionMaps<T> = {
 
 // Keep these shared shapes private and free of index signatures so public interfaces can be
 // augmented independently and uploader maps retain their specific value types.
-interface IBuildInWaterMarkOptionValues {
-  isAddWatermark?: boolean
+interface WatermarkAppearance {
   watermarkType?: 'text' | 'image'
   isFullScreenWatermark?: boolean
   /** Watermark rotation in degrees. */
   watermarkDegree?: number
   watermarkText?: string
   watermarkFontPath?: string
+  /** Positive font size in pixels. Zero uses the watermark width ratio. */
+  watermarkFontSize?: number
   /** Watermark width as a fraction of source image width. */
   watermarkScaleRatio?: number
   watermarkColor?: string
@@ -796,6 +797,18 @@ interface IBuildInWaterMarkOptionValues {
   watermarkPosition?: availableWatermarkPosition
   /** Image-watermark alpha on a 0–255 scale. */
   watermarkImageOpacity?: number
+}
+
+export interface WatermarkPreset extends WatermarkAppearance {
+  name: string
+  enabled: boolean
+  watermarkType: 'text' | 'image'
+}
+
+interface IBuildInWaterMarkOptionValues extends WatermarkAppearance {
+  isAddWatermark?: boolean
+  randomWatermark?: boolean
+  watermarkPresets?: WatermarkPreset[]
 }
 
 /**
