@@ -1,3 +1,8 @@
+## :tada: 3.1.1 (2026-11-22)
+
+### :sparkles: Features
+
+* support random watermark preset and more options ([d9ed676](https://github.com/Kuingsmile/PicList-Core/commit/d9ed676))
 # :tada: 3.1.0 (2026-11-21)
 
 ### :sparkles: Features
