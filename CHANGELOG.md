@@ -1,3 +1,9 @@
+## :tada: 3.1.2 (2026-11-23)
+
+### :sparkles: Features
+
+* add s3Object in result of s3 ([e5cd405](https://github.com/Kuingsmile/PicList-Core/commit/e5cd405))
+* optimize url file name get ([a673639](https://github.com/Kuingsmile/PicList-Core/commit/a673639))
 ## :tada: 3.1.1 (2026-11-22)
 
 ### :sparkles: Features
