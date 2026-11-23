@@ -46,6 +46,7 @@ const handle = async (ctx: IPicGo): Promise<IPicGo> => {
       })
       img.imgUrl = task.imgURL
       img.url = task.url
+      img.s3Object = { bucket: task.bucket, key: task.key }
       delete img.buffer
       delete img.base64Image
 

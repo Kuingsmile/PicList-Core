@@ -11,6 +11,7 @@ import { extractInfo, getProxyAgent } from './utils'
 
 /** Uploaded object identity, download URL aliases, and optional S3 version and ETag metadata. */
 export interface IUploadResult {
+  bucket: string
   key: string
   url: string
   imgURL: string
@@ -93,6 +94,7 @@ async function createUploadTask(opts: ICreateUploadTaskOpts): Promise<IUploadRes
     }
 
     return {
+      bucket: opts.bucketName,
       key: opts.path,
       url,
       imgURL: url,

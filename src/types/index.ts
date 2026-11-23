@@ -251,6 +251,8 @@ export interface IImgInfo {
   /** Image extension, normally including its leading dot. */
   extname?: string
   imgUrl?: string
+  /** Exact S3 upload target, including the unencoded object key. */
+  s3Object?: { bucket: string; key: string }
   filePath?: string
   /** Index of the source input, retained when failed inputs are removed from the output. */
   inputIndex?: number
