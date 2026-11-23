@@ -15,7 +15,7 @@ export {
   safeParse,
 } from './common/config'
 export { getMd5 } from './common/hash'
-export { getFSFile, getImageSize, getImageTypeByMagicNumber, getURLFile } from './common/imageFile'
+export { getFSFile, getImageSize, getImageTypeByMagicNumber, getURLFile, getUrlFileName } from './common/imageFile'
 export {
   getNormalPluginName,
   getPluginNameType,

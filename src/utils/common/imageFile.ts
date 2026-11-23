@@ -89,6 +89,25 @@ export function getImageTypeByMagicNumber(buffer: Buffer | Uint8Array): string {
   return ''
 }
 
+/** Decodes a URL basename once, keeping characters unsafe for portable filenames escaped. */
+export function getUrlFileName(url: URL): string {
+  const segment = path.posix.basename(url.pathname)
+  let fileName = segment
+  try {
+    fileName = decodeURIComponent(segment.replace(/%(?![\da-f]{2})/gi, '%25'))
+  } catch {
+    // Invalid UTF-8 has no lossless text representation. Keep the original spelling.
+  }
+  fileName = fileName.replace(
+    /[<>:"/\\|?*\x00-\x1f\x7f]|[. ]$/g,
+    char => `%${char.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0')}`,
+  )
+  // Device names are reserved on Windows even when followed by an extension.
+  return /^(?:con|prn|aux|nul|conin\$|conout\$|com[1-9¹²³]|lpt[1-9¹²³]) *(?:\.|$)/i.test(fileName)
+    ? `_${fileName}`
+    : fileName
+}
+
 /**
  * Downloads an image and resolves its extension from URL hints, MIME type, or magic bytes.
  *
@@ -121,7 +140,7 @@ export const getURLFile = async (url: string, ctx: IPicGo): Promise<IPathTransfo
       deadline,
     ])
     const buffer = Buffer.isBuffer(response.data) ? response.data : Buffer.from(response.data as ArrayBuffer)
-    const { name, ext } = path.posix.parse(parsedUrl.pathname)
+    const { name, ext } = path.posix.parse(getUrlFileName(parsedUrl))
     const formatHint = parsedUrl.searchParams.get('wx_fmt')?.replace(/^\./, '')
     let extname = ext
     if (formatHint && /^[a-z0-9]+$/i.test(formatHint) && mime.getType(formatHint)?.startsWith('image/')) {
